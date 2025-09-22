@@ -110,4 +110,119 @@ export class ProxyController {
       });
     }
   }
+
+  /**
+   * Proxy all Payment Service requests
+   */
+  @All('payments/*')
+  async proxyPayments(@Req() req: Request, @Res() res: Response) {
+    try {
+      const path = req.url.replace('/api/payments', '');
+      const method = req.method.toLowerCase();
+      
+      const response = await firstValueFrom(
+        this.proxyService.proxyToPaymentService(method, `/api/payments${path}`, req.body, req.headers)
+      );
+
+      res.status(response.status).json(response.data);
+    } catch (error: any) {
+      this.logger.error(`Payment proxy error: ${error.message}`);
+      res.status(error.response?.status || 500).json({
+        message: 'Payment service unavailable',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Proxy all Notification Service requests
+   */
+  @All('notifications/*')
+  async proxyNotifications(@Req() req: Request, @Res() res: Response) {
+    try {
+      const path = req.url.replace('/api/notifications', '');
+      const method = req.method.toLowerCase();
+      
+      const response = await firstValueFrom(
+        this.proxyService.proxyToNotificationService(method, `/api/notifications${path}`, req.body, req.headers)
+      );
+
+      res.status(response.status).json(response.data);
+    } catch (error: any) {
+      this.logger.error(`Notification proxy error: ${error.message}`);
+      res.status(error.response?.status || 500).json({
+        message: 'Notification service unavailable',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Proxy all Location Service requests
+   */
+  @All('locations/*')
+  async proxyLocations(@Req() req: Request, @Res() res: Response) {
+    try {
+      const path = req.url.replace('/api/locations', ''); 
+      const method = req.method.toLowerCase();
+      
+      const response = await firstValueFrom(
+        this.proxyService.proxyToLocationService(method, `/api/locations${path}`, req.body, req.headers)
+      );
+
+      res.status(response.status).json(response.data);
+    } catch (error: any) {
+      this.logger.error(`Location proxy error: ${error.message}`);
+      res.status(error.response?.status || 500).json({
+        message: 'Location service unavailable',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Proxy all Review Service requests
+   */
+  @All('reviews/*')
+  async proxyReviews(@Req() req: Request, @Res() res: Response) {
+    try {
+      const path = req.url.replace('/api/reviews', '');
+      const method = req.method.toLowerCase();
+      
+      const response = await firstValueFrom(
+        this.proxyService.proxyToReviewService(method, `/api/reviews${path}`, req.body, req.headers)
+      );
+
+      res.status(response.status).json(response.data);
+    } catch (error: any) {
+      this.logger.error(`Review proxy error: ${error.message}`);
+      res.status(error.response?.status || 500).json({
+        message: 'Review service unavailable',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
+   * Proxy all File Upload Service requests
+   */
+  @All('file-uploads/*')
+  async proxyFileUploads(@Req() req: Request, @Res() res: Response) {
+    try {
+      const path = req.url.replace('/api/file-uploads', '');
+      const method = req.method.toLowerCase();
+      
+      const response = await firstValueFrom(
+        this.proxyService.proxyToFileUploadService(method, `/api/file-uploads${path}`, req.body, req.headers)
+      );
+
+      res.status(response.status).json(response.data);
+    } catch (error: any) {  
+      this.logger.error(`File upload proxy error: ${error.message}`);
+      res.status(error.response?.status || 500).json({
+        message: 'File upload service unavailable',
+        error: error.message,
+      });
+    }
+  }
 }

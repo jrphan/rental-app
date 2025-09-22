@@ -82,6 +82,106 @@ export class ProxyService {
   }
 
   /**
+   * Proxy request to Payment Service
+   */
+  proxyToPaymentService(
+    method: string,
+    path: string,
+    data?: any,
+    headers?: any
+  ): Observable<AxiosResponse> {
+    const url = `${this.services.payment}${path}`;
+    this.logger.log(`Proxying ${method.toUpperCase()} ${url}`);
+    
+    return this.httpService.request({
+      method,
+      url,
+      data,
+      headers,
+    });
+  }
+
+  /**
+   * Proxy request to Notification Service
+   */
+  proxyToNotificationService(
+    method: string,
+    path: string,
+    data?: any,
+    headers?: any
+  ): Observable<AxiosResponse> {
+    const url = `${this.services.notification}${path}`;
+    this.logger.log(`Proxying ${method.toUpperCase()} ${url}`);
+    
+    return this.httpService.request({
+      method,
+      url,
+      data,
+      headers,
+    });
+  }
+
+  /**
+   * Proxy request to Location Service
+   */
+  proxyToLocationService(
+    method: string,
+    path: string,
+    data?: any,
+    headers?: any
+  ): Observable<AxiosResponse> {
+    const url = `${this.services.location}${path}`;
+    this.logger.log(`Proxying ${method.toUpperCase()} ${url}`);
+    
+    return this.httpService.request({
+      method,
+      url,
+      data,
+      headers,
+    });
+  }
+
+  /**
+   * Proxy request to Review Service
+   */
+  proxyToReviewService(
+    method: string,
+    path: string,
+    data?: any,
+    headers?: any
+  ): Observable<AxiosResponse> {
+    const url = `${this.services.review}${path}`;
+    this.logger.log(`Proxying ${method.toUpperCase()} ${url}`);
+    
+    return this.httpService.request({
+      method,
+      url,
+      data,
+      headers,
+    });
+  }
+
+  /**
+   * Proxy request to File Upload Service
+   */
+  proxyToFileUploadService(
+    method: string,
+    path: string,
+    data?: any,
+    headers?: any
+  ): Observable<AxiosResponse> {
+    const url = `${this.services.fileUpload}${path}`;
+    this.logger.log(`Proxying ${method.toUpperCase()} ${url}`);
+    
+    return this.httpService.request({
+      method,
+      url,
+      data,
+      headers,
+    });
+  }
+
+  /**
    * Generic proxy method
    */
   proxyToService(
