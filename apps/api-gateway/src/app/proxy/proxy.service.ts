@@ -12,6 +12,11 @@ export class ProxyService {
     auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3333',
     vehicle: process.env.VEHICLE_SERVICE_URL || 'http://localhost:3334',
     booking: process.env.BOOKING_SERVICE_URL || 'http://localhost:3335',
+    payment: process.env.PAYMENT_SERVICE_URL || 'http://localhost:3336',
+    notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3337',
+    location: process.env.LOCATION_SERVICE_URL || 'http://localhost:3338',
+    review: process.env.REVIEW_SERVICE_URL || 'http://localhost:3339',
+    fileUpload: process.env.FILE_UPLOAD_SERVICE_URL || 'http://localhost:3342',
   };
 
   constructor(private readonly httpService: HttpService) {}
@@ -66,6 +71,27 @@ export class ProxyService {
     headers?: any
   ): Observable<AxiosResponse> {
     const url = `${this.services.booking}${path}`;
+    this.logger.log(`Proxying ${method.toUpperCase()} ${url}`);
+    
+    return this.httpService.request({
+      method,
+      url,
+      data,
+      headers,
+    });
+  }
+
+  /**
+   * Generic proxy method
+   */
+  proxyToService(
+    serviceName: keyof typeof this.services,
+    method: string,
+    path: string,
+    data?: any,
+    headers?: any
+  ): Observable<AxiosResponse> {
+    const url = `${this.services[serviceName]}${path}`;
     this.logger.log(`Proxying ${method.toUpperCase()} ${url}`);
     
     return this.httpService.request({

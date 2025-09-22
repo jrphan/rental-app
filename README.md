@@ -11,7 +11,12 @@ rental-app/
 │   ├── api-gateway/                # NestJS API Gateway (Entry Point)
 │   ├── auth-service/               # NestJS Auth Microservice
 │   ├── vehicle-service/            # NestJS Vehicle Microservice
-│   └── booking-service/            # NestJS Booking Microservice
+│   ├── booking-service/            # NestJS Booking Microservice
+│   ├── payment-service/            # NestJS Payment Microservice
+│   ├── notification-service/       # NestJS Notification Microservice
+│   ├── location-service/           # NestJS Location & Map Microservice
+│   ├── review-service/             # NestJS Review & Rating Microservice
+│   └── file-upload-service/        # NestJS File Upload Microservice
 ├── packages/                       # Shared libraries
 │   ├── shared-types/               # Shared TypeScript types
 │   └── shared-utils/               # Shared utilities
@@ -54,9 +59,17 @@ pnpm mobile:web
 pnpm gateway    # API Gateway (port 3000)
 
 # Start từng service riêng lẻ
-pnpm auth       # Auth service (port 3333)
-pnpm vehicle    # Vehicle service (port 3334)
-pnpm booking    # Booking service (port 3335)
+pnpm auth           # Auth service (port 3333)
+pnpm vehicle        # Vehicle service (port 3334)
+pnpm booking        # Booking service (port 3335)
+pnpm payment        # Payment service (port 3336)
+pnpm notification   # Notification service (port 3337)
+pnpm location       # Location service (port 3338)
+pnpm review         # Review service (port 3339)
+pnpm file-upload    # File Upload service (port 3342)
+
+# Start core services (phát triển cơ bản)
+pnpm dev:core
 
 # Start tất cả backend services bao gồm gateway
 pnpm dev:backend
