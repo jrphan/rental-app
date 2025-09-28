@@ -13,7 +13,7 @@
     "mobile:web": "nx serve rental-mobile",
     "gateway": "nx serve api-gateway",
     "auth": "nx serve auth-service",
-    "vehicle": "nx serve vehicle-service", 
+    "vehicle": "nx serve vehicle-service",
     "booking": "nx serve booking-service",
     "payment": "nx serve payment-service",
     "notification": "nx serve notification-service",
@@ -27,6 +27,7 @@
     "test:all": "nx run-many --target=test --all"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.4",
     "@babel/runtime": "~7.27.6",
     "@expo/cli": "~0.24.14",
     "@nestjs/schematics": "^11.0.0",

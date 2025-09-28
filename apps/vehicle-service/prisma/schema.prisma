@@ -1,0 +1,186 @@
+// Vehicle Service Prisma Schema
+generator client {
+    provider = "prisma-client-js"
+    output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Vehicle {
+    id           String       @id @default(cuid())
+    ownerId      String       @map("owner_id")
+    make         String
+    model        String
+    year         Int
+    color        String
+    licensePlate String       @unique @map("license_plate")
+    vin          String?      @unique
+    mileage      Int?
+    fuelType     FuelType     @map("fuel_type")
+    transmission Transmission
+    engineSize   Float?       @map("engine_size")
+    seats        Int          @default(5)
+    doors        Int          @default(4)
+    features     String[]     @default([])
+    images       String[]     @default([])
+    documents    String[]     @default([])
+
+    // Location
+    latitude  Float
+    longitude Float
+    address   String
+    city      String
+    state     String
+    country   String @default("US")
+    zipCode   String @map("zip_code")
+
+    // Pricing
+    pricePerDay  Decimal  @map("price_per_day")
+    pricePerHour Decimal? @map("price_per_hour")
+    deposit      Decimal? @default(0)
+
+    // Status and availability
+    status     VehicleStatus @default(AVAILABLE)
+    isActive   Boolean       @default(true) @map("is_active")
+    isVerified Boolean       @default(false) @map("is_verified")
+
+    // Timestamps
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+
+    // Insurance and registration
+    insuranceExpiry    DateTime? @map("insurance_expiry")
+    registrationExpiry DateTime? @map("registration_expiry")
+    inspectionExpiry   DateTime? @map("inspection_expiry")
+
+    // Relations
+    bookings        Booking[]
+    reviews         Review[]
+    maintenanceLogs MaintenanceLog[]
+    locationHistory VehicleLocationHistory[]
+
+    @@map("vehicles")
+}
+
+model VehicleLocationHistory {
+    id         String   @id @default(cuid())
+    vehicleId  String   @map("vehicle_id")
+    latitude   Float
+    longitude  Float
+    address    String
+    city       String
+    state      String
+    country    String   @default("US")
+    zipCode    String   @map("zip_code")
+    recordedAt DateTime @default(now()) @map("recorded_at")
+
+    // Relations
+    vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+    @@map("vehicle_location_history")
+}
+
+model MaintenanceLog {
+    id          String          @id @default(cuid())
+    vehicleId   String          @map("vehicle_id")
+    type        MaintenanceType
+    description String
+    cost        Decimal?
+    mileage     Int?
+    performedAt DateTime        @map("performed_at")
+    nextDueAt   DateTime?       @map("next_due_at")
+    notes       String?
+    receipts    String[]        @default([])
+    createdAt   DateTime        @default(now()) @map("created_at")
+    updatedAt   DateTime        @updatedAt @map("updated_at")
+
+    // Relations
+    vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+    @@map("maintenance_logs")
+}
+
+model Booking {
+    id              String        @id @default(cuid())
+    vehicleId       String        @map("vehicle_id")
+    userId          String        @map("user_id")
+    startDate       DateTime      @map("start_date")
+    endDate         DateTime      @map("end_date")
+    totalDays       Int           @map("total_days")
+    totalAmount     Decimal       @map("total_amount")
+    status          BookingStatus @default(PENDING)
+    pickupLocation  String        @map("pickup_location")
+    dropoffLocation String?       @map("dropoff_location")
+    notes           String?
+    createdAt       DateTime      @default(now()) @map("created_at")
+    updatedAt       DateTime      @updatedAt @map("updated_at")
+
+    // Relations
+    vehicle Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+    reviews Review[]
+
+    @@map("bookings")
+}
+
+model Review {
+    id        String   @id @default(cuid())
+    vehicleId String   @map("vehicle_id")
+    bookingId String   @map("booking_id")
+    userId    String   @map("user_id")
+    rating    Int // 1-5 stars
+    comment   String?
+    images    String[] @default([])
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    // Relations
+    vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+    booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+    @@map("reviews")
+}
+
+enum VehicleStatus {
+    AVAILABLE
+    RENTED
+    MAINTENANCE
+    UNAVAILABLE
+}
+
+enum FuelType {
+    GASOLINE
+    DIESEL
+    ELECTRIC
+    HYBRID
+    PLUGIN_HYBRID
+}
+
+enum Transmission {
+    MANUAL
+    AUTOMATIC
+    CVT
+}
+
+enum MaintenanceType {
+    OIL_CHANGE
+    BRAKE_SERVICE
+    TIRE_CHANGE
+    ENGINE_SERVICE
+    TRANSMISSION_SERVICE
+    ELECTRICAL_SERVICE
+    BODY_REPAIR
+    INSPECTION
+    OTHER
+}
+
+enum BookingStatus {
+    PENDING
+    CONFIRMED
+    ACTIVE
+    COMPLETED
+    CANCELLED
+}

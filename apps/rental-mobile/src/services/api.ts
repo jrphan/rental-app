@@ -26,7 +26,13 @@ class ApiService {
       async (config) => {
         const token = await AsyncStorage.getItem('auth_token');
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+          const headers: any = config.headers ?? {};
+          if (typeof headers.set === 'function') {
+            headers.set('Authorization', `Bearer ${token}`);
+          } else {
+            (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+          }
+          config.headers = headers;
         }
         return config;
       },

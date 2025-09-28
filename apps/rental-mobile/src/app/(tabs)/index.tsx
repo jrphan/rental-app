@@ -1,9 +1,15 @@
-import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { useRouter } from "expo-router";
 
 export default function HomeScreen() {
   const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/(auth)/login");
+  };
 
   return (
     <View style={styles.container}>
@@ -16,7 +22,7 @@ export default function HomeScreen() {
         <Text style={styles.infoText}>Vai trò: {user?.role}</Text>
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Đăng xuất</Text>
       </TouchableOpacity>
     </View>
