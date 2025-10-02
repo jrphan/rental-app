@@ -9,27 +9,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Toast from "react-native-toast-message";
 import { apiService } from "../services/api";
 
-interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  phone: string;
-  avatar?: string;
-  role: "user" | "admin";
-  createdAt: string;
-}
+import { User, RegisterDto } from "@rental-app/shared-types";
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: {
-    email: string;
-    password: string;
-    fullName: string;
-    phone: string;
-  }) => Promise<void>;
+  register: (data: RegisterDto) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
 }
@@ -114,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         Toast.show({
           type: "success",
           text1: "Đăng nhập thành công",
-          text2: `Chào mừng ${userData.fullName}!`,
+          text2: `Chào mừng ${userData.firstName} ${userData.lastName}!`,
         });
       } else {
         throw new Error(response.message || "Đăng nhập thất bại");
@@ -131,12 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (userData: {
-    email: string;
-    password: string;
-    fullName: string;
-    phone: string;
-  }) => {
+  const register = async (userData: RegisterDto) => {
     try {
       setIsLoading(true);
       const response = await apiService.register(userData);
@@ -164,7 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         Toast.show({
           type: "success",
           text1: "Đăng ký thành công",
-          text2: `Chào mừng ${newUser.fullName}!`,
+          text2: `Chào mừng ${newUser.firstName} ${newUser.lastName}!`,
         });
       } else {
         throw new Error(response.message || "Đăng ký thất bại");

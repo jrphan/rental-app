@@ -18,7 +18,8 @@ export default function RegisterScreen() {
     email: "",
     password: "",
     confirmPassword: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     phone: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +35,8 @@ export default function RegisterScreen() {
     if (
       !formData.email ||
       !formData.password ||
-      !formData.fullName ||
+      !formData.firstName ||
+      !formData.lastName ||
       !formData.phone
     ) {
       Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
@@ -68,7 +70,8 @@ export default function RegisterScreen() {
       await register({
         email: formData.email,
         password: formData.password,
-        fullName: formData.fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         phone: formData.phone,
       });
       router.replace("/(tabs)");
@@ -96,12 +99,23 @@ export default function RegisterScreen() {
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Họ và tên</Text>
+            <Text style={styles.label}>Họ</Text>
             <TextInput
               style={styles.input}
-              value={formData.fullName}
-              onChangeText={(value) => handleInputChange("fullName", value)}
-              placeholder="Nhập họ và tên"
+              value={formData.lastName}
+              onChangeText={(value) => handleInputChange("lastName", value)}
+              placeholder="Nhập họ"
+              autoCapitalize="words"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Tên</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.firstName}
+              onChangeText={(value) => handleInputChange("firstName", value)}
+              placeholder="Nhập tên"
               autoCapitalize="words"
             />
           </View>

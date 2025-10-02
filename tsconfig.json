@@ -25,9 +25,6 @@
       "path": "./apps/booking-service"
     },
     {
-      "path": "./packages/shared-types"
-    },
-    {
       "path": "./packages/shared-utils"
     },
     {
@@ -65,6 +62,9 @@
     },
     {
       "path": "./apps/file-upload-service"
+    },
+    {
+      "path": "./packages/shared-prisma"
     }
   ]
 }

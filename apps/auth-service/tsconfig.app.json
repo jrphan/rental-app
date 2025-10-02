@@ -3,9 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "module": "nodenext",
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "rootDir": "src",
     "moduleResolution": "nodenext",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
@@ -13,8 +11,14 @@
     "emitDecoratorMetadata": true,
     "target": "es2021"
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": []
+  "include": ["src/**/*.ts"],
+  "exclude": [],
+  "references": [
+    {
+      "path": "../../packages/shared-prisma"
+    },
+    {
+      "path": "../../packages/shared-types/tsconfig.lib.json"
+    }
+  ]
 }

@@ -1,16 +1,11 @@
-import { Controller, Post, Get, Body, Headers, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers, HttpException, HttpStatus, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import type { RegisterDto } from '@rental-app/shared-types';
+import type { Request } from 'express';
 
 export interface LoginDto {
   email: string;
   password: string;
-}
-
-export interface RegisterDto {
-  email: string;
-  password: string;
-  fullName: string;
-  phone: string;
 }
 
 @Controller('auth')
@@ -21,9 +16,12 @@ export class AuthController {
    * User login
    */
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
+  async login(@Body() loginDto: LoginDto, @Req() req: Request) {
     try {
-      const result = await this.authService.login(loginDto);
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'unknown';
+      
+      const result = await this.authService.login(loginDto, ipAddress, userAgent);
       return {
         success: true,
         message: 'Login successful',
@@ -44,9 +42,12 @@ export class AuthController {
    * User registration
    */
   @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
+  async register(@Body() registerDto: RegisterDto, @Req() req: Request) {
     try {
-      const result = await this.authService.register(registerDto);
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'unknown';
+      
+      const result = await this.authService.register(registerDto, ipAddress, userAgent);
       return {
         success: true,
         message: 'Registration successful',

@@ -79,6 +79,15 @@
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
+    "@rental-app/shared-types": "workspace:*",
+    "@rental-app/shared-prisma": "workspace:*",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
     "prisma": "^6.16.2"
   }
 }
