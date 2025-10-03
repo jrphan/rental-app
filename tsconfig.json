@@ -7,9 +7,6 @@
       "path": "./apps/rental-mobile"
     },
     {
-      "path": "./apps/auth-service-e2e"
-    },
-    {
       "path": "./apps/auth-service"
     },
     {
@@ -19,46 +16,25 @@
       "path": "./apps/vehicle-service"
     },
     {
-      "path": "./apps/booking-service-e2e"
-    },
-    {
       "path": "./apps/booking-service"
     },
     {
       "path": "./packages/shared-utils"
     },
     {
-      "path": "./apps/api-gateway-e2e"
-    },
-    {
       "path": "./apps/api-gateway"
-    },
-    {
-      "path": "./apps/payment-service-e2e"
     },
     {
       "path": "./apps/payment-service"
     },
     {
-      "path": "./apps/notification-service-e2e"
-    },
-    {
       "path": "./apps/notification-service"
-    },
-    {
-      "path": "./apps/location-service-e2e"
     },
     {
       "path": "./apps/location-service"
     },
     {
-      "path": "./apps/review-service-e2e"
-    },
-    {
       "path": "./apps/review-service"
-    },
-    {
-      "path": "./apps/file-upload-service-e2e"
     },
     {
       "path": "./apps/file-upload-service"

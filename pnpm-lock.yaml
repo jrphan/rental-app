@@ -161,8 +161,6 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3
 
-  apps/api-gateway-e2e: {}
-
   apps/auth-service:
     dependencies:
       '@prisma/client':
@@ -194,27 +192,15 @@ importers:
         specifier: ^6.16.2
         version: 6.16.3(typescript@5.9.3)
 
-  apps/auth-service-e2e: {}
-
   apps/booking-service: {}
-
-  apps/booking-service-e2e: {}
 
   apps/file-upload-service: {}
 
-  apps/file-upload-service-e2e: {}
-
   apps/location-service: {}
-
-  apps/location-service-e2e: {}
 
   apps/notification-service: {}
 
-  apps/notification-service-e2e: {}
-
   apps/payment-service: {}
-
-  apps/payment-service-e2e: {}
 
   apps/rental-mobile:
     dependencies:
@@ -284,8 +270,6 @@ importers:
         version: 20.19.9
 
   apps/review-service: {}
-
-  apps/review-service-e2e: {}
 
   apps/vehicle-service: {}
 
