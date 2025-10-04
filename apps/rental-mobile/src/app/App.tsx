@@ -38,7 +38,7 @@ export const App = () => {
               testID="heading"
               role="heading"
             >
-              Welcome RentalMobile 👋
+              Welcome MoRent 🏍️
             </Text>
           </View>
         </ScrollView>

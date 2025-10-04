@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useRegister } from "../../queries/auth";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "../../constants/colors";
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
@@ -93,83 +96,148 @@ export default function RegisterScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Đăng ký</Text>
-          <Text style={styles.subtitle}>Tạo tài khoản mới</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header with orange background */}
+        <View style={styles.headerGradient}>
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <View style={styles.logoCircle}>
+                <Ionicons name="bicycle" size={40} color="white" />
+              </View>
+              <Text style={styles.appName}>MoRent</Text>
+            </View>
+            <Text style={styles.welcomeText}>Tạo tài khoản mới</Text>
+          </View>
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Họ</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.lastName}
-              onChangeText={(value) => handleInputChange("lastName", value)}
-              placeholder="Nhập họ"
-              autoCapitalize="words"
-            />
+        {/* Form Card */}
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>Đăng ký</Text>
+
+          <View style={styles.inputRow}>
+            <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color="{COLORS.primary}"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  value={formData.lastName}
+                  onChangeText={(value) => handleInputChange("lastName", value)}
+                  placeholder="Họ"
+                  placeholderTextColor="#9ca3af"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+            <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color="{COLORS.primary}"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  value={formData.firstName}
+                  onChangeText={(value) =>
+                    handleInputChange("firstName", value)
+                  }
+                  placeholder="Tên"
+                  placeholderTextColor="#9ca3af"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Tên</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.firstName}
-              onChangeText={(value) => handleInputChange("firstName", value)}
-              placeholder="Nhập tên"
-              autoCapitalize="words"
-            />
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color="{COLORS.primary}"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                value={formData.email}
+                onChangeText={(value) => handleInputChange("email", value)}
+                placeholder="Nhập email"
+                placeholderTextColor="#9ca3af"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.email}
-              onChangeText={(value) => handleInputChange("email", value)}
-              placeholder="Nhập email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="call-outline"
+                size={20}
+                color="{COLORS.primary}"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                value={formData.phone}
+                onChangeText={(value) => handleInputChange("phone", value)}
+                placeholder="Nhập số điện thoại"
+                placeholderTextColor="#9ca3af"
+                keyboardType="phone-pad"
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Số điện thoại</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.phone}
-              onChangeText={(value) => handleInputChange("phone", value)}
-              placeholder="Nhập số điện thoại"
-              keyboardType="phone-pad"
-            />
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color="{COLORS.primary}"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                value={formData.password}
+                onChangeText={(value) => handleInputChange("password", value)}
+                placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.password}
-              onChangeText={(value) => handleInputChange("password", value)}
-              placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
-              secureTextEntry
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Xác nhận mật khẩu</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.confirmPassword}
-              onChangeText={(value) =>
-                handleInputChange("confirmPassword", value)
-              }
-              placeholder="Nhập lại mật khẩu"
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color="{COLORS.primary}"
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                value={formData.confirmPassword}
+                onChangeText={(value) =>
+                  handleInputChange("confirmPassword", value)
+                }
+                placeholder="Nhập lại mật khẩu"
+                placeholderTextColor="#9ca3af"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
           </View>
 
           <TouchableOpacity
@@ -185,6 +253,23 @@ export default function RegisterScreen() {
             </Text>
           </TouchableOpacity>
 
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>hoặc</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <View style={styles.socialButtons}>
+            <TouchableOpacity style={styles.socialButton}>
+              <Ionicons name="logo-google" size={24} color="#db4437" />
+              <Text style={styles.socialButtonText}>Google</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton}>
+              <Ionicons name="logo-facebook" size={24} color="#4267B2" />
+              <Text style={styles.socialButtonText}>Facebook</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.footer}>
             <Text style={styles.footerText}>Đã có tài khoản? </Text>
             <TouchableOpacity onPress={navigateToLogin}>
@@ -197,87 +282,170 @@ export default function RegisterScreen() {
   );
 }
 
+const { width } = Dimensions.get("window");
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#f8fafc",
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "center",
-    padding: 20,
+  },
+  headerGradient: {
+    backgroundColor: COLORS.primary,
+    paddingTop: 60,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   header: {
     alignItems: "center",
-    marginBottom: 40,
   },
-  title: {
-    fontSize: 32,
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  appName: {
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#2c3e50",
+    color: "white",
+    letterSpacing: 2,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "white",
     marginBottom: 8,
   },
-  subtitle: {
+  subtitleText: {
     fontSize: 16,
-    color: "#7f8c8d",
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
   },
-  form: {
+  formCard: {
     backgroundColor: "white",
-    borderRadius: 16,
+    marginHorizontal: 20,
+    marginTop: -20,
+    borderRadius: 20,
     padding: 24,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  formTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1f2937",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  inputRow: {
+    flexDirection: "row",
+    marginBottom: 20,
   },
   inputContainer: {
     marginBottom: 20,
   },
-  label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2c3e50",
-    marginBottom: 8,
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    backgroundColor: "#f9fafb",
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#e1e8ed",
-    borderRadius: 12,
-    padding: 16,
+    flex: 1,
+    paddingVertical: 16,
     fontSize: 16,
-    backgroundColor: "#f8f9fa",
+    color: "#1f2937",
   },
   registerButton: {
-    backgroundColor: "#27ae60",
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
-    padding: 16,
+    paddingVertical: 16,
     alignItems: "center",
+    justifyContent: "center",
     marginTop: 20,
   },
   disabledButton: {
-    backgroundColor: "#bdc3c7",
+    opacity: 0.6,
   },
   registerButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
   },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#e5e7eb",
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: "#6b7280",
+    fontSize: 14,
+  },
+  socialButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  socialButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginHorizontal: 6,
+    backgroundColor: "white",
+  },
+  socialButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+  },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 24,
+    alignItems: "center",
   },
   footerText: {
     fontSize: 14,
-    color: "#7f8c8d",
+    color: "#6b7280",
   },
   linkText: {
     fontSize: 14,
-    color: "#3498db",
+    color: "{COLORS.primary}",
     fontWeight: "600",
   },
 });

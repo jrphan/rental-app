@@ -7,6 +7,8 @@ import {
 } from '@rental-app/shared-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { useRouter } from "expo-router";
+
 
 // Login mutation
 export function useLogin() {
@@ -142,6 +144,8 @@ export function useRefreshToken() {
 export function useLogout() {
   const queryClient = useQueryClient();
 
+  const router = useRouter();
+
   return useMutation({
     mutationFn: () => authService.logout(),
     onSuccess: async () => {
@@ -150,7 +154,9 @@ export function useLogout() {
       
       // Clear all query caches
       queryClient.clear();
-      
+
+      router.replace('/login');
+
       Toast.show({
         type: 'success',
         text1: 'Đăng xuất thành công',
@@ -162,11 +168,14 @@ export function useLogout() {
       // Clear data even if logout API fails
       await AsyncStorage.multiRemove(['auth_token', 'refresh_token', 'user_data']);
       queryClient.clear();
+
       
       Toast.show({
         type: 'success',
         text1: 'Đăng xuất thành công',
       });
+
+      router.replace('/login');
     },
   });
 }
