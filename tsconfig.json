@@ -41,6 +41,9 @@
     },
     {
       "path": "./packages/shared-prisma"
+    },
+    {
+      "path": "./packages/shared-types"
     }
   ]
 }

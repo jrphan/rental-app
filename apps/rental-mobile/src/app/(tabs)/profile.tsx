@@ -1,14 +1,26 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLogout } from "../../queries/auth";
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const logoutMutation = useLogout();
 
   const handleLogout = () => {
     Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
       { text: "Hủy", style: "cancel" },
-      { text: "Đăng xuất", style: "destructive", onPress: logout },
+      {
+        text: "Đăng xuất",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logoutMutation.mutateAsync();
+          } catch (error) {
+            console.error("Logout error:", error);
+          }
+        },
+      },
     ]);
   };
 
@@ -17,11 +29,15 @@ export default function ProfileScreen() {
       <View style={styles.profileCard}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {user?.fullName?.charAt(0).toUpperCase()}
+            {user
+              ? `${user.firstName} ${user.lastName}`.charAt(0).toUpperCase()
+              : "U"}
           </Text>
         </View>
 
-        <Text style={styles.name}>{user?.fullName}</Text>
+        <Text style={styles.name}>
+          {user ? `${user.firstName} ${user.lastName}` : "User"}
+        </Text>
         <Text style={styles.email}>{user?.email}</Text>
       </View>
 
@@ -34,7 +50,7 @@ export default function ProfileScreen() {
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Vai trò:</Text>
           <Text style={styles.infoValue}>
-            {user?.role === "admin" ? "Quản trị viên" : "Người dùng"}
+            {user?.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}
           </Text>
         </View>
 
@@ -48,8 +64,17 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Đăng xuất</Text>
+      <TouchableOpacity
+        style={[
+          styles.logoutButton,
+          logoutMutation.isPending && styles.disabledButton,
+        ]}
+        onPress={handleLogout}
+        disabled={logoutMutation.isPending}
+      >
+        <Text style={styles.logoutButtonText}>
+          {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -141,5 +166,8 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  disabledButton: {
+    backgroundColor: "#bdc3c7",
   },
 });

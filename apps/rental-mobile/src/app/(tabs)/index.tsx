@@ -1,19 +1,34 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLogout, useCurrentUser } from "../../queries/auth";
 import { useRouter } from "expo-router";
+import DesignSystemDemo from "../../components/DesignSystemDemo";
 
 export default function HomeScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
-    router.replace("/(auth)/login");
+  // Use React Query hooks
+  const logoutMutation = useLogout();
+  const currentUser = useCurrentUser();
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      router.replace("/(auth)/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Still navigate to login even if logout API fails
+      router.replace("/(auth)/login");
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.welcome}>Chào mừng, {user?.fullName}!</Text>
+      <DesignSystemDemo />
+      <Text style={styles.welcome}>
+        Chào mừng, {user ? `${user.firstName} ${user.lastName}` : "User"}!
+      </Text>
       <Text style={styles.subtitle}>Ứng dụng cho thuê xe</Text>
 
       <View style={styles.userInfo}>
@@ -22,8 +37,17 @@ export default function HomeScreen() {
         <Text style={styles.infoText}>Vai trò: {user?.role}</Text>
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutButtonText}>Đăng xuất</Text>
+      <TouchableOpacity
+        style={[
+          styles.logoutButton,
+          logoutMutation.isPending && styles.disabledButton,
+        ]}
+        onPress={handleLogout}
+        disabled={logoutMutation.isPending}
+      >
+        <Text style={styles.logoutButtonText}>
+          {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -77,5 +101,8 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  disabledButton: {
+    backgroundColor: "#bdc3c7",
   },
 });

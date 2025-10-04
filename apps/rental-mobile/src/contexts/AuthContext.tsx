@@ -6,19 +6,23 @@ import React, {
   ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Toast from "react-native-toast-message";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../lib/queryClient";
 import { apiService } from "../services/api";
+import Toast from "react-native-toast-message";
 
-import { User, RegisterDto } from "@rental-app/shared-types";
+import {
+  User,
+  RegisterDto,
+  LoginResponse,
+  RegisterResponse,
+  RefreshTokenResponse,
+} from "@rental-app/shared-types";
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterDto) => Promise<void>;
-  logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Load saved auth data on app start
   useEffect(() => {
@@ -58,12 +63,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const response = await apiService.getProfile();
           if (response.success && response.data) {
-            setUser(response.data as User);
+            setUser(response.data);
+            // Update React Query cache
+            queryClient.setQueryData(queryKeys.auth.profile, response.data);
           } else {
-            await logout();
+            // Clear auth data if profile fetch fails
+            setUser(null);
+            setToken(null);
+            await AsyncStorage.multiRemove([
+              "auth_token",
+              "refresh_token",
+              "user_data",
+            ]);
           }
         } catch (error) {
-          await logout();
+          // Clear auth data if profile fetch fails
+          setUser(null);
+          setToken(null);
+          await AsyncStorage.multiRemove([
+            "auth_token",
+            "refresh_token",
+            "user_data",
+          ]);
         }
       }
     } catch (error) {
@@ -73,157 +94,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      const response = await apiService.login(email, password);
+  // Sync with React Query cache and AsyncStorage
+  useEffect(() => {
+    const syncAuthState = async () => {
+      const savedToken = await AsyncStorage.getItem("auth_token");
+      const savedUser = await AsyncStorage.getItem("user_data");
 
-      if (response.success && response.data) {
-        const {
-          user: userData,
-          accessToken,
-          refreshToken,
-        } = response.data as {
-          user: User;
-          accessToken: string;
-          refreshToken: string;
-        };
+      if (savedToken && savedUser) {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
 
-        // Save to storage
-        await AsyncStorage.setItem("auth_token", accessToken);
-        await AsyncStorage.setItem("refresh_token", refreshToken);
-        await AsyncStorage.setItem("user_data", JSON.stringify(userData));
-
-        // Update state
-        setToken(accessToken);
-        setUser(userData);
-
-        Toast.show({
-          type: "success",
-          text1: "Đăng nhập thành công",
-          text2: `Chào mừng ${userData.firstName} ${userData.lastName}!`,
-        });
-      } else {
-        throw new Error(response.message || "Đăng nhập thất bại");
+        // Also update React Query cache
+        queryClient.setQueryData(queryKeys.auth.profile, JSON.parse(savedUser));
       }
-    } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Đăng nhập thất bại",
-        text2: error.message,
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  const register = async (userData: RegisterDto) => {
-    try {
-      setIsLoading(true);
-      const response = await apiService.register(userData);
+    syncAuthState();
+  }, [queryClient]);
 
-      if (response.success && response.data) {
-        const {
-          user: newUser,
-          accessToken,
-          refreshToken,
-        } = response.data as {
-          user: User;
-          accessToken: string;
-          refreshToken: string;
-        };
-
-        // Save to storage
-        await AsyncStorage.setItem("auth_token", accessToken);
-        await AsyncStorage.setItem("refresh_token", refreshToken);
-        await AsyncStorage.setItem("user_data", JSON.stringify(newUser));
-
-        // Update state
-        setToken(accessToken);
-        setUser(newUser);
-
-        Toast.show({
-          type: "success",
-          text1: "Đăng ký thành công",
-          text2: `Chào mừng ${newUser.firstName} ${newUser.lastName}!`,
-        });
-      } else {
-        throw new Error(response.message || "Đăng ký thất bại");
+  // Listen to React Query cache changes for user data
+  useEffect(() => {
+    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      if (
+        event.query.queryKey[0] === "auth" &&
+        event.query.queryKey[1] === "profile"
+      ) {
+        const userData = queryClient.getQueryData<User>(queryKeys.auth.profile);
+        if (userData) {
+          setUser(userData);
+        } else {
+          setUser(null);
+          setToken(null);
+        }
       }
-    } catch (error: any) {
-      Toast.show({
-        type: "error",
-        text1: "Đăng ký thất bại",
-        text2: error.message,
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    });
 
-  const logout = async () => {
-    try {
-      if (token) {
-        await apiService.logout();
-      }
-    } catch (error) {
-      console.error("Logout API error:", error);
-    } finally {
-      // Clear storage and state
-      await AsyncStorage.multiRemove([
-        "auth_token",
-        "refresh_token",
-        "user_data",
-      ]);
-      setToken(null);
-      setUser(null);
-
-      Toast.show({
-        type: "success",
-        text1: "Đăng xuất thành công",
-      });
-    }
-  };
-
-  const refreshTokenFunc = async () => {
-    try {
-      const savedRefreshToken = await AsyncStorage.getItem("refresh_token");
-      if (!savedRefreshToken) {
-        throw new Error("No refresh token");
-      }
-
-      const response = await apiService.refreshToken(savedRefreshToken);
-
-      if (response.success && response.data) {
-        const { accessToken, refreshToken: newRefreshToken } =
-          response.data as {
-            accessToken: string;
-            refreshToken: string;
-          };
-
-        await AsyncStorage.setItem("auth_token", accessToken);
-        await AsyncStorage.setItem("refresh_token", newRefreshToken);
-
-        setToken(accessToken);
-      } else {
-        await logout();
-      }
-    } catch (error) {
-      console.error("Token refresh error:", error);
-      await logout();
-    }
-  };
+    return unsubscribe;
+  }, [queryClient]);
 
   const value: AuthContextType = {
     user,
     token,
     isLoading,
-    login,
-    register,
-    logout,
-    refreshToken: refreshTokenFunc,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

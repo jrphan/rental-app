@@ -1,5 +1,10 @@
 // Export all services
-export { BaseApiService, type ApiResponse } from './BaseApiService';
+export { 
+  BaseApiService, 
+  type ApiResponse, 
+  type ApiErrorResponse, 
+  type PaginatedResponse 
+} from './BaseApiService';
 export { AuthService, authService } from './AuthService';
 
 // Re-export for backward compatibility

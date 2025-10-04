@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { View, ScrollView, StyleSheet, Alert } from "react-native";
 import {
   Button,
@@ -6,12 +6,11 @@ import {
   Text,
   Card,
   Modal,
-  Loading,
   Badge,
   Avatar,
   Switch,
   Icon,
-} from "./common/index";
+} from "./ui/index";
 import { theme } from "../styles/theme";
 
 const DesignSystemDemo: React.FC = () => {

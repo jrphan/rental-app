@@ -36,7 +36,7 @@
   ],
   "references": [
     {
-      "path": "../../packages/shared-types/tsconfig.lib.json"
+      "path": "../../packages/shared-types"
     }
   ]
 }

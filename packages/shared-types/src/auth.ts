@@ -59,7 +59,7 @@ export type AuthAuditLog = {
   userAgent: string | null;
   success: boolean;
   errorMessage: string | null;
-  metadata: any;
+  metadata: Record<string, unknown>;
   createdAt: Date;
 };
 
@@ -74,10 +74,23 @@ export interface LoginResponse extends AuthToken {
   user: User;
 }
 
+export interface RegisterResponse extends AuthToken {
+  user: User;
+}
+
 export interface RegisterDto {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
   phone?: string;
+}
+
+export interface RefreshTokenDto {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken: string;
 }

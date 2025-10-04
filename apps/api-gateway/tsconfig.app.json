@@ -16,5 +16,10 @@
   "include": [
     "src/**/*.ts"
   ],
-  "exclude": []
+  "exclude": [],
+  "references": [
+    {
+      "path": "../../packages/shared-utils"
+    }
+  ]
 }

@@ -15,10 +15,13 @@
   "exclude": [],
   "references": [
     {
+      "path": "../../packages/shared-utils"
+    },
+    {
       "path": "../../packages/shared-prisma"
     },
     {
-      "path": "../../packages/shared-types/tsconfig.lib.json"
+      "path": "../../packages/shared-types"
     }
   ]
 }

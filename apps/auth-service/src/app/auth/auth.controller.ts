@@ -1,7 +1,20 @@
-import { Controller, Post, Get, Body, Headers, HttpException, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, Headers, HttpException, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import type { RegisterDto } from '@rental-app/shared-types';
+import type { 
+  RegisterDto, 
+  LoginResponse, 
+  RegisterResponse, 
+  RefreshTokenDto, 
+  RefreshTokenResponse,
+  User 
+} from '@rental-app/shared-types';
 import type { Request } from 'express';
+import { 
+  createSuccessResponse, 
+  createErrorResponse, 
+  RESPONSE_MESSAGES, 
+  HTTP_STATUS 
+} from '@rental-app/shared-utils';
 
 export interface LoginDto {
   email: string;
@@ -21,20 +34,17 @@ export class AuthController {
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.get('User-Agent') || 'unknown';
       
-      const result = await this.authService.login(loginDto, ipAddress, userAgent);
-      return {
-        success: true,
-        message: 'Login successful',
-        data: result,
-      };
-    } catch (error: any) {
-      throw new HttpException(
-        {
-          success: false,
-          message: error.message || 'Login failed',
-        },
-        HttpStatus.UNAUTHORIZED
+      const result: LoginResponse = await this.authService.login(loginDto, ipAddress, userAgent);
+      return createSuccessResponse(RESPONSE_MESSAGES.LOGIN_SUCCESS, result, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || RESPONSE_MESSAGES.INVALID_CREDENTIALS,
+        errorMessage || 'Login failed',
+        HTTP_STATUS.UNAUTHORIZED,
+        req.path
       );
+      throw new HttpException(errorResponse, HTTP_STATUS.UNAUTHORIZED);
     }
   }
 
@@ -47,20 +57,17 @@ export class AuthController {
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.get('User-Agent') || 'unknown';
       
-      const result = await this.authService.register(registerDto, ipAddress, userAgent);
-      return {
-        success: true,
-        message: 'Registration successful',
-        data: result,
-      };
-    } catch (error: any) {
-      throw new HttpException(
-        {
-          success: false,
-          message: error.message || 'Registration failed',
-        },
-        HttpStatus.BAD_REQUEST
+      const result: RegisterResponse = await this.authService.register(registerDto, ipAddress, userAgent);
+      return createSuccessResponse(RESPONSE_MESSAGES.REGISTRATION_SUCCESS, result, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || RESPONSE_MESSAGES.VALIDATION_ERROR,
+        errorMessage || 'Registration failed',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
       );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
     }
   }
 
@@ -68,27 +75,25 @@ export class AuthController {
    * Get user profile
    */
   @Get('profile')
-  async getProfile(@Headers('authorization') authHeader: string) {
+  async getProfile(@Headers('authorization') authHeader: string, @Req() req: Request) {
     try {
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error('Invalid authorization header');
       }
 
       const token = authHeader.substring(7);
-      const user = await this.authService.getProfile(token);
+      const user: User = await this.authService.getProfile(token);
       
-      return {
-        success: true,
-        data: user,
-      };
-    } catch (error: any) {
-      throw new HttpException(
-        {
-          success: false,
-          message: error.message || 'Unauthorized',
-        },
-        HttpStatus.UNAUTHORIZED
+      return createSuccessResponse(RESPONSE_MESSAGES.SUCCESS, user, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unauthorized';
+      const errorResponse = createErrorResponse(
+        errorMessage || RESPONSE_MESSAGES.UNAUTHORIZED,
+        errorMessage || 'Unauthorized',
+        HTTP_STATUS.UNAUTHORIZED,
+        req.path
       );
+      throw new HttpException(errorResponse, HTTP_STATUS.UNAUTHORIZED);
     }
   }
 
@@ -96,21 +101,19 @@ export class AuthController {
    * Refresh token
    */
   @Post('refresh')
-  async refreshToken(@Body() body: { refreshToken: string }) {
+  async refreshToken(@Body() body: RefreshTokenDto, @Req() req: Request) {
     try {
-      const result = await this.authService.refreshToken(body.refreshToken);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error: any) {
-      throw new HttpException(
-        {
-          success: false,
-          message: error.message || 'Token refresh failed',
-        },
-        HttpStatus.UNAUTHORIZED
+      const result: RefreshTokenResponse = await this.authService.refreshToken(body.refreshToken);
+      return createSuccessResponse(RESPONSE_MESSAGES.SUCCESS, result, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Token refresh failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || RESPONSE_MESSAGES.INVALID_TOKEN,
+        errorMessage || 'Token refresh failed',
+        HTTP_STATUS.UNAUTHORIZED,
+        req.path
       );
+      throw new HttpException(errorResponse, HTTP_STATUS.UNAUTHORIZED);
     }
   }
 
@@ -118,7 +121,7 @@ export class AuthController {
    * Logout
    */
   @Post('logout')
-  async logout(@Headers('authorization') authHeader: string) {
+  async logout(@Headers('authorization') authHeader: string, @Req() req: Request) {
     try {
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error('Invalid authorization header');
@@ -127,18 +130,16 @@ export class AuthController {
       const token = authHeader.substring(7);
       await this.authService.logout(token);
       
-      return {
-        success: true,
-        message: 'Logout successful',
-      };
-    } catch (error: any) {
-      throw new HttpException(
-        {
-          success: false,
-          message: error.message || 'Logout failed',
-        },
-        HttpStatus.BAD_REQUEST
+      return createSuccessResponse(RESPONSE_MESSAGES.LOGOUT_SUCCESS, null, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Logout failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Logout failed',
+        errorMessage || 'Logout failed',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
       );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
     }
   }
 }

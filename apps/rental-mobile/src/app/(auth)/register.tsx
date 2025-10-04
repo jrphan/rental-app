@@ -11,7 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "../../contexts/AuthContext";
+import { useRegister } from "../../queries/auth";
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
@@ -22,10 +22,10 @@ export default function RegisterScreen() {
     lastName: "",
     phone: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { register } = useAuth();
   const router = useRouter();
+
+  // Use React Query mutation for register
+  const registerMutation = useRegister();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -66,19 +66,21 @@ export default function RegisterScreen() {
     if (!validateForm()) return;
 
     try {
-      setIsLoading(true);
-      await register({
+      const result = await registerMutation.mutateAsync({
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
       });
-      router.replace("/(tabs)");
-    } catch (error: any) {
-      Alert.alert("Đăng ký thất bại", error.message);
-    } finally {
-      setIsLoading(false);
+
+      if (result?.success) {
+        // Navigate to main app on success
+        router.replace("/(tabs)");
+      }
+    } catch (error: unknown) {
+      // Error handling is already done in the mutation
+      console.error("Register error:", error);
     }
   };
 
@@ -171,12 +173,15 @@ export default function RegisterScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.registerButton, isLoading && styles.disabledButton]}
+            style={[
+              styles.registerButton,
+              registerMutation.isPending && styles.disabledButton,
+            ]}
             onPress={handleRegister}
-            disabled={isLoading}
+            disabled={registerMutation.isPending}
           >
             <Text style={styles.registerButtonText}>
-              {isLoading ? "Đang đăng ký..." : "Đăng ký"}
+              {registerMutation.isPending ? "Đang đăng ký..." : "Đăng ký"}
             </Text>
           </TouchableOpacity>
 

@@ -1,0 +1,22 @@
+{
+  "name": "@rental-app/shared-types",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/shared-types/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "packages/shared-types/dist",
+        "main": "packages/shared-types/src/index.ts",
+        "tsConfig": "packages/shared-types/tsconfig.json",
+        "assets": ["packages/shared-types/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  },
+  "tags": []
+}

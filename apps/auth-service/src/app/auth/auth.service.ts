@@ -3,7 +3,13 @@ import { PrismaService } from '@rental-app/shared-prisma';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
-import type { User, AuthToken, LoginResponse, RegisterDto } from '@rental-app/shared-types';
+import type { 
+  User, 
+  LoginResponse, 
+  RegisterDto, 
+  RegisterResponse, 
+  RefreshTokenResponse
+} from '@rental-app/shared-types';
 
 @Injectable()
 export class AuthService {
@@ -84,7 +90,7 @@ export class AuthService {
   /**
    * User registration
    */
-  async register(registerDto: RegisterDto, ipAddress?: string, userAgent?: string): Promise<LoginResponse> {
+  async register(registerDto: RegisterDto, ipAddress?: string, userAgent?: string): Promise<RegisterResponse> {
     const { email, password, firstName, lastName, phone } = registerDto;
 
     // Validate required fields
@@ -207,7 +213,7 @@ export class AuthService {
   /**
    * Refresh access token
    */
-  async refreshToken(refreshToken: string): Promise<AuthToken> {
+  async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
     try {
       // Find refresh token in database
       const refreshTokens = await this.prisma.client.refreshToken.findMany({
@@ -266,7 +272,6 @@ export class AuthService {
       return {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
-        expiresIn: 3600,
       };
     } catch (error) {
       if (error instanceof Error) {
@@ -322,16 +327,21 @@ export class AuthService {
   /**
    * Map Prisma User to AuthUser interface
    */
-  private mapUserToAuthUser(user: any): any {
+  private mapUserToAuthUser(user: User): User {
     return {
       id: user.id,
       email: user.email,
+      passwordHash: user.passwordHash,
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone,
-      role: user.role,
       isVerified: user.isVerified,
+      isActive: user.isActive,
+      role: user.role,
       createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastLoginAt: user.lastLoginAt,
+      deletedAt: user.deletedAt,
     };
   }
 

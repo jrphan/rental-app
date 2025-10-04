@@ -1,40 +1,48 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "../../contexts/AuthContext";
+import { useLogin } from "../../queries/auth";
+import Toast from "react-native-toast-message";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("user@example.com");
-  const [password, setPassword] = useState("password123");
-  const [isLoading, setIsLoading] = useState(false);
+  const [password, setPassword] = useState("123456t@T");
 
-  const { login } = useAuth();
   const router = useRouter();
+
+  // Use React Query mutation for login
+  const loginMutation = useLogin();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Vui lòng nhập đầy đủ thông tin",
+      });
       return;
     }
 
     try {
-      setIsLoading(true);
-      await login(email, password);
-      router.replace("/(tabs)");
-    } catch (error: any) {
-      Alert.alert("Đăng nhập thất bại", error.message);
-    } finally {
-      setIsLoading(false);
+      // Use React Query mutation
+      const result = await loginMutation.mutateAsync({ email, password });
+
+      if (result?.success) {
+        // Navigate to main app on success
+        router.replace("/(tabs)");
+      }
+    } catch (error: unknown) {
+      // Error handling is already done in the mutation
+      console.error("Login error:", error);
     }
   };
 
@@ -80,12 +88,15 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.disabledButton]}
+            style={[
+              styles.loginButton,
+              loginMutation.isPending && styles.disabledButton,
+            ]}
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={loginMutation.isPending}
           >
             <Text style={styles.loginButtonText}>
-              {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+              {loginMutation.isPending ? "Đang đăng nhập..." : "Đăng nhập"}
             </Text>
           </TouchableOpacity>
 

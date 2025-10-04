@@ -3,10 +3,39 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const API_BASE_URL = 'http://localhost:3000/api';
 
+// Import shared types from the backend
 export interface ApiResponse<T = any> {
   success: boolean;
-  message?: string;
+  message: string;
   data?: T;
+  error?: string;
+  timestamp: string;
+  path?: string;
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  message: string;
+  error: string;
+  timestamp: string;
+  path?: string;
+  statusCode: number;
+}
+
+export interface PaginatedResponse<T> {
+  success: true;
+  message: string;
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  timestamp: string;
+  path?: string;
 }
 
 export class BaseApiService {
@@ -69,11 +98,41 @@ export class BaseApiService {
   ): Promise<ApiResponse<T>> {
     try {
       const response = await this.axiosInstance.request(config);
-      return response.data;
+      
+      // Return the response data directly - it should already be in the correct format
+      return response.data as ApiResponse<T>;
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Network error';
-      console.error('API Error:', errorMessage);
-      throw new Error(errorMessage);
+      console.error('API Error:', error);
+      
+      // If the error has a response from the server, extract the error details
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        
+        // If it's already in our error format, throw it as is
+        if (errorData.success === false) {
+          throw errorData;
+        }
+        
+        // Otherwise, create a structured error
+        throw {
+          success: false,
+          message: errorData.message || 'Request failed',
+          error: errorData.error || error.message || 'Unknown error',
+          timestamp: new Date().toISOString(),
+          path: errorData.path,
+          statusCode: error.response.status,
+        } as ApiErrorResponse;
+      }
+      
+      // For network errors or other issues
+      const errorMessage = error.message || 'Network error';
+      throw {
+        success: false,
+        message: 'Network error',
+        error: errorMessage,
+        timestamp: new Date().toISOString(),
+        statusCode: 0,
+      } as ApiErrorResponse;
     }
   }
 
