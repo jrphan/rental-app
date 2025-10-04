@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "eas-build-post-install": "cd ../../ && node tools/scripts/eas-build-post-install.mjs . apps/rental-mobile"
+    "eas-build-post-install": "cd ../../ && node ./scripts/eas-build-post-install.mjs . apps/rental-mobile"
   },
   "dependencies": {
     "@expo/metro-config": "^54.0.5",
