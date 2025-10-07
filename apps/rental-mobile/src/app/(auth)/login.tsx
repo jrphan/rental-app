@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   View,
   Text,
@@ -8,44 +7,46 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useLogin } from "../../queries/auth";
-import Toast from "react-native-toast-message";
+import { useLogin } from "@/queries/auth";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "../../constants/colors";
+import { COLORS } from "@/constants/colors";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
+
+interface LoginForm {
+  email: string;
+  password: string;
+}
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("user@example.com");
-  const [password, setPassword] = useState("123456t@T");
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>({
+    defaultValues: {
+      email: "user@example.com",
+      password: "123456t@T",
+    },
+  });
 
   const router = useRouter();
 
   // Use React Query mutation for login
   const loginMutation = useLogin();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Toast.show({
-        type: "error",
-        text1: "Lỗi",
-        text2: "Vui lòng nhập đầy đủ thông tin",
-      });
-      return;
-    }
-
+  const onSubmit: SubmitHandler<LoginForm> = async (values) => {
     try {
-      // Use React Query mutation
-      const result = await loginMutation.mutateAsync({ email, password });
-
+      const result = await loginMutation.mutateAsync({
+        email: values.email,
+        password: values.password,
+      });
       if (result?.success) {
-        // Navigate to main app on success
         router.replace("/(tabs)");
       }
     } catch (error: unknown) {
-      // Error handling is already done in the mutation
       console.error("Login error:", error);
     }
   };
@@ -88,17 +89,36 @@ export default function LoginScreen() {
                 color={COLORS.primary}
                 style={styles.inputIcon}
               />
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Nhập email của bạn"
-                placeholderTextColor="#9ca3af"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
+              <Controller
+                control={control}
+                name="email"
+                rules={{
+                  required: "Vui lòng nhập email",
+                  pattern: {
+                    value: /[^\s@]+@[^\s@]+\.[^\s@]+/,
+                    message: "Email không hợp lệ",
+                  },
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="Nhập email của bạn"
+                    placeholderTextColor="#9ca3af"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )}
               />
             </View>
+            {errors.email?.message ? (
+              <Text style={styles.errorText}>
+                {String(errors.email.message)}
+              </Text>
+            ) : null}
           </View>
 
           <View style={styles.inputContainer}>
@@ -109,16 +129,35 @@ export default function LoginScreen() {
                 color={COLORS.primary}
                 style={styles.inputIcon}
               />
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Nhập mật khẩu"
-                placeholderTextColor="#9ca3af"
-                secureTextEntry
-                autoCapitalize="none"
+              <Controller
+                control={control}
+                name="password"
+                rules={{
+                  required: "Vui lòng nhập mật khẩu",
+                  minLength: {
+                    value: 6,
+                    message: "Mật khẩu tối thiểu 6 ký tự",
+                  },
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="Nhập mật khẩu"
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                )}
               />
             </View>
+            {errors.password?.message ? (
+              <Text style={styles.errorText}>
+                {String(errors.password.message)}
+              </Text>
+            ) : null}
           </View>
 
           <TouchableOpacity
@@ -126,7 +165,7 @@ export default function LoginScreen() {
               styles.loginButton,
               loginMutation.isPending && styles.disabledButton,
             ]}
-            onPress={handleLogin}
+            onPress={handleSubmit(onSubmit)}
             disabled={loginMutation.isPending}
           >
             <Text style={styles.loginButtonText}>
@@ -256,6 +295,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 16,
     color: "#1f2937",
+  },
+  errorText: {
+    marginTop: 6,
+    color: "#dc2626",
+    fontSize: 12,
   },
   loginButton: {
     backgroundColor: COLORS.primary,

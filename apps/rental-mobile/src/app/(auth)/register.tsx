@@ -1,88 +1,66 @@
-import { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useRegister } from "../../queries/auth";
+import { useRegister } from "@/queries/auth";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "../../constants/colors";
+import { COLORS } from "@/constants/colors";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
+
+interface RegisterForm {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+}
 
 export default function RegisterScreen() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    firstName: "",
-    lastName: "",
-    phone: "",
+  // React Hook Form setup
+  const {
+    control,
+    handleSubmit,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterForm>({
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+      firstName: "",
+      lastName: "",
+      phone: "",
+    },
+    mode: "onTouched",
   });
   const router = useRouter();
 
   // Use React Query mutation for register
   const registerMutation = useRegister();
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const validateForm = () => {
-    if (
-      !formData.email ||
-      !formData.password ||
-      !formData.firstName ||
-      !formData.lastName ||
-      !formData.phone
-    ) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
-      return false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert("Lỗi", "Mật khẩu xác nhận không khớp");
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      Alert.alert("Lỗi", "Mật khẩu phải có ít nhất 6 ký tự");
-      return false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      Alert.alert("Lỗi", "Email không hợp lệ");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleRegister = async () => {
-    if (!validateForm()) return;
-
+  const handleRegister: SubmitHandler<RegisterForm> = async (data) => {
     try {
       const result = await registerMutation.mutateAsync({
-        email: formData.email,
-        password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
       });
 
       if (result?.success) {
-        // Navigate to main app on success
         router.replace("/(tabs)");
       }
     } catch (error: unknown) {
-      // Error handling is already done in the mutation
       console.error("Register error:", error);
     }
   };
@@ -123,38 +101,62 @@ export default function RegisterScreen() {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color="{COLORS.primary}"
+                  color={COLORS.primary}
                   style={styles.inputIcon}
                 />
-                <TextInput
-                  style={styles.input}
-                  value={formData.lastName}
-                  onChangeText={(value) => handleInputChange("lastName", value)}
-                  placeholder="Họ"
-                  placeholderTextColor="#9ca3af"
-                  autoCapitalize="words"
+                <Controller
+                  control={control}
+                  name="lastName"
+                  rules={{ required: "Vui lòng nhập họ" }}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Họ"
+                      placeholderTextColor="#9ca3af"
+                      autoCapitalize="words"
+                    />
+                  )}
                 />
               </View>
+              {errors.lastName && (
+                <Text style={styles.errorText}>
+                  {errors.lastName.message as string}
+                </Text>
+              )}
             </View>
             <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
               <View style={styles.inputWrapper}>
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color="{COLORS.primary}"
+                  color={COLORS.primary}
                   style={styles.inputIcon}
                 />
-                <TextInput
-                  style={styles.input}
-                  value={formData.firstName}
-                  onChangeText={(value) =>
-                    handleInputChange("firstName", value)
-                  }
-                  placeholder="Tên"
-                  placeholderTextColor="#9ca3af"
-                  autoCapitalize="words"
+                <Controller
+                  control={control}
+                  name="firstName"
+                  rules={{ required: "Vui lòng nhập tên" }}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Tên"
+                      placeholderTextColor="#9ca3af"
+                      autoCapitalize="words"
+                    />
+                  )}
                 />
               </View>
+              {errors.firstName && (
+                <Text style={styles.errorText}>
+                  {errors.firstName.message as string}
+                </Text>
+              )}
             </View>
           </View>
 
@@ -163,20 +165,39 @@ export default function RegisterScreen() {
               <Ionicons
                 name="mail-outline"
                 size={20}
-                color="{COLORS.primary}"
+                color={COLORS.primary}
                 style={styles.inputIcon}
               />
-              <TextInput
-                style={styles.input}
-                value={formData.email}
-                onChangeText={(value) => handleInputChange("email", value)}
-                placeholder="Nhập email"
-                placeholderTextColor="#9ca3af"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
+              <Controller
+                control={control}
+                name="email"
+                rules={{
+                  required: "Vui lòng nhập email",
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Email không hợp lệ",
+                  },
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="Nhập email"
+                    placeholderTextColor="#9ca3af"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )}
               />
             </View>
+            {errors.email && (
+              <Text style={styles.errorText}>
+                {errors.email.message as string}
+              </Text>
+            )}
           </View>
 
           <View style={styles.inputContainer}>
@@ -184,18 +205,31 @@ export default function RegisterScreen() {
               <Ionicons
                 name="call-outline"
                 size={20}
-                color="{COLORS.primary}"
+                color={COLORS.primary}
                 style={styles.inputIcon}
               />
-              <TextInput
-                style={styles.input}
-                value={formData.phone}
-                onChangeText={(value) => handleInputChange("phone", value)}
-                placeholder="Nhập số điện thoại"
-                placeholderTextColor="#9ca3af"
-                keyboardType="phone-pad"
+              <Controller
+                control={control}
+                name="phone"
+                rules={{ required: "Vui lòng nhập số điện thoại" }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="Nhập số điện thoại"
+                    placeholderTextColor="#9ca3af"
+                    keyboardType="phone-pad"
+                  />
+                )}
               />
             </View>
+            {errors.phone && (
+              <Text style={styles.errorText}>
+                {errors.phone.message as string}
+              </Text>
+            )}
           </View>
 
           <View style={styles.inputContainer}>
@@ -203,19 +237,35 @@ export default function RegisterScreen() {
               <Ionicons
                 name="lock-closed-outline"
                 size={20}
-                color="{COLORS.primary}"
+                color={COLORS.primary}
                 style={styles.inputIcon}
               />
-              <TextInput
-                style={styles.input}
-                value={formData.password}
-                onChangeText={(value) => handleInputChange("password", value)}
-                placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
-                placeholderTextColor="#9ca3af"
-                secureTextEntry
-                autoCapitalize="none"
+              <Controller
+                control={control}
+                name="password"
+                rules={{
+                  required: "Vui lòng nhập mật khẩu",
+                  minLength: { value: 6, message: "Ít nhất 6 ký tự" },
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                )}
               />
             </View>
+            {errors.password && (
+              <Text style={styles.errorText}>
+                {errors.password.message as string}
+              </Text>
+            )}
           </View>
 
           <View style={styles.inputContainer}>
@@ -223,33 +273,52 @@ export default function RegisterScreen() {
               <Ionicons
                 name="lock-closed-outline"
                 size={20}
-                color="{COLORS.primary}"
+                color={COLORS.primary}
                 style={styles.inputIcon}
               />
-              <TextInput
-                style={styles.input}
-                value={formData.confirmPassword}
-                onChangeText={(value) =>
-                  handleInputChange("confirmPassword", value)
-                }
-                placeholder="Nhập lại mật khẩu"
-                placeholderTextColor="#9ca3af"
-                secureTextEntry
-                autoCapitalize="none"
+              <Controller
+                control={control}
+                name="confirmPassword"
+                rules={{
+                  required: "Vui lòng nhập lại mật khẩu",
+                  validate: (v) =>
+                    v === getValues("password") ||
+                    "Mật khẩu xác nhận không khớp",
+                }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={styles.input}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="Nhập lại mật khẩu"
+                    placeholderTextColor="#9ca3af"
+                    secureTextEntry
+                    autoCapitalize="none"
+                  />
+                )}
               />
             </View>
+            {errors.confirmPassword && (
+              <Text style={styles.errorText}>
+                {errors.confirmPassword.message as string}
+              </Text>
+            )}
           </View>
 
           <TouchableOpacity
             style={[
               styles.registerButton,
-              registerMutation.isPending && styles.disabledButton,
+              (registerMutation.isPending || isSubmitting) &&
+                styles.disabledButton,
             ]}
-            onPress={handleRegister}
-            disabled={registerMutation.isPending}
+            onPress={handleSubmit(handleRegister)}
+            disabled={registerMutation.isPending || isSubmitting}
           >
             <Text style={styles.registerButtonText}>
-              {registerMutation.isPending ? "Đang đăng ký..." : "Đăng ký"}
+              {registerMutation.isPending || isSubmitting
+                ? "Đang đăng ký..."
+                : "Đăng ký"}
             </Text>
           </TouchableOpacity>
 
@@ -445,7 +514,12 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 14,
-    color: "{COLORS.primary}",
+    color: COLORS.primary,
     fontWeight: "600",
+  },
+  errorText: {
+    marginTop: 6,
+    color: "#ef4444",
+    fontSize: 12,
   },
 });

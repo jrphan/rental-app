@@ -1,6 +1,6 @@
-const { withNxMetro } = require('@nx/expo');
-const { getDefaultConfig } = require('@expo/metro-config');
-const { mergeConfig } = require('metro-config');
+const { withNxMetro } = require("@nx/expo");
+const { getDefaultConfig } = require("@expo/metro-config");
+const { mergeConfig } = require("metro-config");
 
 const defaultConfig = getDefaultConfig(__dirname);
 const { assetExts, sourceExts } = defaultConfig.resolver;
@@ -11,17 +11,21 @@ const { assetExts, sourceExts } = defaultConfig.resolver;
  *
  * @type {import('metro-config').MetroConfig}
  */
+const path = require("path");
+
 const customConfig = {
   cacheVersion: "rental-mobile",
   transformer: {
-    babelTransformerPath: require.resolve('react-native-svg-transformer'),
+    babelTransformerPath: require.resolve("react-native-svg-transformer"),
   },
   resolver: {
-    assetExts: assetExts.filter((ext) => ext !== 'svg'),
-    sourceExts: [...sourceExts, 'cjs', 'mjs', 'svg'],
+    assetExts: assetExts.filter((ext) => ext !== "svg"),
+    sourceExts: [...sourceExts, "cjs", "mjs", "svg"],
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
   },
 };
-
 
 module.exports = withNxMetro(mergeConfig(defaultConfig, customConfig), {
   // Change this to true to see debugging info.
