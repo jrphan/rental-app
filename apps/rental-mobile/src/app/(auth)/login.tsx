@@ -10,17 +10,22 @@ import {
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useLogin } from "../../queries/auth";
+import { useLogin } from "@/queries/auth";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "../../constants/colors";
-import { useForm, Controller } from "react-hook-form";
+import { COLORS } from "@/constants/colors";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
+
+interface LoginForm {
+  email: string;
+  password: string;
+}
 
 export default function LoginScreen() {
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<{ email: string; password: string }>({
+  } = useForm<LoginForm>({
     defaultValues: {
       email: "user@example.com",
       password: "123456t@T",
@@ -32,7 +37,7 @@ export default function LoginScreen() {
   // Use React Query mutation for login
   const loginMutation = useLogin();
 
-  const onSubmit = async (values: { email: string; password: string }) => {
+  const onSubmit: SubmitHandler<LoginForm> = async (values) => {
     try {
       const result = await loginMutation.mutateAsync({
         email: values.email,

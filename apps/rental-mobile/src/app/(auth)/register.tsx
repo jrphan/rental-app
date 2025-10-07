@@ -1,20 +1,19 @@
-import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useRegister } from "../../queries/auth";
+import { useRegister } from "@/queries/auth";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "../../constants/colors";
+import { COLORS } from "@/constants/colors";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
 
 interface RegisterForm {
   email: string;

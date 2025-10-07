@@ -42,6 +42,7 @@
     "@swc/helpers": "~0.5.11",
     "@types/node": "20.19.9",
     "@types/react": "^19.1.0",
+    "babel-plugin-module-resolver": "^5.0.2",
     "babel-preset-expo": "~13.2.0",
     "metro-config": "~0.82.4",
     "metro-resolver": "~0.82.4",
