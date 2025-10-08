@@ -18,15 +18,22 @@ export default function ProfileScreen() {
 	const router = useRouter();
 	const { user } = useAuth();
 	const logoutMutation = useLogout();
-	const handleLogout = () =>
-		Alert.alert('Alert Title', 'My Alert Msg', [
+	const handleLogout = () => {
+		Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+			{ text: "Hủy", style: "cancel" },
 			{
-				text: 'Cancel',
-				onPress: () => console.log('Cancel Pressed'),
-				style: 'cancel',
+				text: "Đăng xuất",
+				style: "destructive",
+				onPress: async () => {
+					try {
+						await logoutMutation.mutateAsync();
+					} catch (error) {
+						console.error("Logout error:", error);
+					}
+				},
 			},
-			{ text: 'OK', onPress: () => console.log('OK Pressed') },
 		]);
+	};
 	// Các mục trong menu
 	const menuItems: MenuItem[] = [
 		{ icon: "car-outline", label: "Đăng ký cho thuê xe" },
@@ -88,7 +95,9 @@ export default function ProfileScreen() {
 				onPress={handleLogout}
 				disabled={logoutMutation.isPending}
 			>
-				<Text style={styles.logoutText}>Đăng xuất</Text>
+				<Text style={styles.logoutText}>
+					{logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
+				</Text>
 				<Ionicons name="log-out-outline" size={20} color="red" />
 			</TouchableOpacity>
 		</ScrollView>
