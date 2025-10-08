@@ -1,173 +1,140 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import { useAuth } from "../../contexts/AuthContext";
-import { useLogout } from "../../queries/auth";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLogout } from "@/queries";
+import { log } from "console";
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+interface MenuItem {
+	icon: IoniconName;
+	label: string;
+	screen?: string; // màn hình sẽ chuyển tới (nếu có)
+}
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
-  const logoutMutation = useLogout();
+	const router = useRouter();
+	const { user } = useAuth();
+	const logoutMutation = useLogout();
+	const handleLogout = () =>
+		Alert.alert('Alert Title', 'My Alert Msg', [
+			{
+				text: 'Cancel',
+				onPress: () => console.log('Cancel Pressed'),
+				style: 'cancel',
+			},
+			{ text: 'OK', onPress: () => console.log('OK Pressed') },
+		]);
+	// Các mục trong menu
+	const menuItems: MenuItem[] = [
+		{ icon: "car-outline", label: "Đăng ký cho thuê xe" },
+		{ icon: "heart-outline", label: "Xe yêu thích" },
+		{ icon: "document-text-outline", label: "Địa chỉ của tôi" },
+		{ icon: "document-text-outline", label: "Giấy phép lái xe" },
+		{ icon: "card-outline", label: "Thẻ thanh toán" },
+		{ icon: "star-outline", label: "Đánh giá từ chủ xe" },
+	];
 
-  const handleLogout = () => {
-    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Đăng xuất",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await logoutMutation.mutateAsync();
-          } catch (error) {
-            console.error("Logout error:", error);
-          }
-        },
-      },
-    ]);
-  };
+	const otherItems: MenuItem[] = [
+		{ icon: "gift-outline", label: "Quà tặng" },
+		{ icon: "share-social-outline", label: "Giới thiệu bạn mới" },
+		{ icon: "lock-closed-outline", label: "Đổi mật khẩu" },
+		{ icon: "trash-outline", label: "Yêu cầu xóa tài khoản" },
+	];
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user
-              ? `${user.firstName} ${user.lastName}`.charAt(0).toUpperCase()
-              : "U"}
-          </Text>
-        </View>
+	return (
+		<ScrollView style={styles.container}>
+			{/* Header người dùng */}
+			<TouchableOpacity
+				style={styles.profileHeader}
+				onPress={() => router.push("/(subtabs)/profile_detail")} // chuyển sang trang EditProfile
+			>
+				<View style={styles.avatar}>
+					<Text style={styles.avatarText}>T</Text>
+				</View>
+				<View style={{ flex: 1 }}>
+					<Text style={styles.name}>{user ? `${user.firstName} ${user.lastName}` : "User"}</Text>
+					<Text style={styles.email}>{user?.email}</Text>
+				</View>
+				<Ionicons name="chevron-forward-outline" size={20} color="#999" />
+			</TouchableOpacity>
 
-        <Text style={styles.name}>
-          {user ? `${user.firstName} ${user.lastName}` : "User"}
-        </Text>
-        <Text style={styles.email}>{user?.email}</Text>
-      </View>
+			{/* Menu chính */}
+			<View style={styles.menu}>
+				{menuItems.map((item, idx) => (
+					<TouchableOpacity key={idx} style={styles.menuItem}>
+						<Ionicons name={item.icon} size={22} color="#333" />
+						<Text style={styles.menuLabel}>{item.label}</Text>
+						<Ionicons name="chevron-forward-outline" size={18} color="#999" />
+					</TouchableOpacity>
+				))}
+			</View>
 
-      <View style={styles.infoSection}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Số điện thoại:</Text>
-          <Text style={styles.infoValue}>{user?.phone}</Text>
-        </View>
+			{/* Mục khác */}
+			<View style={styles.menu}>
+				{otherItems.map((item, idx) => (
+					<TouchableOpacity key={idx} style={styles.menuItem}>
+						<Ionicons name={item.icon} size={22} color="#333" />
+						<Text style={styles.menuLabel}>{item.label}</Text>
+						<Ionicons name="chevron-forward-outline" size={18} color="#999" />
+					</TouchableOpacity>
+				))}
+			</View>
 
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Vai trò:</Text>
-          <Text style={styles.infoValue}>
-            {user?.role === "ADMIN" ? "Quản trị viên" : "Người dùng"}
-          </Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Ngày tạo:</Text>
-          <Text style={styles.infoValue}>
-            {user?.createdAt
-              ? new Date(user.createdAt).toLocaleDateString("vi-VN")
-              : "N/A"}
-          </Text>
-        </View>
-      </View>
-
-      <TouchableOpacity
-        style={[
-          styles.logoutButton,
-          logoutMutation.isPending && styles.disabledButton,
-        ]}
-        onPress={handleLogout}
-        disabled={logoutMutation.isPending}
-      >
-        <Text style={styles.logoutButtonText}>
-          {logoutMutation.isPending ? "Đang đăng xuất..." : "Đăng xuất"}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
+			{/* Đăng xuất */}
+			<TouchableOpacity style={styles.logoutBtn}
+				onPress={handleLogout}
+				disabled={logoutMutation.isPending}
+			>
+				<Text style={styles.logoutText}>Đăng xuất</Text>
+				<Ionicons name="log-out-outline" size={20} color="red" />
+			</TouchableOpacity>
+		</ScrollView>
+	);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#f8f9fa",
-  },
-  profileCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#3498db",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "white",
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#2c3e50",
-    marginBottom: 8,
-  },
-  email: {
-    fontSize: 16,
-    color: "#7f8c8d",
-  },
-  infoSection: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ecf0f1",
-  },
-  infoLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#2c3e50",
-  },
-  infoValue: {
-    fontSize: 16,
-    color: "#7f8c8d",
-  },
-  logoutButton: {
-    backgroundColor: "#e74c3c",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-  },
-  logoutButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  disabledButton: {
-    backgroundColor: "#bdc3c7",
-  },
+	container: { flex: 1, backgroundColor: "#f9f9f9" },
+	profileHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#fff",
+		paddingVertical: 20,
+		paddingHorizontal: 15,
+		marginBottom: 10,
+	},
+	avatar: {
+		width: 50,
+		height: 50,
+		borderRadius: 25,
+		backgroundColor: "#6c63ff",
+		justifyContent: "center",
+		alignItems: "center",
+		marginRight: 15,
+	},
+	avatarText: { color: "#fff", fontWeight: "bold", fontSize: 18 },
+	name: { fontWeight: "600", fontSize: 16 },
+	email: { color: "#777" },
+	menu: { backgroundColor: "#fff", marginTop: 10 },
+	menuItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingVertical: 15,
+		paddingHorizontal: 20,
+		borderBottomColor: "#eee",
+		borderBottomWidth: 1,
+	},
+	menuLabel: { flex: 1, marginLeft: 10, fontSize: 15 },
+	logoutBtn: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		backgroundColor: "#fff",
+		padding: 15,
+		marginTop: 20,
+		gap: 5,
+	},
+	logoutText: { color: "red", fontWeight: "bold" },
 });
