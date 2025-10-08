@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import Toast from "react-native-toast-message";
 import { QueryProvider } from "../providers/QueryProvider";
 import { AuthProvider } from "../contexts/AuthContext";
+import toastConfig from "@/components/CustomToast";
 
 export default function RootLayout() {
   return (
@@ -13,7 +14,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
-        <Toast />
+        <Toast config={toastConfig} />
       </AuthProvider>
     </QueryProvider>
   );
