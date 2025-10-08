@@ -5,33 +5,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Dimensions,
-  Image,
 } from "react-native";
-import { useAuth } from "../../contexts/AuthContext";
-import { useLogout, useCurrentUser } from "../../queries/auth";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "../../constants/colors";
+import { COLORS } from "@/constants/colors";
 
 export default function HomeScreen() {
-  const { user } = useAuth();
-  const router = useRouter();
-
-  // Use React Query hooks
-  const logoutMutation = useLogout();
-  const currentUser = useCurrentUser();
-
-  const handleLogout = async () => {
-    try {
-      await logoutMutation.mutateAsync();
-      router.replace("/(auth)/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Still navigate to login even if logout API fails
-      router.replace("/(auth)/login");
-    }
-  };
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header with Mid-Autumn Festival theme */}
