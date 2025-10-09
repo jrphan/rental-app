@@ -1,10 +1,10 @@
-import { 
-  RegisterDto, 
-  LoginResponse, 
-  RegisterResponse, 
-  RefreshTokenDto, 
+import {
+  RegisterDto,
+  LoginResponse,
+  RegisterResponse,
+  RefreshTokenDto,
   RefreshTokenResponse,
-  User 
+  User
 } from '@rental-app/shared-types';
 import { BaseApiService, ApiResponse } from './BaseApiService';
 
@@ -30,6 +30,15 @@ export class AuthService extends BaseApiService {
     return this.request<User>({
       url: '/auth/profile',
       method: 'GET',
+    });
+  }
+
+  // async updateProfile(data: Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>>): Promise<ApiResponse<User>> {
+  async updateProfile(data: Partial<Pick<User, 'firstName' | 'lastName' | 'phone'>>): Promise<ApiResponse<User>> {
+    return this.request<User>({
+      url: '/auth/profile',
+      method: 'PUT',
+      data,
     });
   }
 

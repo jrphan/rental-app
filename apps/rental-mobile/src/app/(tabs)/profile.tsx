@@ -11,7 +11,7 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 interface MenuItem {
 	icon: IoniconName;
 	label: string;
-	screen?: string; // màn hình sẽ chuyển tới (nếu có)
+	screen?: string;
 }
 
 export default function ProfileScreen() {
@@ -34,11 +34,11 @@ export default function ProfileScreen() {
 			},
 		]);
 	};
-	// Các mục trong menu
+	
 	const menuItems: MenuItem[] = [
 		{ icon: "car-outline", label: "Đăng ký cho thuê xe" },
 		{ icon: "heart-outline", label: "Xe yêu thích" },
-		{ icon: "document-text-outline", label: "Địa chỉ của tôi" },
+		{ icon: "location-outline", label: "Địa chỉ của tôi" },
 		{ icon: "document-text-outline", label: "Giấy phép lái xe" },
 		{ icon: "card-outline", label: "Thẻ thanh toán" },
 		{ icon: "star-outline", label: "Đánh giá từ chủ xe" },
@@ -53,10 +53,10 @@ export default function ProfileScreen() {
 
 	return (
 		<ScrollView style={styles.container}>
-			{/* Header người dùng */}
+			
 			<TouchableOpacity
 				style={styles.profileHeader}
-				onPress={() => router.push("/(subtabs)/profile_detail")} // chuyển sang trang EditProfile
+				onPress={() => router.push("/(subtabs)/profile_detail")}
 			>
 				<View style={styles.avatar}>
 					<Text style={styles.avatarText}>T</Text>
@@ -68,7 +68,6 @@ export default function ProfileScreen() {
 				<Ionicons name="chevron-forward-outline" size={20} color="#999" />
 			</TouchableOpacity>
 
-			{/* Menu chính */}
 			<View style={styles.menu}>
 				{menuItems.map((item, idx) => (
 					<TouchableOpacity key={idx} style={styles.menuItem}>
@@ -79,7 +78,6 @@ export default function ProfileScreen() {
 				))}
 			</View>
 
-			{/* Mục khác */}
 			<View style={styles.menu}>
 				{otherItems.map((item, idx) => (
 					<TouchableOpacity key={idx} style={styles.menuItem}>
@@ -90,7 +88,6 @@ export default function ProfileScreen() {
 				))}
 			</View>
 
-			{/* Đăng xuất */}
 			<TouchableOpacity style={styles.logoutBtn}
 				onPress={handleLogout}
 				disabled={logoutMutation.isPending}

@@ -231,12 +231,21 @@ importers:
       '@testing-library/react-native':
         specifier: '*'
         version: 13.3.3(jest@29.7.0(@types/node@20.19.9)(babel-plugin-macros@3.1.0))(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0))(react-test-renderer@19.1.0(react@19.1.0))(react@19.1.0)
+      expo:
+        specifier: ~54.0.12
+        version: 54.0.12(@babel/core@7.28.4)(@expo/metro-runtime@6.1.2)(expo-router@6.0.10)(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0))(react@19.1.0)
       expo-router:
         specifier: ^6.0.8
         version: 6.0.10(@expo/metro-runtime@6.1.2)(@testing-library/react-native@13.3.3(jest@29.7.0(@types/node@20.19.9)(babel-plugin-macros@3.1.0))(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0))(react-test-renderer@19.1.0(react@19.1.0))(react@19.1.0))(@types/react@19.2.0)(expo-constants@18.0.9)(expo-linking@8.0.8)(expo@54.0.12)(react-dom@19.1.0(react@19.1.0))(react-native-safe-area-context@5.6.1(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0))(react@19.1.0))(react-native-screens@4.16.0(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0))(react@19.1.0))(react-native-web@0.21.1(encoding@0.1.13)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0))(react-server-dom-webpack@19.0.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(webpack@5.102.0))(react@19.1.0)
       jest-expo:
         specifier: ^54.0.12
         version: 54.0.12(@babel/core@7.28.4)(expo@54.0.12)(jest@29.7.0(@types/node@20.19.9)(babel-plugin-macros@3.1.0))(react-dom@19.1.0(react@19.1.0))(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0))(react@19.1.0)(webpack@5.102.0(@swc/core@1.5.29(@swc/helpers@0.5.17))(webpack-cli@5.1.4))
+      react:
+        specifier: 19.1.0
+        version: 19.1.0
+      react-native:
+        specifier: 0.81.4
+        version: 0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0)
       react-native-toast-message:
         specifier: ^2.3.3
         version: 2.3.3(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.2.0)(react@19.1.0))(react@19.1.0)

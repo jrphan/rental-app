@@ -3,11 +3,11 @@ import { PrismaService } from '@rental-app/shared-prisma';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
-import type { 
-  User, 
-  LoginResponse, 
-  RegisterDto, 
-  RegisterResponse, 
+import type {
+  User,
+  LoginResponse,
+  RegisterDto,
+  RegisterResponse,
   RefreshTokenResponse
 } from '@rental-app/shared-types';
 
@@ -18,7 +18,7 @@ export class AuthService {
   // private readonly REFRESH_TOKEN_EXPIRES_IN = '7d';
   private readonly BCRYPT_ROUNDS = 12;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * User login
@@ -184,7 +184,7 @@ export class AuthService {
     try {
       // Verify and decode JWT token
       const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string; iat: number; exp: number };
-      
+
       // Find user
       const user = await this.prisma.client.user.findUnique({
         where: { id: payload.userId },
@@ -208,6 +208,60 @@ export class AuthService {
       }
       throw new Error('Token không hợp lệ hoặc đã hết hạn');
     }
+  }
+
+  /**
+   * Update profile fields: firstName, lastName, phone
+   */
+  async updateProfile(
+    token: string,
+    // data: { firstName?: string; lastName?: string; email?: string; phone?: string | null }
+    data: { firstName?: string; lastName?: string; phone?: string | null }
+  ): Promise<User> {
+    // Verify token
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    const updates: any = {};
+    if (typeof data.firstName === 'string') {
+      const v = data.firstName.trim();
+      if (!v) throw new Error('Họ không được để trống');
+      updates.firstName = v;
+    }
+    if (typeof data.lastName === 'string') {
+      const v = data.lastName.trim();
+      if (!v) throw new Error('Tên không được để trống');
+      updates.lastName = v;
+    }
+    // if (typeof data.email === 'string') {
+    //   const v = data.email.trim().toLowerCase();
+    //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    //   if (!emailRegex.test(v)) throw new Error('Email không hợp lệ');
+    //   updates.email = v;
+    // }
+    if (typeof data.phone !== 'undefined') {
+      const v = (data.phone || '').trim();
+      if (v && !/^\d{9,11}$/.test(v)) throw new Error('Số điện thoại không hợp lệ');
+      updates.phone = v || null;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      throw new Error('Không có dữ liệu để cập nhật');
+    }
+
+    // Ensure email unique if changed
+    // if (updates.email) {
+    //   const exists = await this.prisma.client.user.findFirst({
+    //     where: { email: updates.email, NOT: { id: payload.userId } },
+    //   });
+    //   if (exists) throw new Error('Email đã được sử dụng');
+    // }
+
+    const user = await this.prisma.client.user.update({
+      where: { id: payload.userId },
+      data: updates,
+    });
+
+    return this.mapUserToAuthUser(user as any);
   }
 
   /**
@@ -288,7 +342,7 @@ export class AuthService {
     try {
       // Decode token to get user ID
       const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
-      
+
       // Revoke all refresh tokens for this user
       await this.prisma.client.refreshToken.updateMany({
         where: {
