@@ -49,6 +49,36 @@ export class AuthController {
   }
 
   /**
+   * Change password
+   */
+  @Put('change_password')
+  async changePassword(
+    @Headers('authorization') authHeader: string,
+    @Body() body: { oldPassword: string; newPassword: string },
+    @Req() req: Request
+  ) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      await this.authService.changePassword(token, body.oldPassword, body.newPassword);
+
+      return createSuccessResponse(RESPONSE_MESSAGES.SUCCESS, null, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Change password failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || RESPONSE_MESSAGES.VALIDATION_ERROR,
+        errorMessage || 'Change password failed',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
    * Update user profile
    */
   @Put('profile')

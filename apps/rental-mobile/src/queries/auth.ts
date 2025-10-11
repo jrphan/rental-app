@@ -180,13 +180,27 @@ export function useLogout() {
   });
 }
 
+// Change password mutation
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) =>
+      authService.changePassword(oldPassword, newPassword),
+    onSuccess: () => {
+      Toast.show({ type: 'success', text1: 'Cập nhật mật khẩu thành công' });
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || error?.message || 'Cập nhật mật khẩu thất bại';
+      Toast.show({ type: 'error', text1: 'Cập nhật thất bại', text2: msg });
+    },
+  });
+}
+
 // Update profile mutation
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    // mutationFn: (data: Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>>) => authService.updateProfile(data),
-    mutationFn: (data: Partial<Pick<User, 'firstName' | 'lastName' | 'phone'>>) => authService.updateProfile(data),
+    mutationFn: (data: Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>>) => authService.updateProfile(data),
     onSuccess: async (response) => {
       if (response.success && response.data) {
         const user = response.data;

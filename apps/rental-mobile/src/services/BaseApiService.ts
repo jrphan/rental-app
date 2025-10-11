@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 // const API_BASE_URL = 'http://localhost:3000/api';
-const API_BASE_URL = 'http://192.168.100.5:3000/api';
+const API_BASE_URL = 'http://192.168.100.6:3000/api';
 
 // Import shared types from the backend
 export interface ApiResponse<T = any> {

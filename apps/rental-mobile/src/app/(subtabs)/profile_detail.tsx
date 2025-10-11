@@ -13,18 +13,16 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [firstName, setFirstName] = useState(user?.firstName ?? "");
   const [lastName, setLastName] = useState(user?.lastName ?? "");
-  // const [email, setEmail] = useState(user?.email ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
 
   const canSave = useMemo(() => {
     if (!isEditing) return false;
     const nameOk = firstName.trim().length > 0 && lastName.trim().length > 0;
-    // const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
     const phoneOk = phone ? /^\d{9,11}$/.test(phone.replace(/\D/g, "")) : true;
-    // return nameOk && emailOk && phoneOk;
-    return nameOk && phoneOk;
-    // }, [isEditing, firstName, lastName, email, phone]);
-  }, [isEditing, firstName, lastName, phone]);
+    return nameOk && emailOk && phoneOk;
+  }, [isEditing, firstName, lastName, email, phone]);
 
   const handleBack = () => router.back();
 
@@ -49,8 +47,7 @@ export default function ProfileScreen() {
     }
 
     try {
-      // await updateMutation.mutateAsync({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), phone: phone?.trim() || undefined });
-      await updateMutation.mutateAsync({ firstName: firstName.trim(), lastName: lastName.trim(), phone: phone?.trim() || undefined });
+      await updateMutation.mutateAsync({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), phone: phone?.trim() || undefined });
       setIsEditing(false);
       Keyboard.dismiss();
     } catch (e) {
@@ -95,6 +92,7 @@ export default function ProfileScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Họ"
+                  placeholderTextColor="#9E9E9E"
                   value={lastName}
                   onChangeText={setLastName}
                   editable={!updateMutation.isPending}
@@ -102,6 +100,7 @@ export default function ProfileScreen() {
                 <TextInput
                   style={[styles.input, { marginLeft: 8 }]}
                   placeholder="Tên"
+                  placeholderTextColor="#9E9E9E"
                   value={firstName}
                   onChangeText={setFirstName}
                   editable={!updateMutation.isPending}
@@ -113,19 +112,20 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Email:</Text>
-            {/* {isEditing ? (
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-              editable={!updateMutation.isPending}
-            />
-          ) : ( */}
-            <Text style={styles.infoValue}>{user?.email}</Text>
-            {/* )} */}
+            {isEditing ? (
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#9E9E9E"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+                editable={!updateMutation.isPending}
+              />
+            ) : (
+              <Text style={styles.infoValue}>{user?.email}</Text>
+            )}
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Số điện thoại:</Text>
@@ -133,6 +133,7 @@ export default function ProfileScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Số điện thoại"
+                placeholderTextColor="#9E9E9E"
                 keyboardType="phone-pad"
                 value={phone ?? ''}
                 onChangeText={setPhone}
@@ -208,9 +209,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backBtn: {
-    borderRadius: "50%",
-    borderColor: "black",
-    borderWidth: 0.2,
     width: 40,
     height: 40,
     alignItems: "center",

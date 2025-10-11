@@ -88,6 +88,37 @@ export class AuthService {
   }
 
   /**
+   * Change password for current user
+   */
+  async changePassword(token: string, oldPassword: string, newPassword: string): Promise<void> {
+    // Basic validation
+    if (!oldPassword || !newPassword) {
+      throw new Error('Vui lòng nhập đầy đủ mật khẩu cũ và mật khẩu mới');
+    }
+    if (newPassword.length < 6) {
+      throw new Error('Mật khẩu mới phải có ít nhất 6 ký tự');
+    }
+
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    const user = await this.prisma.client.user.findUnique({ where: { id: payload.userId } });
+    if (!user) {
+      throw new Error('Người dùng không tồn tại');
+    }
+
+    const isOldValid = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!isOldValid) {
+      throw new Error('Mật khẩu cũ không đúng');
+    }
+
+    const newHash = await bcrypt.hash(newPassword, this.BCRYPT_ROUNDS);
+    await this.prisma.client.user.update({
+      where: { id: user.id },
+      data: { passwordHash: newHash },
+    });
+  }
+
+  /**
    * User registration
    */
   async register(registerDto: RegisterDto, ipAddress?: string, userAgent?: string): Promise<RegisterResponse> {
@@ -215,8 +246,7 @@ export class AuthService {
    */
   async updateProfile(
     token: string,
-    // data: { firstName?: string; lastName?: string; email?: string; phone?: string | null }
-    data: { firstName?: string; lastName?: string; phone?: string | null }
+    data: { firstName?: string; lastName?: string; email?: string; phone?: string | null }
   ): Promise<User> {
     // Verify token
     const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
@@ -232,12 +262,12 @@ export class AuthService {
       if (!v) throw new Error('Tên không được để trống');
       updates.lastName = v;
     }
-    // if (typeof data.email === 'string') {
-    //   const v = data.email.trim().toLowerCase();
-    //   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    //   if (!emailRegex.test(v)) throw new Error('Email không hợp lệ');
-    //   updates.email = v;
-    // }
+    if (typeof data.email === 'string') {
+      const v = data.email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(v)) throw new Error('Email không hợp lệ');
+      updates.email = v;
+    }
     if (typeof data.phone !== 'undefined') {
       const v = (data.phone || '').trim();
       if (v && !/^\d{9,11}$/.test(v)) throw new Error('Số điện thoại không hợp lệ');
@@ -249,12 +279,12 @@ export class AuthService {
     }
 
     // Ensure email unique if changed
-    // if (updates.email) {
-    //   const exists = await this.prisma.client.user.findFirst({
-    //     where: { email: updates.email, NOT: { id: payload.userId } },
-    //   });
-    //   if (exists) throw new Error('Email đã được sử dụng');
-    // }
+    if (updates.email) {
+      const exists = await this.prisma.client.user.findFirst({
+        where: { email: updates.email, NOT: { id: payload.userId } },
+      });
+      if (exists) throw new Error('Email đã được sử dụng');
+    }
 
     const user = await this.prisma.client.user.update({
       where: { id: payload.userId },

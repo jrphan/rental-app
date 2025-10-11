@@ -34,26 +34,26 @@ export default function ProfileScreen() {
 			},
 		]);
 	};
-	
+
 	const menuItems: MenuItem[] = [
 		{ icon: "car-outline", label: "Đăng ký cho thuê xe" },
 		{ icon: "heart-outline", label: "Xe yêu thích" },
 		{ icon: "location-outline", label: "Địa chỉ của tôi" },
 		{ icon: "document-text-outline", label: "Giấy phép lái xe" },
-		{ icon: "card-outline", label: "Thẻ thanh toán" },
-		{ icon: "star-outline", label: "Đánh giá từ chủ xe" },
+		// { icon: "card-outline", label: "Thẻ thanh toán" },
+		// { icon: "star-outline", label: "Đánh giá từ chủ xe" },
 	];
 
 	const otherItems: MenuItem[] = [
-		{ icon: "gift-outline", label: "Quà tặng" },
-		{ icon: "share-social-outline", label: "Giới thiệu bạn mới" },
-		{ icon: "lock-closed-outline", label: "Đổi mật khẩu" },
+		// { icon: "gift-outline", label: "Quà tặng" },
+		// { icon: "share-social-outline", label: "Giới thiệu bạn mới" },
+		{ icon: "lock-closed-outline", label: "Đổi mật khẩu", screen: "/(subtabs)/change_password" },
 		{ icon: "trash-outline", label: "Yêu cầu xóa tài khoản" },
 	];
 
 	return (
 		<ScrollView style={styles.container}>
-			
+
 			<TouchableOpacity
 				style={styles.profileHeader}
 				onPress={() => router.push("/(subtabs)/profile_detail")}
@@ -80,7 +80,7 @@ export default function ProfileScreen() {
 
 			<View style={styles.menu}>
 				{otherItems.map((item, idx) => (
-					<TouchableOpacity key={idx} style={styles.menuItem}>
+					<TouchableOpacity key={idx} style={styles.menuItem} onPress={() => item.screen && router.push(item.screen)}>
 						<Ionicons name={item.icon} size={22} color="#333" />
 						<Text style={styles.menuLabel}>{item.label}</Text>
 						<Ionicons name="chevron-forward-outline" size={18} color="#999" />

@@ -33,8 +33,7 @@ export class AuthService extends BaseApiService {
     });
   }
 
-  // async updateProfile(data: Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>>): Promise<ApiResponse<User>> {
-  async updateProfile(data: Partial<Pick<User, 'firstName' | 'lastName' | 'phone'>>): Promise<ApiResponse<User>> {
+  async updateProfile(data: Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>>): Promise<ApiResponse<User>> {
     return this.request<User>({
       url: '/auth/profile',
       method: 'PUT',
@@ -54,6 +53,14 @@ export class AuthService extends BaseApiService {
     return this.request<null>({
       url: '/auth/logout',
       method: 'POST',
+    });
+  }
+
+  async changePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<null>> {
+    return this.request<null>({
+      url: '/auth/change_password',
+      method: 'PUT',
+      data: { oldPassword, newPassword },
     });
   }
 }
