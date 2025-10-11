@@ -391,6 +391,51 @@ export class AuthService {
   }
 
   /**
+   * Delete user account
+   */
+  async deleteAccount(token: string): Promise<void> {
+    try {
+      // Decode token to get user ID
+      const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+      // Check if user exists
+      const user = await this.prisma.client.user.findUnique({
+        where: { id: payload.userId },
+      });
+
+      if (!user) {
+        throw new Error('Người dùng không tồn tại');
+      }
+
+      // Soft delete the user by setting deletedAt timestamp
+      await this.prisma.client.user.update({
+        where: { id: payload.userId },
+        data: {
+          deletedAt: new Date(),
+          isActive: false,
+        },
+      });
+
+      // Revoke all refresh tokens for this user
+      await this.prisma.client.refreshToken.updateMany({
+        where: {
+          userId: payload.userId,
+          isRevoked: false,
+        },
+        data: {
+          isRevoked: true,
+          revokedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Xóa tài khoản thất bại');
+    }
+  }
+
+  /**
    * Generate JWT access token
    */
   private generateAccessToken(userId: string): string {

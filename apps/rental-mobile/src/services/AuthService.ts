@@ -63,6 +63,13 @@ export class AuthService extends BaseApiService {
       data: { oldPassword, newPassword },
     });
   }
+
+  async deleteAccount(): Promise<ApiResponse<null>> {
+    return this.request<null>({
+      url: '/auth/delete_account',
+      method: 'DELETE',
+    });
+  }
 }
 
 export const authService = new AuthService();

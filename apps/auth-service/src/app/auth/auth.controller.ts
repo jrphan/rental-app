@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Body, Headers, HttpException, Req } from '@nestjs/common';
+import { Controller, Post, Get, Put, Body, Headers, HttpException, Req, Delete } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type {
   RegisterDto,
@@ -196,6 +196,32 @@ export class AuthController {
       const errorResponse = createErrorResponse(
         errorMessage || 'Logout failed',
         errorMessage || 'Logout failed',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Delete account
+   */
+  @Delete('delete_account')
+  async deleteAccount(@Headers('authorization') authHeader: string, @Req() req: Request) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      await this.authService.deleteAccount(token);
+
+      return createSuccessResponse('Tài khoản đã được xóa thành công', null, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Delete account failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Xóa tài khoản thất bại',
+        errorMessage || 'Xóa tài khoản thất bại',
         HTTP_STATUS.BAD_REQUEST,
         req.path
       );

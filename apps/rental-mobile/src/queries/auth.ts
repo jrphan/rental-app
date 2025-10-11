@@ -195,6 +195,35 @@ export function useChangePassword() {
   });
 }
 
+// Delete account mutation
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: () => authService.deleteAccount(),
+    onSuccess: async () => {
+      // Clear all auth-related data
+      await AsyncStorage.multiRemove(['auth_token', 'refresh_token', 'user_data']);
+
+      // Clear all query caches
+      queryClient.clear();
+
+      Toast.show({
+        type: 'success',
+        text1: 'Tài khoản đã được xóa thành công',
+      });
+
+      // Navigate to login
+      router.replace('/login');
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || error?.message || 'Xóa tài khoản thất bại';
+      Toast.show({ type: 'error', text1: 'Xóa tài khoản thất bại', text2: msg });
+    },
+  });
+}
+
 // Update profile mutation
 export function useUpdateProfile() {
   const queryClient = useQueryClient();

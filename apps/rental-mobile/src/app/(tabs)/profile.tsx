@@ -1,9 +1,9 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLogout } from "@/queries";
+import { useLogout, useDeleteAccount } from "@/queries";
 import { log } from "console";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -12,12 +12,16 @@ interface MenuItem {
 	icon: IoniconName;
 	label: string;
 	screen?: string;
+	action?: string;
 }
 
 export default function ProfileScreen() {
 	const router = useRouter();
 	const { user } = useAuth();
 	const logoutMutation = useLogout();
+	const deleteAccountMutation = useDeleteAccount();
+	const [showDeleteModal, setShowDeleteModal] = useState(false);
+
 	const handleLogout = () => {
 		Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
 			{ text: "Hủy", style: "cancel" },
@@ -35,6 +39,18 @@ export default function ProfileScreen() {
 		]);
 	};
 
+	const handleDeleteAccount = () => {
+		setShowDeleteModal(true);
+	};
+
+	const confirmDeleteAccount = async () => {
+		try {
+			await deleteAccountMutation.mutateAsync();
+		} catch (error) {
+			console.error("Delete account error:", error);
+		}
+	};
+
 	const menuItems: MenuItem[] = [
 		{ icon: "car-outline", label: "Đăng ký cho thuê xe" },
 		{ icon: "heart-outline", label: "Xe yêu thích" },
@@ -48,7 +64,7 @@ export default function ProfileScreen() {
 		// { icon: "gift-outline", label: "Quà tặng" },
 		// { icon: "share-social-outline", label: "Giới thiệu bạn mới" },
 		{ icon: "lock-closed-outline", label: "Đổi mật khẩu", screen: "/(subtabs)/change_password" },
-		{ icon: "trash-outline", label: "Yêu cầu xóa tài khoản" },
+		{ icon: "trash-outline", label: "Yêu cầu xóa tài khoản", action: "delete" },
 	];
 
 	return (
@@ -80,7 +96,17 @@ export default function ProfileScreen() {
 
 			<View style={styles.menu}>
 				{otherItems.map((item, idx) => (
-					<TouchableOpacity key={idx} style={styles.menuItem} onPress={() => item.screen && router.push(item.screen)}>
+					<TouchableOpacity
+						key={idx}
+						style={styles.menuItem}
+						onPress={() => {
+							if (item.screen) {
+								router.push(item.screen);
+							} else if (item.action === "delete") {
+								handleDeleteAccount();
+							}
+						}}
+					>
 						<Ionicons name={item.icon} size={22} color="#333" />
 						<Text style={styles.menuLabel}>{item.label}</Text>
 						<Ionicons name="chevron-forward-outline" size={18} color="#999" />
@@ -97,6 +123,49 @@ export default function ProfileScreen() {
 				</Text>
 				<Ionicons name="log-out-outline" size={20} color="red" />
 			</TouchableOpacity>
+
+			{/* Delete Account Confirmation Modal */}
+			<Modal
+				visible={showDeleteModal}
+				transparent={true}
+				animationType="fade"
+				onRequestClose={() => setShowDeleteModal(false)}
+			>
+				<View style={styles.modalOverlay}>
+					<View style={styles.modalContent}>
+						<View style={styles.modalHeader}>
+							<Ionicons name="warning" size={24} color="#ff4444" />
+							<Text style={styles.modalTitle}>Yêu cầu xoá tài khoản?</Text>
+						</View>
+
+						<Text style={styles.modalMessage}>
+							Hành động xoá tài khoản sẽ xoá toàn bộ dữ liệu liên quan đến tài khoản này trên hệ thống lưu trữ thông tin của ứng dụng MoRent. Chỉ xoá một lần và không thể phục hồi lại như cũ.
+						</Text>
+
+						<View style={styles.modalButtons}>
+							<TouchableOpacity
+								style={styles.cancelButton}
+								onPress={() => setShowDeleteModal(false)}
+								disabled={deleteAccountMutation.isPending}
+							>
+								<Text style={styles.cancelButtonText}>Hủy</Text>
+							</TouchableOpacity>
+
+							<TouchableOpacity
+								style={styles.deleteButton}
+								onPress={confirmDeleteAccount}
+								disabled={deleteAccountMutation.isPending}
+							>
+								{deleteAccountMutation.isPending ? (
+									<ActivityIndicator size="small" color="#fff" />
+								) : (
+									<Text style={styles.deleteButtonText}>Xoá tài khoản</Text>
+								)}
+							</TouchableOpacity>
+						</View>
+					</View>
+				</View>
+			</Modal>
 		</ScrollView>
 	);
 }
@@ -143,4 +212,67 @@ const styles = StyleSheet.create({
 		gap: 5,
 	},
 	logoutText: { color: "red", fontWeight: "bold" },
+
+	// Modal styles
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0, 0, 0, 0.5)",
+		justifyContent: "center",
+		alignItems: "center",
+		padding: 20,
+	},
+	modalContent: {
+		backgroundColor: "#fff",
+		borderRadius: 12,
+		padding: 20,
+		width: "100%",
+		maxWidth: 400,
+	},
+	modalHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginBottom: 16,
+	},
+	modalTitle: {
+		fontSize: 18,
+		fontWeight: "600",
+		marginLeft: 8,
+		color: "#333",
+	},
+	modalMessage: {
+		fontSize: 14,
+		lineHeight: 20,
+		color: "#666",
+		marginBottom: 24,
+	},
+	modalButtons: {
+		flexDirection: "row",
+		justifyContent: "flex-end",
+		gap: 12,
+	},
+	cancelButton: {
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderRadius: 8,
+		borderWidth: 1,
+		borderColor: "#ddd",
+	},
+	cancelButtonText: {
+		color: "#666",
+		fontSize: 16,
+		fontWeight: "500",
+	},
+	deleteButton: {
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderRadius: 8,
+		backgroundColor: "#ff4444",
+		minWidth: 120,
+		alignItems: "center",
+	},
+	deleteButtonText: {
+		color: "#fff",
+		fontSize: 16,
+		fontWeight: "600",
+	},
 });
