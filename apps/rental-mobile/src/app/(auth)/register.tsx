@@ -14,24 +14,17 @@ import { useRegister } from "@/queries/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/constants/colors";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
-
-interface RegisterForm {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-}
+import { zodResolver } from "@hookform/resolvers/zod";
+import { registerSchema, RegisterFormData } from "@/schemas/auth";
 
 export default function RegisterScreen() {
   // React Hook Form setup
   const {
     control,
     handleSubmit,
-    getValues,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterForm>({
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema as any),
     defaultValues: {
       email: "",
       password: "",
@@ -47,7 +40,7 @@ export default function RegisterScreen() {
   // Use React Query mutation for register
   const registerMutation = useRegister();
 
-  const handleRegister: SubmitHandler<RegisterForm> = async (data) => {
+  const handleRegister: SubmitHandler<RegisterFormData> = async (data) => {
     try {
       const result = await registerMutation.mutateAsync({
         email: data.email,
@@ -107,7 +100,6 @@ export default function RegisterScreen() {
                 <Controller
                   control={control}
                   name="lastName"
-                  rules={{ required: "Vui lòng nhập họ" }}
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       style={styles.input}
@@ -138,7 +130,6 @@ export default function RegisterScreen() {
                 <Controller
                   control={control}
                   name="firstName"
-                  rules={{ required: "Vui lòng nhập tên" }}
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       style={styles.input}
@@ -171,13 +162,6 @@ export default function RegisterScreen() {
               <Controller
                 control={control}
                 name="email"
-                rules={{
-                  required: "Vui lòng nhập email",
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Email không hợp lệ",
-                  },
-                }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     style={styles.input}
@@ -211,7 +195,6 @@ export default function RegisterScreen() {
               <Controller
                 control={control}
                 name="phone"
-                rules={{ required: "Vui lòng nhập số điện thoại" }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     style={styles.input}
@@ -243,10 +226,6 @@ export default function RegisterScreen() {
               <Controller
                 control={control}
                 name="password"
-                rules={{
-                  required: "Vui lòng nhập mật khẩu",
-                  minLength: { value: 6, message: "Ít nhất 6 ký tự" },
-                }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     style={styles.input}
@@ -279,12 +258,6 @@ export default function RegisterScreen() {
               <Controller
                 control={control}
                 name="confirmPassword"
-                rules={{
-                  required: "Vui lòng nhập lại mật khẩu",
-                  validate: (v) =>
-                    v === getValues("password") ||
-                    "Mật khẩu xác nhận không khớp",
-                }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     style={styles.input}
@@ -426,7 +399,6 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     flexDirection: "row",
-    marginBottom: 20,
   },
   inputContainer: {
     marginBottom: 20,
@@ -455,7 +427,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: 8,
   },
   disabledButton: {
     opacity: 0.6,

@@ -14,18 +14,19 @@ import { useLogin } from "@/queries/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/constants/colors";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
-
-interface LoginForm {
-  email: string;
-  password: string;
-}
+import { useState } from "react";
+import { loginSchema, type LoginFormData } from "@/schemas";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export default function LoginScreen() {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>({
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema as any),
     defaultValues: {
       email: "user@example.com",
       password: "123456t@T",
@@ -37,7 +38,7 @@ export default function LoginScreen() {
   // Use React Query mutation for login
   const loginMutation = useLogin();
 
-  const onSubmit: SubmitHandler<LoginForm> = async (values) => {
+  const onSubmit: SubmitHandler<LoginFormData> = async (values) => {
     try {
       const result = await loginMutation.mutateAsync({
         email: values.email,
@@ -92,13 +93,6 @@ export default function LoginScreen() {
               <Controller
                 control={control}
                 name="email"
-                rules={{
-                  required: "Vui lòng nhập email",
-                  pattern: {
-                    value: /[^\s@]+@[^\s@]+\.[^\s@]+/,
-                    message: "Email không hợp lệ",
-                  },
-                }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     style={styles.input}
@@ -132,13 +126,6 @@ export default function LoginScreen() {
               <Controller
                 control={control}
                 name="password"
-                rules={{
-                  required: "Vui lòng nhập mật khẩu",
-                  minLength: {
-                    value: 6,
-                    message: "Mật khẩu tối thiểu 6 ký tự",
-                  },
-                }}
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     style={styles.input}
@@ -147,11 +134,21 @@ export default function LoginScreen() {
                     onBlur={onBlur}
                     placeholder="Nhập mật khẩu"
                     placeholderTextColor="#9ca3af"
-                    secureTextEntry
+                    secureTextEntry={!isPasswordVisible}
                     autoCapitalize="none"
                   />
                 )}
               />
+              <TouchableOpacity
+                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                style={styles.eyeButton}
+              >
+                <Ionicons
+                  name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
+                  size={20}
+                  color="#6b7280"
+                />
+              </TouchableOpacity>
             </View>
             {errors.password?.message ? (
               <Text style={styles.errorText}>
@@ -296,6 +293,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#1f2937",
   },
+  eyeButton: {
+    padding: 4,
+  },
   errorText: {
     marginTop: 6,
     color: "#dc2626",
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: 8,
   },
   disabledButton: {
     opacity: 0.6,

@@ -54,6 +54,7 @@
   "dependencies": {
     "@expo/metro-config": "^54.0.5",
     "@expo/metro-runtime": "^6.1.2",
+    "@hookform/resolvers": "^3.10.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
@@ -74,6 +75,7 @@
     "react-native-svg-transformer": "^1.5.1",
     "react-native-web": "^0.21.1",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.8.0"
+    "rxjs": "^7.8.0",
+    "zod": "^3.25.76"
   }
 }
