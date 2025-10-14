@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authService } from '../services/AuthService';
 import { queryKeys } from '../lib/queryClient';
-import { 
-  User, 
-  RegisterDto 
+import {
+  User,
+  RegisterDto
 } from '@rental-app/shared-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
@@ -20,7 +20,7 @@ export function useLogin() {
     onSuccess: async (response) => {
       if (response.success && response.data) {
         const { user, accessToken, refreshToken } = response.data;
-        
+
         // Save tokens and user data to storage
         await AsyncStorage.multiSet([
           ['auth_token', accessToken],
@@ -30,7 +30,7 @@ export function useLogin() {
 
         // Update auth profile query cache
         queryClient.setQueryData(queryKeys.auth.profile, user);
-        
+
         Toast.show({
           type: 'success',
           text1: 'Đăng nhập thành công',
@@ -58,7 +58,7 @@ export function useRegister() {
     onSuccess: async (response) => {
       if (response.success && response.data) {
         const { user, accessToken, refreshToken } = response.data;
-        
+
         // Save tokens and user data to storage
         await AsyncStorage.multiSet([
           ['auth_token', accessToken],
@@ -68,7 +68,7 @@ export function useRegister() {
 
         // Update auth profile query cache
         queryClient.setQueryData(queryKeys.auth.profile, user);
-        
+
         Toast.show({
           type: 'success',
           text1: 'Đăng ký thành công',
@@ -113,7 +113,7 @@ export function useRefreshToken() {
       if (!refreshToken) {
         throw new Error('No refresh token available');
       }
-      
+
       const response = await authService.refreshToken(refreshToken);
       if (response.success && response.data) {
         return response.data;
@@ -122,13 +122,13 @@ export function useRefreshToken() {
     },
     onSuccess: async (data) => {
       const { accessToken, refreshToken } = data;
-      
+
       // Save new tokens to storage
       await AsyncStorage.multiSet([
         ['auth_token', accessToken],
         ['refresh_token', refreshToken],
       ]);
-      
+
       console.log('Tokens refreshed successfully');
     },
     onError: (error: any) => {
@@ -151,7 +151,7 @@ export function useLogout() {
     onSuccess: async () => {
       // Clear all auth-related data
       await AsyncStorage.multiRemove(['auth_token', 'refresh_token', 'user_data']);
-      
+
       // Clear all query caches
       queryClient.clear();
 
@@ -164,18 +164,84 @@ export function useLogout() {
     },
     onError: async (error: any) => {
       console.error('Logout error:', error);
-      
+
       // Clear data even if logout API fails
       await AsyncStorage.multiRemove(['auth_token', 'refresh_token', 'user_data']);
       queryClient.clear();
 
-      
+
       Toast.show({
         type: 'success',
         text1: 'Đăng xuất thành công',
       });
 
       router.replace('/login');
+    },
+  });
+}
+
+// Change password mutation
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) =>
+      authService.changePassword(oldPassword, newPassword),
+    onSuccess: () => {
+      Toast.show({ type: 'success', text1: 'Cập nhật mật khẩu thành công' });
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || error?.message || 'Cập nhật mật khẩu thất bại';
+      Toast.show({ type: 'error', text1: 'Cập nhật thất bại', text2: msg });
+    },
+  });
+}
+
+// Delete account mutation
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: () => authService.deleteAccount(),
+    onSuccess: async () => {
+      // Clear all auth-related data
+      await AsyncStorage.multiRemove(['auth_token', 'refresh_token', 'user_data']);
+
+      // Clear all query caches
+      queryClient.clear();
+
+      Toast.show({
+        type: 'success',
+        text1: 'Tài khoản đã được xóa thành công',
+      });
+
+      // Navigate to login
+      router.replace('/login');
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || error?.message || 'Xóa tài khoản thất bại';
+      Toast.show({ type: 'error', text1: 'Xóa tài khoản thất bại', text2: msg });
+    },
+  });
+}
+
+// Update profile mutation
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>>) => authService.updateProfile(data),
+    onSuccess: async (response) => {
+      if (response.success && response.data) {
+        const user = response.data;
+        // Update cache and local storage
+        queryClient.setQueryData(queryKeys.auth.profile, user);
+        await AsyncStorage.setItem('user_data', JSON.stringify(user));
+        Toast.show({ type: 'success', text1: 'Lưu thành công' });
+      }
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || error?.message || 'Lưu thất bại';
+      Toast.show({ type: 'error', text1: 'Lưu thất bại', text2: msg });
     },
   });
 }

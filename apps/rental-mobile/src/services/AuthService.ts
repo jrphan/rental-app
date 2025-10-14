@@ -1,10 +1,10 @@
-import { 
-  RegisterDto, 
-  LoginResponse, 
-  RegisterResponse, 
-  RefreshTokenDto, 
+import {
+  RegisterDto,
+  LoginResponse,
+  RegisterResponse,
+  RefreshTokenDto,
   RefreshTokenResponse,
-  User 
+  User
 } from '@rental-app/shared-types';
 import { BaseApiService, ApiResponse } from './BaseApiService';
 
@@ -33,6 +33,14 @@ export class AuthService extends BaseApiService {
     });
   }
 
+  async updateProfile(data: Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>>): Promise<ApiResponse<User>> {
+    return this.request<User>({
+      url: '/auth/profile',
+      method: 'PUT',
+      data,
+    });
+  }
+
   async refreshToken(refreshToken: string): Promise<ApiResponse<RefreshTokenResponse>> {
     return this.request<RefreshTokenResponse>({
       url: '/auth/refresh',
@@ -45,6 +53,21 @@ export class AuthService extends BaseApiService {
     return this.request<null>({
       url: '/auth/logout',
       method: 'POST',
+    });
+  }
+
+  async changePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<null>> {
+    return this.request<null>({
+      url: '/auth/change_password',
+      method: 'PUT',
+      data: { oldPassword, newPassword },
+    });
+  }
+
+  async deleteAccount(): Promise<ApiResponse<null>> {
+    return this.request<null>({
+      url: '/auth/delete_account',
+      method: 'DELETE',
     });
   }
 }

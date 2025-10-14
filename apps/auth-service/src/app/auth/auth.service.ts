@@ -3,11 +3,11 @@ import { PrismaService } from '@rental-app/shared-prisma';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 
-import type { 
-  User, 
-  LoginResponse, 
-  RegisterDto, 
-  RegisterResponse, 
+import type {
+  User,
+  LoginResponse,
+  RegisterDto,
+  RegisterResponse,
   RefreshTokenResponse
 } from '@rental-app/shared-types';
 
@@ -18,7 +18,7 @@ export class AuthService {
   // private readonly REFRESH_TOKEN_EXPIRES_IN = '7d';
   private readonly BCRYPT_ROUNDS = 12;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * User login
@@ -85,6 +85,37 @@ export class AuthService {
       await this.logAuthEvent(null, 'LOGIN_ATTEMPT', false, 'Unknown error', ipAddress, userAgent);
       throw new Error('Đăng nhập thất bại');
     }
+  }
+
+  /**
+   * Change password for current user
+   */
+  async changePassword(token: string, oldPassword: string, newPassword: string): Promise<void> {
+    // Basic validation
+    if (!oldPassword || !newPassword) {
+      throw new Error('Vui lòng nhập đầy đủ mật khẩu cũ và mật khẩu mới');
+    }
+    if (newPassword.length < 6) {
+      throw new Error('Mật khẩu mới phải có ít nhất 6 ký tự');
+    }
+
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    const user = await this.prisma.client.user.findUnique({ where: { id: payload.userId } });
+    if (!user) {
+      throw new Error('Người dùng không tồn tại');
+    }
+
+    const isOldValid = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!isOldValid) {
+      throw new Error('Mật khẩu cũ không đúng');
+    }
+
+    const newHash = await bcrypt.hash(newPassword, this.BCRYPT_ROUNDS);
+    await this.prisma.client.user.update({
+      where: { id: user.id },
+      data: { passwordHash: newHash },
+    });
   }
 
   /**
@@ -184,7 +215,7 @@ export class AuthService {
     try {
       // Verify and decode JWT token
       const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string; iat: number; exp: number };
-      
+
       // Find user
       const user = await this.prisma.client.user.findUnique({
         where: { id: payload.userId },
@@ -208,6 +239,59 @@ export class AuthService {
       }
       throw new Error('Token không hợp lệ hoặc đã hết hạn');
     }
+  }
+
+  /**
+   * Update profile fields: firstName, lastName, phone
+   */
+  async updateProfile(
+    token: string,
+    data: { firstName?: string; lastName?: string; email?: string; phone?: string | null }
+  ): Promise<User> {
+    // Verify token
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    const updates: any = {};
+    if (typeof data.firstName === 'string') {
+      const v = data.firstName.trim();
+      if (!v) throw new Error('Họ không được để trống');
+      updates.firstName = v;
+    }
+    if (typeof data.lastName === 'string') {
+      const v = data.lastName.trim();
+      if (!v) throw new Error('Tên không được để trống');
+      updates.lastName = v;
+    }
+    if (typeof data.email === 'string') {
+      const v = data.email.trim().toLowerCase();
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(v)) throw new Error('Email không hợp lệ');
+      updates.email = v;
+    }
+    if (typeof data.phone !== 'undefined') {
+      const v = (data.phone || '').trim();
+      if (v && !/^\d{9,11}$/.test(v)) throw new Error('Số điện thoại không hợp lệ');
+      updates.phone = v || null;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      throw new Error('Không có dữ liệu để cập nhật');
+    }
+
+    // Ensure email unique if changed
+    if (updates.email) {
+      const exists = await this.prisma.client.user.findFirst({
+        where: { email: updates.email, NOT: { id: payload.userId } },
+      });
+      if (exists) throw new Error('Email đã được sử dụng');
+    }
+
+    const user = await this.prisma.client.user.update({
+      where: { id: payload.userId },
+      data: updates,
+    });
+
+    return this.mapUserToAuthUser(user as any);
   }
 
   /**
@@ -288,7 +372,7 @@ export class AuthService {
     try {
       // Decode token to get user ID
       const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
-      
+
       // Revoke all refresh tokens for this user
       await this.prisma.client.refreshToken.updateMany({
         where: {
@@ -303,6 +387,51 @@ export class AuthService {
     } catch (error) {
       // If token is invalid, we don't need to do anything
       // The token will expire naturally
+    }
+  }
+
+  /**
+   * Delete user account
+   */
+  async deleteAccount(token: string): Promise<void> {
+    try {
+      // Decode token to get user ID
+      const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+      // Check if user exists
+      const user = await this.prisma.client.user.findUnique({
+        where: { id: payload.userId },
+      });
+
+      if (!user) {
+        throw new Error('Người dùng không tồn tại');
+      }
+
+      // Soft delete the user by setting deletedAt timestamp
+      await this.prisma.client.user.update({
+        where: { id: payload.userId },
+        data: {
+          deletedAt: new Date(),
+          isActive: false,
+        },
+      });
+
+      // Revoke all refresh tokens for this user
+      await this.prisma.client.refreshToken.updateMany({
+        where: {
+          userId: payload.userId,
+          isRevoked: false,
+        },
+        data: {
+          isRevoked: true,
+          revokedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Xóa tài khoản thất bại');
     }
   }
 
