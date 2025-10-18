@@ -6,9 +6,11 @@ export type User = {
   firstName: string;
   lastName: string;
   phone: string | null;
+  avatar: string | null;
   isVerified: boolean;
   isActive: boolean;
   role: UserRole;
+  kycStatus: KycStatus;
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt: Date | null;
@@ -16,6 +18,12 @@ export type User = {
 };
 
 export type UserRole = 'USER' | 'ADMIN' | 'MODERATOR';
+
+export type KycStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export type KycDocumentType = 'ID_CARD' | 'DRIVER_LICENSE' | 'PASSPORT';
+
+export type PaymentMethodType = 'CREDIT_CARD' | 'DEBIT_CARD' | 'E_WALLET' | 'BANK_TRANSFER';
 
 export type VerificationToken = {
   id: string;
@@ -28,6 +36,51 @@ export type VerificationToken = {
 };
 
 export type TokenType = 'EMAIL_VERIFICATION' | 'PASSWORD_RESET' | 'PHONE_VERIFICATION';
+
+// KYC Document types
+export type KycDocument = {
+  id: string;
+  userId: string;
+  type: KycDocumentType;
+  frontImage: string;
+  backImage: string | null;
+  status: KycStatus;
+  rejectedReason: string | null;
+  reviewedBy: string | null;
+  reviewedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// User Address types
+export type UserAddress = {
+  id: string;
+  userId: string;
+  title: string;
+  fullAddress: string;
+  latitude: number | null;
+  longitude: number | null;
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+// Payment Method types
+export type PaymentMethod = {
+  id: string;
+  userId: string;
+  type: PaymentMethodType;
+  provider: string;
+  providerId: string;
+  last4: string | null;
+  brand: string | null;
+  expiryMonth: number | null;
+  expiryYear: number | null;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export type RefreshToken = {
   id: string;
@@ -93,4 +146,50 @@ export interface RefreshTokenDto {
 export interface RefreshTokenResponse {
   accessToken: string;
   refreshToken: string;
+}
+
+// KYC DTOs
+export interface UploadKycDocumentDto {
+  type: KycDocumentType;
+  frontImage: string; // Base64 or file URL
+  backImage?: string; // Base64 or file URL (optional)
+}
+
+export interface ReviewKycDocumentDto {
+  status: KycStatus;
+  rejectedReason?: string;
+}
+
+// Address DTOs
+export interface CreateAddressDto {
+  title: string;
+  fullAddress: string;
+  latitude?: number;
+  longitude?: number;
+  isDefault?: boolean;
+}
+
+export interface UpdateAddressDto {
+  title?: string;
+  fullAddress?: string;
+  latitude?: number;
+  longitude?: number;
+  isDefault?: boolean;
+}
+
+// Payment Method DTOs
+export interface CreatePaymentMethodDto {
+  type: PaymentMethodType;
+  provider: string;
+  providerId: string;
+  last4?: string;
+  brand?: string;
+  expiryMonth?: number;
+  expiryYear?: number;
+  isDefault?: boolean;
+}
+
+export interface UpdatePaymentMethodDto {
+  isDefault?: boolean;
+  isActive?: boolean;
 }

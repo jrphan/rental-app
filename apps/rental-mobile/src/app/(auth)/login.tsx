@@ -9,6 +9,7 @@ import {
   ScrollView,
   Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useLogin } from "@/queries/auth";
 import { Ionicons } from "@expo/vector-icons";
@@ -57,145 +58,147 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Header with orange background */}
-        <View style={styles.headerGradient}>
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoCircle}>
-                <Ionicons name="bicycle" size={40} color="white" />
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header with orange background */}
+          <View style={styles.headerGradient}>
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <View style={styles.logoCircle}>
+                  <Ionicons name="bicycle" size={40} color="white" />
+                </View>
+                <Text style={styles.appName}>MoRent</Text>
               </View>
-              <Text style={styles.appName}>MoRent</Text>
+              <Text style={styles.welcomeText}>Chào mừng trở lại!</Text>
             </View>
-            <Text style={styles.welcomeText}>Chào mừng trở lại!</Text>
-          </View>
-        </View>
-
-        {/* Form Card */}
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Đăng nhập</Text>
-
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color={COLORS.primary}
-                style={styles.inputIcon}
-              />
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={styles.input}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Nhập email của bạn"
-                    placeholderTextColor="#9ca3af"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                )}
-              />
-            </View>
-            {errors.email?.message ? (
-              <Text style={styles.errorText}>
-                {String(errors.email.message)}
-              </Text>
-            ) : null}
           </View>
 
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={COLORS.primary}
-                style={styles.inputIcon}
-              />
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={styles.input}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Nhập mật khẩu"
-                    placeholderTextColor="#9ca3af"
-                    secureTextEntry={!isPasswordVisible}
-                    autoCapitalize="none"
-                  />
-                )}
-              />
-              <TouchableOpacity
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-                style={styles.eyeButton}
-              >
+          {/* Form Card */}
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Đăng nhập</Text>
+
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
                 <Ionicons
-                  name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
+                  name="mail-outline"
                   size={20}
-                  color="#6b7280"
+                  color={COLORS.primary}
+                  style={styles.inputIcon}
                 />
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Nhập email của bạn"
+                      placeholderTextColor="#9ca3af"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  )}
+                />
+              </View>
+              {errors.email?.message ? (
+                <Text style={styles.errorText}>
+                  {String(errors.email.message)}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={COLORS.primary}
+                  style={styles.inputIcon}
+                />
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Nhập mật khẩu"
+                      placeholderTextColor="#9ca3af"
+                      secureTextEntry={!isPasswordVisible}
+                      autoCapitalize="none"
+                    />
+                  )}
+                />
+                <TouchableOpacity
+                  onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons
+                    name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
+                    size={20}
+                    color="#6b7280"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.password?.message ? (
+                <Text style={styles.errorText}>
+                  {String(errors.password.message)}
+                </Text>
+              ) : null}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                loginMutation.isPending && styles.disabledButton,
+              ]}
+              onPress={handleSubmit(onSubmit)}
+              disabled={loginMutation.isPending}
+            >
+              <Text style={styles.loginButtonText}>
+                {loginMutation.isPending ? "Đang đăng nhập..." : "Đăng nhập"}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>hoặc</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.socialButtons}>
+              <TouchableOpacity style={styles.socialButton}>
+                <Ionicons name="logo-google" size={24} color="#db4437" />
+                <Text style={styles.socialButtonText}>Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <Ionicons name="logo-facebook" size={24} color="#4267B2" />
+                <Text style={styles.socialButtonText}>Facebook</Text>
               </TouchableOpacity>
             </View>
-            {errors.password?.message ? (
-              <Text style={styles.errorText}>
-                {String(errors.password.message)}
-              </Text>
-            ) : null}
-          </View>
 
-          <TouchableOpacity
-            style={[
-              styles.loginButton,
-              loginMutation.isPending && styles.disabledButton,
-            ]}
-            onPress={handleSubmit(onSubmit)}
-            disabled={loginMutation.isPending}
-          >
-            <Text style={styles.loginButtonText}>
-              {loginMutation.isPending ? "Đang đăng nhập..." : "Đăng nhập"}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>hoặc</Text>
-            <View style={styles.dividerLine} />
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Chưa có tài khoản? </Text>
+              <TouchableOpacity onPress={navigateToRegister}>
+                <Text style={styles.linkText}>Đăng ký ngay</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          <View style={styles.socialButtons}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Ionicons name="logo-google" size={24} color="#db4437" />
-              <Text style={styles.socialButtonText}>Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Ionicons name="logo-facebook" size={24} color="#4267B2" />
-              <Text style={styles.socialButtonText}>Facebook</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Chưa có tài khoản? </Text>
-            <TouchableOpacity onPress={navigateToRegister}>
-              <Text style={styles.linkText}>Đăng ký ngay</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -205,6 +208,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8fafc",
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,

@@ -8,7 +8,16 @@ import type {
   LoginResponse,
   RegisterDto,
   RegisterResponse,
-  RefreshTokenResponse
+  RefreshTokenResponse,
+  KycDocument,
+  UserAddress,
+  PaymentMethod,
+  UploadKycDocumentDto,
+  ReviewKycDocumentDto,
+  CreateAddressDto,
+  UpdateAddressDto,
+  CreatePaymentMethodDto,
+  UpdatePaymentMethodDto
 } from '@rental-app/shared-types';
 
 @Injectable()
@@ -390,50 +399,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Delete user account
-   */
-  async deleteAccount(token: string): Promise<void> {
-    try {
-      // Decode token to get user ID
-      const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
-
-      // Check if user exists
-      const user = await this.prisma.client.user.findUnique({
-        where: { id: payload.userId },
-      });
-
-      if (!user) {
-        throw new Error('Người dùng không tồn tại');
-      }
-
-      // Soft delete the user by setting deletedAt timestamp
-      await this.prisma.client.user.update({
-        where: { id: payload.userId },
-        data: {
-          deletedAt: new Date(),
-          isActive: false,
-        },
-      });
-
-      // Revoke all refresh tokens for this user
-      await this.prisma.client.refreshToken.updateMany({
-        where: {
-          userId: payload.userId,
-          isRevoked: false,
-        },
-        data: {
-          isRevoked: true,
-          revokedAt: new Date(),
-        },
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Xóa tài khoản thất bại');
-    }
-  }
 
   /**
    * Generate JWT access token
@@ -456,7 +421,7 @@ export class AuthService {
   /**
    * Map Prisma User to AuthUser interface
    */
-  private mapUserToAuthUser(user: User): User {
+  private mapUserToAuthUser(user: any): User {
     return {
       id: user.id,
       email: user.email,
@@ -464,14 +429,304 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone,
+      avatar: user.avatar,
       isVerified: user.isVerified,
       isActive: user.isActive,
       role: user.role,
+      kycStatus: user.kycStatus,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       lastLoginAt: user.lastLoginAt,
       deletedAt: user.deletedAt,
     };
+  }
+
+  /**
+   * Upload KYC document
+   */
+  async uploadKycDocument(token: string, data: UploadKycDocumentDto): Promise<KycDocument> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    // Check if document type already exists for this user
+    const existingDoc = await this.prisma.client.kycDocument.findFirst({
+      where: {
+        userId: payload.userId,
+        type: data.type,
+      },
+    });
+
+    if (existingDoc && existingDoc.status === 'PENDING') {
+      throw new Error('Tài liệu này đang chờ duyệt');
+    }
+
+    const kycDocument = await this.prisma.client.kycDocument.create({
+      data: {
+        userId: payload.userId,
+        type: data.type,
+        frontImage: data.frontImage,
+        backImage: data.backImage || null,
+        status: 'PENDING',
+      },
+    });
+
+    return kycDocument as KycDocument;
+  }
+
+  /**
+   * Get user's KYC documents
+   */
+  async getKycDocuments(token: string): Promise<KycDocument[]> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    const documents = await this.prisma.client.kycDocument.findMany({
+      where: { userId: payload.userId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return documents as KycDocument[];
+  }
+
+  /**
+   * Review KYC document (Admin only)
+   */
+  async reviewKycDocument(adminToken: string, documentId: string, data: ReviewKycDocumentDto): Promise<KycDocument> {
+    const payload = jwt.verify(adminToken, this.JWT_SECRET) as { userId: string };
+
+    // Check if user is admin
+    const admin = await this.prisma.client.user.findUnique({
+      where: { id: payload.userId },
+    });
+
+    if (!admin || admin.role !== 'ADMIN') {
+      throw new Error('Không có quyền thực hiện hành động này');
+    }
+
+    const document = await this.prisma.client.kycDocument.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new Error('Tài liệu không tồn tại');
+    }
+
+    const updatedDocument = await this.prisma.client.kycDocument.update({
+      where: { id: documentId },
+      data: {
+        status: data.status,
+        rejectedReason: data.rejectedReason || null,
+        reviewedBy: payload.userId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    // If approved, update user's KYC status
+    if (data.status === 'APPROVED') {
+      await this.prisma.client.user.update({
+        where: { id: document.userId },
+        data: { kycStatus: 'APPROVED' },
+      });
+    }
+
+    return updatedDocument as KycDocument;
+  }
+
+  /**
+   * Create user address
+   */
+  async createAddress(token: string, data: CreateAddressDto): Promise<UserAddress> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    // If this is set as default, unset other default addresses
+    if (data.isDefault) {
+      await this.prisma.client.userAddress.updateMany({
+        where: { userId: payload.userId },
+        data: { isDefault: false },
+      });
+    }
+
+    const address = await this.prisma.client.userAddress.create({
+      data: {
+        userId: payload.userId,
+        title: data.title,
+        fullAddress: data.fullAddress,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        isDefault: data.isDefault || false,
+      },
+    });
+
+    return address as UserAddress;
+  }
+
+  /**
+   * Get user addresses
+   */
+  async getUserAddresses(token: string): Promise<UserAddress[]> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    const addresses = await this.prisma.client.userAddress.findMany({
+      where: { userId: payload.userId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    return addresses as UserAddress[];
+  }
+
+  /**
+   * Update user address
+   */
+  async updateAddress(token: string, addressId: string, data: UpdateAddressDto): Promise<UserAddress> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    // Check if address belongs to user
+    const address = await this.prisma.client.userAddress.findFirst({
+      where: { id: addressId, userId: payload.userId },
+    });
+
+    if (!address) {
+      throw new Error('Địa chỉ không tồn tại');
+    }
+
+    // If setting as default, unset other default addresses
+    if (data.isDefault) {
+      await this.prisma.client.userAddress.updateMany({
+        where: { userId: payload.userId },
+        data: { isDefault: false },
+      });
+    }
+
+    const updatedAddress = await this.prisma.client.userAddress.update({
+      where: { id: addressId },
+      data: {
+        title: data.title || address.title,
+        fullAddress: data.fullAddress || address.fullAddress,
+        latitude: data.latitude !== undefined ? data.latitude : address.latitude,
+        longitude: data.longitude !== undefined ? data.longitude : address.longitude,
+        isDefault: data.isDefault !== undefined ? data.isDefault : address.isDefault,
+      },
+    });
+
+    return updatedAddress as UserAddress;
+  }
+
+  /**
+   * Delete user address
+   */
+  async deleteAddress(token: string, addressId: string): Promise<void> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    // Check if address belongs to user
+    const address = await this.prisma.client.userAddress.findFirst({
+      where: { id: addressId, userId: payload.userId },
+    });
+
+    if (!address) {
+      throw new Error('Địa chỉ không tồn tại');
+    }
+
+    await this.prisma.client.userAddress.delete({
+      where: { id: addressId },
+    });
+  }
+
+  /**
+   * Create payment method
+   */
+  async createPaymentMethod(token: string, data: CreatePaymentMethodDto): Promise<PaymentMethod> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    // If this is set as default, unset other default payment methods
+    if (data.isDefault) {
+      await this.prisma.client.paymentMethod.updateMany({
+        where: { userId: payload.userId },
+        data: { isDefault: false },
+      });
+    }
+
+    const paymentMethod = await this.prisma.client.paymentMethod.create({
+      data: {
+        userId: payload.userId,
+        type: data.type,
+        provider: data.provider,
+        providerId: data.providerId,
+        last4: data.last4 || null,
+        brand: data.brand || null,
+        expiryMonth: data.expiryMonth || null,
+        expiryYear: data.expiryYear || null,
+        isDefault: data.isDefault || false,
+      },
+    });
+
+    return paymentMethod as PaymentMethod;
+  }
+
+  /**
+   * Get user payment methods
+   */
+  async getPaymentMethods(token: string): Promise<PaymentMethod[]> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    const paymentMethods = await this.prisma.client.paymentMethod.findMany({
+      where: { userId: payload.userId, isActive: true },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    return paymentMethods as PaymentMethod[];
+  }
+
+  /**
+   * Update payment method
+   */
+  async updatePaymentMethod(token: string, paymentMethodId: string, data: UpdatePaymentMethodDto): Promise<PaymentMethod> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    // Check if payment method belongs to user
+    const paymentMethod = await this.prisma.client.paymentMethod.findFirst({
+      where: { id: paymentMethodId, userId: payload.userId },
+    });
+
+    if (!paymentMethod) {
+      throw new Error('Phương thức thanh toán không tồn tại');
+    }
+
+    // If setting as default, unset other default payment methods
+    if (data.isDefault) {
+      await this.prisma.client.paymentMethod.updateMany({
+        where: { userId: payload.userId },
+        data: { isDefault: false },
+      });
+    }
+
+    const updatedPaymentMethod = await this.prisma.client.paymentMethod.update({
+      where: { id: paymentMethodId },
+      data: {
+        isDefault: data.isDefault !== undefined ? data.isDefault : paymentMethod.isDefault,
+        isActive: data.isActive !== undefined ? data.isActive : paymentMethod.isActive,
+      },
+    });
+
+    return updatedPaymentMethod as PaymentMethod;
+  }
+
+  /**
+   * Delete payment method
+   */
+  async deletePaymentMethod(token: string, paymentMethodId: string): Promise<void> {
+    const payload = jwt.verify(token, this.JWT_SECRET) as { userId: string };
+
+    // Check if payment method belongs to user
+    const paymentMethod = await this.prisma.client.paymentMethod.findFirst({
+      where: { id: paymentMethodId, userId: payload.userId },
+    });
+
+    if (!paymentMethod) {
+      throw new Error('Phương thức thanh toán không tồn tại');
+    }
+
+    await this.prisma.client.paymentMethod.update({
+      where: { id: paymentMethodId },
+      data: { isActive: false },
+    });
   }
 
   /**

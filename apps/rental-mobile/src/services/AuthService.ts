@@ -4,7 +4,16 @@ import {
   RegisterResponse,
   RefreshTokenDto,
   RefreshTokenResponse,
-  User
+  User,
+  KycDocument,
+  UserAddress,
+  PaymentMethod,
+  UploadKycDocumentDto,
+  ReviewKycDocumentDto,
+  CreateAddressDto,
+  UpdateAddressDto,
+  CreatePaymentMethodDto,
+  UpdatePaymentMethodDto
 } from '@rental-app/shared-types';
 import { BaseApiService, ApiResponse } from './BaseApiService';
 
@@ -64,9 +73,89 @@ export class AuthService extends BaseApiService {
     });
   }
 
-  async deleteAccount(): Promise<ApiResponse<null>> {
+
+  // KYC endpoints
+  async uploadKycDocument(data: UploadKycDocumentDto): Promise<ApiResponse<KycDocument>> {
+    return this.request<KycDocument>({
+      url: '/auth/kyc/upload',
+      method: 'POST',
+      data,
+    });
+  }
+
+  async getKycDocuments(): Promise<ApiResponse<KycDocument[]>> {
+    return this.request<KycDocument[]>({
+      url: '/auth/kyc/documents',
+      method: 'GET',
+    });
+  }
+
+  async reviewKycDocument(documentId: string, data: ReviewKycDocumentDto): Promise<ApiResponse<KycDocument>> {
+    return this.request<KycDocument>({
+      url: `/auth/kyc/review/${documentId}`,
+      method: 'PUT',
+      data,
+    });
+  }
+
+  // Address endpoints
+  async createAddress(data: CreateAddressDto): Promise<ApiResponse<UserAddress>> {
+    return this.request<UserAddress>({
+      url: '/auth/addresses',
+      method: 'POST',
+      data,
+    });
+  }
+
+  async getUserAddresses(): Promise<ApiResponse<UserAddress[]>> {
+    return this.request<UserAddress[]>({
+      url: '/auth/addresses',
+      method: 'GET',
+    });
+  }
+
+  async updateAddress(addressId: string, data: UpdateAddressDto): Promise<ApiResponse<UserAddress>> {
+    return this.request<UserAddress>({
+      url: `/auth/addresses/${addressId}`,
+      method: 'PUT',
+      data,
+    });
+  }
+
+  async deleteAddress(addressId: string): Promise<ApiResponse<null>> {
     return this.request<null>({
-      url: '/auth/delete_account',
+      url: `/auth/addresses/${addressId}`,
+      method: 'DELETE',
+    });
+  }
+
+  // Payment method endpoints
+  async createPaymentMethod(data: CreatePaymentMethodDto): Promise<ApiResponse<PaymentMethod>> {
+    return this.request<PaymentMethod>({
+      url: '/auth/payment-methods',
+      method: 'POST',
+      data,
+    });
+  }
+
+  async getPaymentMethods(): Promise<ApiResponse<PaymentMethod[]>> {
+    return this.request<PaymentMethod[]>({
+      url: '/auth/payment-methods',
+      method: 'GET',
+    });
+  }
+
+  async updatePaymentMethod(paymentMethodId: string, data: UpdatePaymentMethodDto): Promise<ApiResponse<PaymentMethod>> {
+    return this.request<PaymentMethod>({
+      url: `/auth/payment-methods/${paymentMethodId}`,
+      method: 'PUT',
+      data,
+    });
+  }
+
+  async deletePaymentMethod(paymentMethodId: string): Promise<ApiResponse<null>> {
+    return this.request<null>({
+      url: `/auth/payment-methods/${paymentMethodId}`,
       method: 'DELETE',
     });
   }

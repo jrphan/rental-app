@@ -11,7 +11,7 @@ import { COLORS } from "@/constants/colors";
 
 export default function HomeScreen() {
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView showsVerticalScrollIndicator={false}>
       {/* Header with Mid-Autumn Festival theme */}
       <View style={styles.header}>
         <View style={styles.headerContent}>

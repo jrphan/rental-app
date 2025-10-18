@@ -17,9 +17,11 @@ model User {
   firstName    String    @map("first_name")
   lastName     String    @map("last_name")
   phone        String?
+  avatar       String? // URL to avatar image
   isVerified   Boolean   @default(false) @map("is_verified")
   isActive     Boolean   @default(true) @map("is_active")
   role         UserRole  @default(USER)
+  kycStatus    KycStatus @default(PENDING) @map("kyc_status")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
   lastLoginAt  DateTime? @map("last_login_at")
@@ -30,6 +32,9 @@ model User {
   refreshTokens      RefreshToken[]
   sessions           UserSession[]
   auditLogs          AuthAuditLog[]
+  kycDocuments       KycDocument[]
+  addresses          UserAddress[]
+  paymentMethods     PaymentMethod[]
 
   @@map("users")
 }
@@ -98,6 +103,66 @@ model AuthAuditLog {
   @@map("auth_audit_log")
 }
 
+// KYC Document model
+model KycDocument {
+  id             String          @id @default(cuid())
+  userId         String          @map("user_id")
+  type           KycDocumentType
+  frontImage     String          @map("front_image") // URL to front image
+  backImage      String?         @map("back_image") // URL to back image (optional)
+  status         KycStatus       @default(PENDING)
+  rejectedReason String?         @map("rejected_reason")
+  reviewedBy     String?         @map("reviewed_by") // Admin user ID
+  reviewedAt     DateTime?       @map("reviewed_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("kyc_documents")
+}
+
+// User Address model
+model UserAddress {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  title       String // e.g., "Nhà", "Công ty", "Địa chỉ giao hàng"
+  fullAddress String   @map("full_address")
+  latitude    Float?
+  longitude   Float?
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_addresses")
+}
+
+// Payment Method model
+model PaymentMethod {
+  id          String            @id @default(cuid())
+  userId      String            @map("user_id")
+  type        PaymentMethodType
+  provider    String // e.g., "stripe", "momo", "zalopay"
+  providerId  String            @map("provider_id") // External provider ID
+  last4       String?           @map("last4") // Last 4 digits of card
+  brand       String? // Card brand (visa, mastercard, etc.)
+  expiryMonth Int?              @map("expiry_month")
+  expiryYear  Int?              @map("expiry_year")
+  isDefault   Boolean           @default(false) @map("is_default")
+  isActive    Boolean           @default(true) @map("is_active")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payment_methods")
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -108,4 +173,23 @@ enum TokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
   PHONE_VERIFICATION
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum KycDocumentType {
+  ID_CARD // CCCD/CMND
+  DRIVER_LICENSE // Bằng lái xe
+  PASSPORT // Hộ chiếu
+}
+
+enum PaymentMethodType {
+  CREDIT_CARD
+  DEBIT_CARD
+  E_WALLET
+  BANK_TRANSFER
 }

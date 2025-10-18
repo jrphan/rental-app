@@ -3,4 +3,4 @@ export * from './auth';
 export * from './vehicle';
 export * from './booking';
 export * from './review';
-export * from './payment';
+// export * from './payment';

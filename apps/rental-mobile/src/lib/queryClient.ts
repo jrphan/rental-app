@@ -42,6 +42,9 @@ export const queryKeys = {
   auth: {
     profile: ['auth', 'profile'] as const,
     health: ['auth', 'health'] as const,
+    kycDocuments: ['auth', 'kycDocuments'] as const,
+    addresses: ['auth', 'addresses'] as const,
+    paymentMethods: ['auth', 'paymentMethods'] as const,
   },
   
   // Vehicle related queries

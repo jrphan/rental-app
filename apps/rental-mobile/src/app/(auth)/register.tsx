@@ -9,6 +9,7 @@ import {
   ScrollView,
   Dimensions,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useRegister } from "@/queries/auth";
 import { Ionicons } from "@expo/vector-icons";
@@ -63,264 +64,268 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Header with orange background */}
-        <View style={styles.headerGradient}>
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoCircle}>
-                <Ionicons name="bicycle" size={40} color="white" />
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header with orange background */}
+          <View style={styles.headerGradient}>
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <View style={styles.logoCircle}>
+                  <Ionicons name="bicycle" size={40} color="white" />
+                </View>
+                <Text style={styles.appName}>MoRent</Text>
               </View>
-              <Text style={styles.appName}>MoRent</Text>
+              <Text style={styles.welcomeText}>Tạo tài khoản mới</Text>
             </View>
-            <Text style={styles.welcomeText}>Tạo tài khoản mới</Text>
           </View>
-        </View>
 
-        {/* Form Card */}
-        <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Đăng ký</Text>
+          {/* Form Card */}
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Đăng ký</Text>
 
-          <View style={styles.inputRow}>
-            <View style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}>
+            <View style={styles.inputRow}>
+              <View
+                style={[styles.inputContainer, { flex: 1, marginRight: 8 }]}
+              >
+                <View style={styles.inputWrapper}>
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={COLORS.primary}
+                    style={styles.inputIcon}
+                  />
+                  <Controller
+                    control={control}
+                    name="lastName"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={styles.input}
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="Họ"
+                        placeholderTextColor="#9ca3af"
+                        autoCapitalize="words"
+                      />
+                    )}
+                  />
+                </View>
+                {errors.lastName && (
+                  <Text style={styles.errorText}>
+                    {errors.lastName.message as string}
+                  </Text>
+                )}
+              </View>
+              <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+                <View style={styles.inputWrapper}>
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color={COLORS.primary}
+                    style={styles.inputIcon}
+                  />
+                  <Controller
+                    control={control}
+                    name="firstName"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        style={styles.input}
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        placeholder="Tên"
+                        placeholderTextColor="#9ca3af"
+                        autoCapitalize="words"
+                      />
+                    )}
+                  />
+                </View>
+                {errors.firstName && (
+                  <Text style={styles.errorText}>
+                    {errors.firstName.message as string}
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
                 <Ionicons
-                  name="person-outline"
+                  name="mail-outline"
                   size={20}
                   color={COLORS.primary}
                   style={styles.inputIcon}
                 />
                 <Controller
                   control={control}
-                  name="lastName"
+                  name="email"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       style={styles.input}
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
-                      placeholder="Họ"
+                      placeholder="Nhập email"
                       placeholderTextColor="#9ca3af"
-                      autoCapitalize="words"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
                     />
                   )}
                 />
               </View>
-              {errors.lastName && (
+              {errors.email && (
                 <Text style={styles.errorText}>
-                  {errors.lastName.message as string}
+                  {errors.email.message as string}
                 </Text>
               )}
             </View>
-            <View style={[styles.inputContainer, { flex: 1, marginLeft: 8 }]}>
+
+            <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
                 <Ionicons
-                  name="person-outline"
+                  name="call-outline"
                   size={20}
                   color={COLORS.primary}
                   style={styles.inputIcon}
                 />
                 <Controller
                   control={control}
-                  name="firstName"
+                  name="phone"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       style={styles.input}
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
-                      placeholder="Tên"
+                      placeholder="Nhập số điện thoại"
                       placeholderTextColor="#9ca3af"
-                      autoCapitalize="words"
+                      keyboardType="phone-pad"
                     />
                   )}
                 />
               </View>
-              {errors.firstName && (
+              {errors.phone && (
                 <Text style={styles.errorText}>
-                  {errors.firstName.message as string}
+                  {errors.phone.message as string}
                 </Text>
               )}
             </View>
-          </View>
 
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color={COLORS.primary}
-                style={styles.inputIcon}
-              />
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={styles.input}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Nhập email"
-                    placeholderTextColor="#9ca3af"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                )}
-              />
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={COLORS.primary}
+                  style={styles.inputIcon}
+                />
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
+                      placeholderTextColor="#9ca3af"
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                  )}
+                />
+              </View>
+              {errors.password && (
+                <Text style={styles.errorText}>
+                  {errors.password.message as string}
+                </Text>
+              )}
             </View>
-            {errors.email && (
-              <Text style={styles.errorText}>
-                {errors.email.message as string}
-              </Text>
-            )}
-          </View>
 
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="call-outline"
-                size={20}
-                color={COLORS.primary}
-                style={styles.inputIcon}
-              />
-              <Controller
-                control={control}
-                name="phone"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={styles.input}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Nhập số điện thoại"
-                    placeholderTextColor="#9ca3af"
-                    keyboardType="phone-pad"
-                  />
-                )}
-              />
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={COLORS.primary}
+                  style={styles.inputIcon}
+                />
+                <Controller
+                  control={control}
+                  name="confirmPassword"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      style={styles.input}
+                      value={value}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      placeholder="Nhập lại mật khẩu"
+                      placeholderTextColor="#9ca3af"
+                      secureTextEntry
+                      autoCapitalize="none"
+                    />
+                  )}
+                />
+              </View>
+              {errors.confirmPassword && (
+                <Text style={styles.errorText}>
+                  {errors.confirmPassword.message as string}
+                </Text>
+              )}
             </View>
-            {errors.phone && (
-              <Text style={styles.errorText}>
-                {errors.phone.message as string}
+
+            <TouchableOpacity
+              style={[
+                styles.registerButton,
+                (registerMutation.isPending || isSubmitting) &&
+                  styles.disabledButton,
+              ]}
+              onPress={handleSubmit(handleRegister)}
+              disabled={registerMutation.isPending || isSubmitting}
+            >
+              <Text style={styles.registerButtonText}>
+                {registerMutation.isPending || isSubmitting
+                  ? "Đang đăng ký..."
+                  : "Đăng ký"}
               </Text>
-            )}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={COLORS.primary}
-                style={styles.inputIcon}
-              />
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={styles.input}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
-                    placeholderTextColor="#9ca3af"
-                    secureTextEntry
-                    autoCapitalize="none"
-                  />
-                )}
-              />
-            </View>
-            {errors.password && (
-              <Text style={styles.errorText}>
-                {errors.password.message as string}
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={COLORS.primary}
-                style={styles.inputIcon}
-              />
-              <Controller
-                control={control}
-                name="confirmPassword"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    style={styles.input}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="Nhập lại mật khẩu"
-                    placeholderTextColor="#9ca3af"
-                    secureTextEntry
-                    autoCapitalize="none"
-                  />
-                )}
-              />
-            </View>
-            {errors.confirmPassword && (
-              <Text style={styles.errorText}>
-                {errors.confirmPassword.message as string}
-              </Text>
-            )}
-          </View>
-
-          <TouchableOpacity
-            style={[
-              styles.registerButton,
-              (registerMutation.isPending || isSubmitting) &&
-                styles.disabledButton,
-            ]}
-            onPress={handleSubmit(handleRegister)}
-            disabled={registerMutation.isPending || isSubmitting}
-          >
-            <Text style={styles.registerButtonText}>
-              {registerMutation.isPending || isSubmitting
-                ? "Đang đăng ký..."
-                : "Đăng ký"}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>hoặc</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.socialButtons}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Ionicons name="logo-google" size={24} color="#db4437" />
-              <Text style={styles.socialButtonText}>Google</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Ionicons name="logo-facebook" size={24} color="#4267B2" />
-              <Text style={styles.socialButtonText}>Facebook</Text>
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Đã có tài khoản? </Text>
-            <TouchableOpacity onPress={navigateToLogin}>
-              <Text style={styles.linkText}>Đăng nhập ngay</Text>
-            </TouchableOpacity>
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>hoặc</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.socialButtons}>
+              <TouchableOpacity style={styles.socialButton}>
+                <Ionicons name="logo-google" size={24} color="#db4437" />
+                <Text style={styles.socialButtonText}>Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <Ionicons name="logo-facebook" size={24} color="#4267B2" />
+                <Text style={styles.socialButtonText}>Facebook</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Đã có tài khoản? </Text>
+              <TouchableOpacity onPress={navigateToLogin}>
+                <Text style={styles.linkText}>Đăng nhập ngay</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -330,6 +335,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8fafc",
+  },
+  keyboardContainer: {
+    flex: 1,
   },
   scrollContainer: {
     flexGrow: 1,

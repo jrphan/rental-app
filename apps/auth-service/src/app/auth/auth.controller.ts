@@ -6,7 +6,16 @@ import type {
   RegisterResponse,
   RefreshTokenDto,
   RefreshTokenResponse,
-  User
+  User,
+  KycDocument,
+  UserAddress,
+  PaymentMethod,
+  UploadKycDocumentDto,
+  ReviewKycDocumentDto,
+  CreateAddressDto,
+  UpdateAddressDto,
+  CreatePaymentMethodDto,
+  UpdatePaymentMethodDto
 } from '@rental-app/shared-types';
 import type { Request } from 'express';
 import {
@@ -203,25 +212,321 @@ export class AuthController {
     }
   }
 
+
+  // ========== KYC ENDPOINTS ==========
+
   /**
-   * Delete account
+   * Upload KYC document
    */
-  @Delete('delete_account')
-  async deleteAccount(@Headers('authorization') authHeader: string, @Req() req: Request) {
+  @Post('kyc/upload')
+  async uploadKycDocument(
+    @Headers('authorization') authHeader: string,
+    @Body() body: UploadKycDocumentDto,
+    @Req() req: Request
+  ) {
     try {
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error('Invalid authorization header');
       }
 
       const token = authHeader.substring(7);
-      await this.authService.deleteAccount(token);
+      const document: KycDocument = await this.authService.uploadKycDocument(token, body);
 
-      return createSuccessResponse('Tài khoản đã được xóa thành công', null, req.path);
+      return createSuccessResponse('Tài liệu đã được tải lên thành công', document, req.path);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Delete account failed';
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
       const errorResponse = createErrorResponse(
-        errorMessage || 'Xóa tài khoản thất bại',
-        errorMessage || 'Xóa tài khoản thất bại',
+        errorMessage || 'Tải lên tài liệu thất bại',
+        errorMessage || 'Tải lên tài liệu thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Get user's KYC documents
+   */
+  @Get('kyc/documents')
+  async getKycDocuments(@Headers('authorization') authHeader: string, @Req() req: Request) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const documents: KycDocument[] = await this.authService.getKycDocuments(token);
+
+      return createSuccessResponse('Lấy danh sách tài liệu thành công', documents, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Get documents failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Lấy danh sách tài liệu thất bại',
+        errorMessage || 'Lấy danh sách tài liệu thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Review KYC document (Admin only)
+   */
+  @Put('kyc/review/:documentId')
+  async reviewKycDocument(
+    @Headers('authorization') authHeader: string,
+    @Body() body: ReviewKycDocumentDto,
+    @Req() req: Request
+  ) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const documentId = (req.params as any).documentId;
+      const document: KycDocument = await this.authService.reviewKycDocument(token, documentId, body);
+
+      return createSuccessResponse('Duyệt tài liệu thành công', document, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Review failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Duyệt tài liệu thất bại',
+        errorMessage || 'Duyệt tài liệu thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  // ========== ADDRESS ENDPOINTS ==========
+
+  /**
+   * Create user address
+   */
+  @Post('addresses')
+  async createAddress(
+    @Headers('authorization') authHeader: string,
+    @Body() body: CreateAddressDto,
+    @Req() req: Request
+  ) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const address: UserAddress = await this.authService.createAddress(token, body);
+
+      return createSuccessResponse('Tạo địa chỉ thành công', address, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Create address failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Tạo địa chỉ thất bại',
+        errorMessage || 'Tạo địa chỉ thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Get user addresses
+   */
+  @Get('addresses')
+  async getUserAddresses(@Headers('authorization') authHeader: string, @Req() req: Request) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const addresses: UserAddress[] = await this.authService.getUserAddresses(token);
+
+      return createSuccessResponse('Lấy danh sách địa chỉ thành công', addresses, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Get addresses failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Lấy danh sách địa chỉ thất bại',
+        errorMessage || 'Lấy danh sách địa chỉ thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Update user address
+   */
+  @Put('addresses/:addressId')
+  async updateAddress(
+    @Headers('authorization') authHeader: string,
+    @Body() body: UpdateAddressDto,
+    @Req() req: Request
+  ) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const addressId = (req.params as any).addressId;
+      const address: UserAddress = await this.authService.updateAddress(token, addressId, body);
+
+      return createSuccessResponse('Cập nhật địa chỉ thành công', address, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Update address failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Cập nhật địa chỉ thất bại',
+        errorMessage || 'Cập nhật địa chỉ thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Delete user address
+   */
+  @Delete('addresses/:addressId')
+  async deleteAddress(@Headers('authorization') authHeader: string, @Req() req: Request) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const addressId = (req.params as any).addressId;
+      await this.authService.deleteAddress(token, addressId);
+
+      return createSuccessResponse('Xóa địa chỉ thành công', null, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Delete address failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Xóa địa chỉ thất bại',
+        errorMessage || 'Xóa địa chỉ thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  // ========== PAYMENT METHOD ENDPOINTS ==========
+
+  /**
+   * Create payment method
+   */
+  @Post('payment-methods')
+  async createPaymentMethod(
+    @Headers('authorization') authHeader: string,
+    @Body() body: CreatePaymentMethodDto,
+    @Req() req: Request
+  ) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const paymentMethod: PaymentMethod = await this.authService.createPaymentMethod(token, body);
+
+      return createSuccessResponse('Tạo phương thức thanh toán thành công', paymentMethod, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Create payment method failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Tạo phương thức thanh toán thất bại',
+        errorMessage || 'Tạo phương thức thanh toán thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Get user payment methods
+   */
+  @Get('payment-methods')
+  async getPaymentMethods(@Headers('authorization') authHeader: string, @Req() req: Request) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const paymentMethods: PaymentMethod[] = await this.authService.getPaymentMethods(token);
+
+      return createSuccessResponse('Lấy danh sách phương thức thanh toán thành công', paymentMethods, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Get payment methods failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Lấy danh sách phương thức thanh toán thất bại',
+        errorMessage || 'Lấy danh sách phương thức thanh toán thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Update payment method
+   */
+  @Put('payment-methods/:paymentMethodId')
+  async updatePaymentMethod(
+    @Headers('authorization') authHeader: string,
+    @Body() body: UpdatePaymentMethodDto,
+    @Req() req: Request
+  ) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const paymentMethodId = (req.params as any).paymentMethodId;
+      const paymentMethod: PaymentMethod = await this.authService.updatePaymentMethod(token, paymentMethodId, body);
+
+      return createSuccessResponse('Cập nhật phương thức thanh toán thành công', paymentMethod, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Update payment method failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Cập nhật phương thức thanh toán thất bại',
+        errorMessage || 'Cập nhật phương thức thanh toán thất bại',
+        HTTP_STATUS.BAD_REQUEST,
+        req.path
+      );
+      throw new HttpException(errorResponse, HTTP_STATUS.BAD_REQUEST);
+    }
+  }
+
+  /**
+   * Delete payment method
+   */
+  @Delete('payment-methods/:paymentMethodId')
+  async deletePaymentMethod(@Headers('authorization') authHeader: string, @Req() req: Request) {
+    try {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Invalid authorization header');
+      }
+
+      const token = authHeader.substring(7);
+      const paymentMethodId = (req.params as any).paymentMethodId;
+      await this.authService.deletePaymentMethod(token, paymentMethodId);
+
+      return createSuccessResponse('Xóa phương thức thanh toán thành công', null, req.path);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Delete payment method failed';
+      const errorResponse = createErrorResponse(
+        errorMessage || 'Xóa phương thức thanh toán thất bại',
+        errorMessage || 'Xóa phương thức thanh toán thất bại',
         HTTP_STATUS.BAD_REQUEST,
         req.path
       );
