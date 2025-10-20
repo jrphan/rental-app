@@ -16,7 +16,7 @@ const servicesWithPrisma = [
   "vehicle-service",
 ];
 
-console.log("🚀 Starting Prisma Generate and DB Push for all services...\n");
+console.log("🚀 Starting Prisma DB Push for all services...\n");
 
 let successCount = 0;
 let errorCount = 0;
@@ -42,19 +42,8 @@ for (const service of servicesWithPrisma) {
   }
 
   try {
-    console.log(`🔄 Generating Prisma client for ${service}...`);
-
-    // Change to service directory and run prisma generate
-    execSync("npx prisma generate", {
-      cwd: servicePath,
-      stdio: "inherit",
-    });
-
-    console.log(`✅ ${service}: Prisma client generated successfully`);
-
-    // Now run prisma db push
     console.log(`🔄 Pushing database schema for ${service}...`);
-    
+
     execSync("npx prisma db push", {
       cwd: servicePath,
       stdio: "inherit",
@@ -64,7 +53,7 @@ for (const service of servicesWithPrisma) {
     successCount++;
     results.push({ service, status: "success" });
   } catch (error) {
-    console.log(`❌ ${service}: Failed to generate Prisma client or push schema`);
+    console.log(`❌ ${service}: Failed to push database schema`);
     console.log(`   Error: ${error.message}\n`);
     errorCount++;
     results.push({ service, status: "error", error: error.message });
@@ -91,9 +80,9 @@ if (results.length > 0) {
 
 // Exit with error code if any failed
 if (errorCount > 0) {
-  console.log("\n❌ Some services failed to generate Prisma clients or push schema");
+  console.log("\n❌ Some services failed to push database schema");
   process.exit(1);
 } else {
-  console.log("\n🎉 All Prisma clients generated and database schemas pushed successfully!");
+  console.log("\n🎉 All database schemas pushed successfully!");
   process.exit(0);
 }

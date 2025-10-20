@@ -10,9 +10,6 @@
       "path": "./apps/auth-service"
     },
     {
-      "path": "./apps/vehicle-service-e2e"
-    },
-    {
       "path": "./apps/vehicle-service"
     },
     {

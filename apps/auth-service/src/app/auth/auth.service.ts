@@ -41,6 +41,9 @@ export class AuthService {
         where: { email: email.toLowerCase() },
       });
 
+    console.log(user, 'loginDto')
+
+
       if (!user) {
         await this.logAuthEvent(null, 'LOGIN_ATTEMPT', false, 'User not found', ipAddress, userAgent);
         throw new Error('Email không tồn tại');

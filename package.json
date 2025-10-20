@@ -25,7 +25,15 @@
     "dev:services": "nx run-many --target=serve --projects=auth-service,vehicle-service,booking-service,payment-service,notification-service,location-service,review-service,file-upload-service --parallel",
     "build:all": "nx run-many --target=build --all",
     "test:all": "nx run-many --target=test --all",
-    "generate": "node scripts/generate-prisma.js"
+    "prisma:generate": "node scripts/generate-prisma.js",
+    "prisma:push": "node scripts/push-db.js",
+    "prisma:reset": "node scripts/reset-db.js",
+    "prisma:seed": "node scripts/seed-db.js",
+    "prisma:setup": "npm run prisma:generate && npm run prisma:push",
+    "prisma:full-setup": "npm run prisma:generate && npm run prisma:push && npm run prisma:seed",
+    "db:reset": "npm run prisma:reset",
+    "db:sync": "npm run prisma:push",
+    "db:seed": "npm run prisma:seed"
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",

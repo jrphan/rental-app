@@ -1,0 +1,71 @@
+// File Upload Service Prisma Schema
+generator client {
+    provider      = "prisma-client-js"
+    output        = "../../../node_modules/.prisma/file-client"
+    binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model FileUpload {
+    id           String       @id @default(cuid())
+    userId       String       @map("user_id")
+    fileName     String       @map("file_name")
+    originalName String       @map("original_name")
+    mimeType     String       @map("mime_type")
+    fileSize     Int          @map("file_size")
+    filePath     String       @map("file_path")
+    fileUrl      String       @map("file_url")
+    category     FileCategory @default(GENERAL)
+    status       FileStatus   @default(UPLOADED)
+    metadata     Json?
+    createdAt    DateTime     @default(now()) @map("created_at")
+    updatedAt    DateTime     @updatedAt @map("updated_at")
+    deletedAt    DateTime?    @map("deleted_at")
+
+    @@map("file_uploads")
+}
+
+model FileAccessLog {
+    id        String     @id @default(cuid())
+    fileId    String     @map("file_id")
+    userId    String     @map("user_id")
+    action    FileAction
+    ipAddress String?    @map("ip_address")
+    userAgent String?    @map("user_agent")
+    createdAt DateTime   @default(now()) @map("created_at")
+
+    @@map("file_access_logs")
+}
+
+enum FileCategory {
+    GENERAL
+    AVATAR
+    VEHICLE_IMAGE
+    DOCUMENT
+    INSURANCE
+    REGISTRATION
+    KYC_DOCUMENT
+    REVIEW_IMAGE
+    OTHER
+}
+
+enum FileStatus {
+    UPLOADING
+    UPLOADED
+    PROCESSING
+    PROCESSED
+    FAILED
+    DELETED
+}
+
+enum FileAction {
+    UPLOAD
+    DOWNLOAD
+    VIEW
+    DELETE
+    SHARE
+}

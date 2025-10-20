@@ -4,6 +4,7 @@ import { PrismaService, PrismaServiceConfig } from './prisma.service';
 export interface PrismaModuleOptions {
   databaseUrl: string;
   logLevel?: ('query' | 'info' | 'warn' | 'error')[];
+  clientPath?: string; // Path to specific Prisma client
   isGlobal?: boolean;
 }
 
@@ -14,6 +15,7 @@ export class PrismaModule {
     const config: PrismaServiceConfig = {
       databaseUrl: options.databaseUrl,
       logLevel: options.logLevel,
+      clientPath: options.clientPath,
     };
 
     return {
@@ -43,6 +45,7 @@ export class PrismaModule {
             return new PrismaService({
               databaseUrl: config.databaseUrl,
               logLevel: config.logLevel,
+              clientPath: config.clientPath,
             });
           },
           inject: options.inject || [],

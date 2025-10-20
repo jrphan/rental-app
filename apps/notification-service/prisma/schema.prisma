@@ -1,0 +1,135 @@
+// Notification Service Prisma Schema
+generator client {
+    provider      = "prisma-client-js"
+    output        = "../../../node_modules/.prisma/notification-client"
+    binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Notification {
+    id          String               @id @default(cuid())
+    userId      String               @map("user_id")
+    title       String
+    message     String
+    type        NotificationType
+    priority    NotificationPriority @default(MEDIUM)
+    status      NotificationStatus   @default(PENDING)
+    channel     NotificationChannel
+    metadata    Json?
+    scheduledAt DateTime?            @map("scheduled_at")
+    sentAt      DateTime?            @map("sent_at")
+    readAt      DateTime?            @map("read_at")
+    createdAt   DateTime             @default(now()) @map("created_at")
+    updatedAt   DateTime             @updatedAt @map("updated_at")
+
+    // Relations
+    templates NotificationTemplate[]
+    logs      NotificationLog[]
+
+    @@map("notifications")
+}
+
+model NotificationTemplate {
+    id        String              @id @default(cuid())
+    name      String
+    type      NotificationType
+    channel   NotificationChannel
+    subject   String?
+    content   String
+    variables Json? // Template variables
+    isActive  Boolean             @default(true) @map("is_active")
+    createdAt DateTime            @default(now()) @map("created_at")
+    updatedAt DateTime            @updatedAt @map("updated_at")
+
+    // Relations
+    notifications Notification[]
+
+    @@map("notification_templates")
+}
+
+model NotificationLog {
+    id             String             @id @default(cuid())
+    notificationId String             @map("notification_id")
+    status         NotificationStatus
+    errorMessage   String?            @map("error_message")
+    responseData   Json?              @map("response_data")
+    createdAt      DateTime           @default(now()) @map("created_at")
+
+    // Relations
+    notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+    @@map("notification_logs")
+}
+
+model UserNotificationSettings {
+    id           String  @id @default(cuid())
+    userId       String  @unique @map("user_id")
+    emailEnabled Boolean @default(true) @map("email_enabled")
+    smsEnabled   Boolean @default(true) @map("sms_enabled")
+    pushEnabled  Boolean @default(true) @map("push_enabled")
+    inAppEnabled Boolean @default(true) @map("in_app_enabled")
+
+    // Email settings
+    emailBookingUpdates Boolean @default(true) @map("email_booking_updates")
+    emailPaymentUpdates Boolean @default(true) @map("email_payment_updates")
+    emailPromotions     Boolean @default(false) @map("email_promotions")
+
+    // SMS settings
+    smsBookingUpdates Boolean @default(true) @map("sms_booking_updates")
+    smsPaymentUpdates Boolean @default(true) @map("sms_payment_updates")
+    smsSecurityAlerts Boolean @default(true) @map("sms_security_alerts")
+
+    // Push settings
+    pushBookingUpdates Boolean @default(true) @map("push_booking_updates")
+    pushPaymentUpdates Boolean @default(true) @map("push_payment_updates")
+    pushPromotions     Boolean @default(false) @map("push_promotions")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("user_notification_settings")
+}
+
+enum NotificationType {
+    BOOKING_CONFIRMED
+    BOOKING_CANCELLED
+    BOOKING_REMINDER
+    PAYMENT_SUCCESS
+    PAYMENT_FAILED
+    PAYMENT_REFUNDED
+    VEHICLE_AVAILABLE
+    VEHICLE_UNAVAILABLE
+    REVIEW_REQUEST
+    REVIEW_RECEIVED
+    SECURITY_ALERT
+    PROMOTION
+    SYSTEM_UPDATE
+    OTHER
+}
+
+enum NotificationPriority {
+    LOW
+    MEDIUM
+    HIGH
+    URGENT
+}
+
+enum NotificationStatus {
+    PENDING
+    SENT
+    DELIVERED
+    FAILED
+    CANCELLED
+}
+
+enum NotificationChannel {
+    EMAIL
+    SMS
+    PUSH
+    IN_APP
+    WEBHOOK
+}

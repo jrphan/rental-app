@@ -3,6 +3,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 export interface PrismaServiceConfig {
   databaseUrl: string;
   logLevel?: ('query' | 'info' | 'warn' | 'error')[];
+  clientPath?: string; // Path to specific Prisma client
 }
 
 @Injectable()
@@ -17,7 +18,8 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     try {
       // Dynamic import to avoid bundling issues
-      const { PrismaClient } = await import('@prisma/client');
+      const clientPath = this.config.clientPath || '@prisma/client';
+      const { PrismaClient } = await import(clientPath);
       
       this.prisma = new PrismaClient({
         datasources: {
