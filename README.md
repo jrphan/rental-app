@@ -1,301 +1,118 @@
-# 🚗 Rental App Workspace
+# Rental App - Simple Backend
 
-Workspace phát triển ứng dụng cho thuê xe với kiến trúc microservices sử dụng Nx, React Native và NestJS.
+Ứng dụng thuê xe máy với backend NestJS đơn giản và PostgreSQL.
 
-## 📁 Cấu trúc Workspace
+## 🏗️ Kiến trúc
+
+- **Backend**: NestJS với Prisma ORM
+- **Database**: PostgreSQL
+- **Mobile**: React Native với Expo
+- **Authentication**: JWT tokens
+
+## 🚀 Cách chạy
+
+### 1. Khởi động Database
+
+```bash
+# Khởi động PostgreSQL
+docker-compose -f docker-compose.simple.yml up -d
+```
+
+### 2. Setup Backend
+
+```bash
+# Cài đặt dependencies
+pnpm install
+
+# Setup Prisma
+npm run db:setup
+
+# Chạy backend
+npm run backend
+```
+
+### 3. Chạy Mobile App
+
+```bash
+# Chạy mobile app
+npm run mobile
+
+# Chạy trên iOS
+npm run mobile:ios
+
+# Chạy trên Android
+npm run mobile:android
+
+# Chạy trên Web
+npm run mobile:web
+```
+
+## 📊 API Endpoints
+
+### Auth
+
+- `POST /api/auth/register` - Đăng ký
+- `POST /api/auth/login` - Đăng nhập
+- `GET /api/auth/profile` - Thông tin profile
+
+### Vehicles
+
+- `GET /api/vehicles` - Danh sách xe
+- `POST /api/vehicles` - Tạo xe mới
+- `GET /api/vehicles/:id` - Chi tiết xe
+- `PUT /api/vehicles/:id` - Cập nhật xe
+- `DELETE /api/vehicles/:id` - Xóa xe
+
+### Bookings
+
+- `GET /api/bookings` - Danh sách booking
+- `POST /api/bookings` - Tạo booking
+- `GET /api/bookings/:id` - Chi tiết booking
+- `PUT /api/bookings/:id` - Cập nhật booking
+- `DELETE /api/bookings/:id` - Hủy booking
+
+### Payments
+
+- `GET /api/payments` - Danh sách payment
+- `POST /api/payments` - Tạo payment
+- `GET /api/payments/:id` - Chi tiết payment
+
+## 🔧 Scripts
+
+- `npm run backend` - Chạy backend
+- `npm run mobile` - Chạy mobile app
+- `npm run mobile:ios` - Chạy trên iOS
+- `npm run mobile:android` - Chạy trên Android
+- `npm run mobile:web` - Chạy trên Web
+- `npm run build` - Build backend
+- `npm run build:all` - Build tất cả
+- `npm run db:setup` - Setup database
+- `npm run prisma:studio` - Mở Prisma Studio
+
+## 📁 Cấu trúc thư mục
 
 ```
 rental-app/
-├── apps/                           # Các ứng dụng
-│   ├── rental-mobile/              # React Native + Expo (Mobile App)
-│   ├── api-gateway/                # NestJS API Gateway (Entry Point)
-│   ├── auth-service/               # NestJS Auth Microservice
-│   ├── vehicle-service/            # NestJS Vehicle Microservice
-│   ├── booking-service/            # NestJS Booking Microservice
-│   ├── payment-service/            # NestJS Payment Microservice
-│   ├── notification-service/       # NestJS Notification Microservice
-│   ├── location-service/           # NestJS Location & Map Microservice
-│   ├── review-service/             # NestJS Review & Rating Microservice
-│   └── file-upload-service/        # NestJS File Upload Microservice
-├── packages/                       # Shared libraries
-│   ├── shared-types/               # Shared TypeScript types
-│   └── shared-utils/               # Shared utilities
-└── README.md
+├── apps/
+│   ├── backend/          # NestJS Backend
+│   └── rental-mobile/    # React Native Mobile App
+├── packages/
+│   ├── shared-types/    # Shared TypeScript types
+│   └── shared-utils/    # Shared utility functions
+└── docker-compose.simple.yml
 ```
 
-## 🚀 Cài đặt
+## 🗄️ Database Schema
 
-```bash
-# Clone repository
-git clone <repository-url>
-cd rental-app
+- **Users**: Thông tin người dùng
+- **Vehicles**: Thông tin xe máy
+- **Bookings**: Đặt xe
+- **Payments**: Thanh toán
 
-# Cài đặt dependencies
-pnpm install
+## 🔐 Authentication
+
+Sử dụng JWT tokens cho authentication. Gửi token trong header:
+
 ```
-
-## 📱 Chạy Ứng dụng
-
-### Mobile App (React Native + Expo)
-
-```bash
-# Start Expo dev server
-pnpm mobile
-
-# Chạy trên iOS simulator
-pnpm mobile:ios
-
-# Chạy trên Android emulator
-pnpm mobile:android
-
-# Chạy web version
-pnpm mobile:web
+Authorization: Bearer <your-jwt-token>
 ```
-
-### Backend Services (NestJS)
-
-```bash
-# Start API Gateway (recommended - single entry point)
-pnpm gateway    # API Gateway (port 3000)
-
-# Start từng service riêng lẻ
-pnpm auth           # Auth service (port 3333)
-pnpm vehicle        # Vehicle service (port 3334)
-pnpm booking        # Booking service (port 3335)
-pnpm payment        # Payment service (port 3336)
-pnpm notification   # Notification service (port 3337)
-pnpm location       # Location service (port 3338)
-pnpm review         # Review service (port 3339)
-pnpm file-upload    # File Upload service (port 3342)
-
-# Start core services (phát triển cơ bản)
-pnpm dev:core
-
-# Start tất cả backend services bao gồm gateway
-pnpm dev:backend
-
-# Start chỉ microservices (không bao gồm gateway)
-pnpm dev:services
-```
-
-## 🛠️ Development
-
-### Thêm App Mới
-
-#### React Native App:
-
-```bash
-pnpx nx g @nx/expo:app --name=new-app --directory=apps/new-app --routing
-```
-
-#### NestJS Microservice:
-
-```bash
-pnpx nx g @nx/nest:app --name=new-service --directory=apps/new-service
-```
-
-#### Angular App:
-
-```bash
-pnpx nx g @nx/angular:app --name=new-angular-app --directory=apps/new-angular-app
-```
-
-#### Next.js App:
-
-```bash
-pnpx nx g @nx/next:app --name=new-next-app --directory=apps/new-next-app
-```
-
-### Thêm Library Mới
-
-#### JavaScript/TypeScript Library:
-
-```bash
-pnpx nx g @nx/js:lib --name=new-lib --directory=packages/new-lib
-```
-
-#### React Library:
-
-```bash
-pnpx nx g @nx/react:lib --name=ui-components --directory=packages/ui-components
-```
-
-### Quản lý Dependencies
-
-#### Thêm dependency cho toàn workspace:
-
-```bash
-pnpm add <package-name>
-```
-
-#### Thêm dependency cho app cụ thể:
-
-```bash
-cd apps/rental-mobile && pnpm add <package-name>
-# hoặc
-pnpm add <package-name> --filter apps/rental-mobile
-```
-
-#### Thêm dev dependency:
-
-```bash
-pnpm add -D <package-name>
-```
-
-## 🏗️ Build & Deploy
-
-### Build tất cả projects:
-
-```bash
-pnpm build:all
-```
-
-### Build project cụ thể:
-
-```bash
-pnpx nx build rental-mobile
-pnpx nx build auth-service
-```
-
-### Export mobile app:
-
-```bash
-pnpx nx export rental-mobile
-```
-
-## 🧪 Testing
-
-### Test tất cả:
-
-```bash
-pnpm test:all
-```
-
-### Test project cụ thể:
-
-```bash
-pnpx nx test rental-mobile
-pnpx nx test auth-service
-```
-
-### E2E Testing:
-
-```bash
-pnpx nx e2e auth-service-e2e
-pnpx nx e2e vehicle-service-e2e
-```
-
-## 📊 Workspace Utilities
-
-### Xem tất cả projects:
-
-```bash
-pnpx nx show projects
-```
-
-### Xem chi tiết project:
-
-```bash
-pnpx nx show project rental-mobile
-pnpx nx show project auth-service
-```
-
-### Xem dependency graph:
-
-```bash
-pnpx nx graph
-```
-
-### Lint toàn bộ workspace:
-
-```bash
-pnpx nx run-many --target=lint --all
-```
-
-### Format code:
-
-```bash
-pnpx nx format:write
-```
-
-## 🔧 Cấu hình
-
-### Package Manager: pnpm
-
-- Workspace được cấu hình với `pnpm-workspace.yaml`
-- Sử dụng pnpm cho tất cả package management
-
-### TypeScript:
-
-- Shared configuration trong `tsconfig.base.json`
-- Mỗi app/library có tsconfig riêng
-
-### Nx Configuration:
-
-- Plugin `@nx/expo` cho React Native
-- Plugin `@nx/nest` cho NestJS
-- Plugin `@nx/js` cho JavaScript/TypeScript libraries
-
-## 📚 Tech Stack
-
-### Frontend:
-
-- **React Native** - Mobile app framework
-- **Expo** - Development platform và build tools
-- **Expo Router** - File-based routing
-
-### Backend:
-
-- **NestJS** - Node.js framework cho microservices
-- **Express** - Web server
-- **TypeScript** - Type-safe JavaScript
-
-### Tools:
-
-- **Nx** - Monorepo management
-- **pnpm** - Package manager
-- **Webpack** - Bundler cho backend
-- **Metro** - Bundler cho React Native
-
-## 🌐 Ports & API Endpoints
-
-- **API Gateway**: http://localhost:3000/api (Entry Point)
-- **Mobile App**: Expo dev server (default: 8081)
-- **Auth Service**: http://localhost:3333/api
-- **Vehicle Service**: http://localhost:3334/api
-- **Booking Service**: http://localhost:3335/api
-
-### API Gateway Routes:
-
-- **Health Check**: `GET /api/health`
-- **Auth**: `* /api/auth/*` → Auth Service
-- **Vehicles**: `* /api/vehicles/*` → Vehicle Service
-- **Bookings**: `* /api/bookings/*` → Booking Service
-
-## 📝 Scripts Có Sẵn
-
-| Script                | Mô tả                           |
-| --------------------- | ------------------------------- |
-| `pnpm mobile`         | Start mobile app                |
-| `pnpm mobile:ios`     | Chạy iOS simulator              |
-| `pnpm mobile:android` | Chạy Android emulator           |
-| `pnpm gateway`        | Start API Gateway (port 3000)   |
-| `pnpm auth`           | Start auth service              |
-| `pnpm vehicle`        | Start vehicle service           |
-| `pnpm booking`        | Start booking service           |
-| `pnpm dev:backend`    | Start gateway + tất cả services |
-| `pnpm dev:services`   | Start chỉ microservices         |
-| `pnpm build:all`      | Build tất cả projects           |
-| `pnpm test:all`       | Test tất cả projects            |
-
-## 🤝 Contributing
-
-1. Fork repository
-2. Tạo feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push branch: `git push origin feature/amazing-feature`
-5. Tạo Pull Request
-
-## 📄 License
-
-[MIT](LICENSE)

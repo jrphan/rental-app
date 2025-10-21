@@ -1,0 +1,393 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  phone      String?  @unique
+  password   String
+  firstName  String
+  lastName   String
+  avatar     String?
+  isActive   Boolean  @default(true)
+  isVerified Boolean  @default(false)
+  role       UserRole @default(USER)
+
+  // Profile
+  dateOfBirth DateTime?
+  address     String?
+  city        String?
+  district    String?
+  ward        String?
+
+  // Verification
+  idCardNumber       String?
+  idCardImage        String?
+  driverLicense      String?
+  driverLicenseImage String?
+
+  // Wallet
+  walletBalance Decimal @default(0)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  vehicles        Vehicle[]
+  bookings        Booking[]       @relation("RenterBookings")
+  ownerBookings   Booking[]       @relation("OwnerBookings")
+  reviews         Review[]        @relation("UserReviews")
+  receivedReviews Review[]        @relation("ReceivedReviews")
+  notifications   Notification[]
+  payments        Payment[]
+  reports         Report[]        @relation("ReporterReports")
+  reportedReports Report[]        @relation("ReportedReports")
+  supportTickets  SupportTicket[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+// Vehicle Management
+model Vehicle {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Basic Info
+  brand        String
+  model        String
+  year         Int
+  color        String
+  licensePlate String           @unique
+  engineSize   String
+  fuelType     FuelType
+  transmission TransmissionType
+
+  // Features
+  features String[] // JSON array of features
+
+  // Location
+  latitude  Decimal
+  longitude Decimal
+  address   String
+  city      String
+  district  String
+  ward      String
+
+  // Pricing
+  pricePerHour Decimal
+  pricePerDay  Decimal
+  deposit      Decimal
+
+  // Status
+  status   VehicleStatus @default(AVAILABLE)
+  isActive Boolean       @default(true)
+
+  // Images
+  images String[] // JSON array of image URLs
+
+  // Description
+  description String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  bookings Booking[]
+  reviews  Review[]
+  reports  Report[]
+
+  @@map("vehicles")
+}
+
+enum FuelType {
+  PETROL
+  ELECTRIC
+  HYBRID
+}
+
+enum TransmissionType {
+  MANUAL
+  AUTOMATIC
+  SEMI_AUTOMATIC
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+  UNAVAILABLE
+}
+
+// Booking Management
+model Booking {
+  id        String  @id @default(cuid())
+  renterId  String
+  renter    User    @relation("RenterBookings", fields: [renterId], references: [id], onDelete: Cascade)
+  ownerId   String
+  owner     User    @relation("OwnerBookings", fields: [ownerId], references: [id], onDelete: Cascade)
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  // Booking Details
+  startDate  DateTime
+  endDate    DateTime
+  totalHours Int
+  totalDays  Int
+
+  // Pricing
+  hourlyRate  Decimal
+  dailyRate   Decimal
+  totalAmount Decimal
+  deposit     Decimal
+
+  // Status
+  status BookingStatus @default(PENDING)
+
+  // Location
+  pickupLocation String
+  returnLocation String?
+
+  // Additional Info
+  notes String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  payments Payment[]
+  reviews  Review[]
+  reports  Report[]
+
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+// Payment Management
+model Payment {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  // Payment Details
+  amount Decimal
+  type   PaymentType
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  // Transaction Info
+  transactionId   String?
+  gatewayResponse String? // JSON response from payment gateway
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payments")
+}
+
+enum PaymentType {
+  BOOKING_PAYMENT
+  DEPOSIT
+  REFUND
+  PENALTY
+  COMMISSION
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CREDIT_CARD
+  DEBIT_CARD
+  DIGITAL_WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+// Review System
+model Review {
+  id         String  @id @default(cuid())
+  reviewerId String
+  reviewer   User    @relation("UserReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  revieweeId String
+  reviewee   User    @relation("ReceivedReviews", fields: [revieweeId], references: [id], onDelete: Cascade)
+  vehicleId  String
+  vehicle    Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  bookingId  String
+  booking    Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  // Review Content
+  rating  Int // 1-5 stars
+  comment String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+// Notification System
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Notification Content
+  title   String
+  message String
+  type    NotificationType
+  isRead  Boolean          @default(false)
+
+  // Additional Data
+  data String? // JSON data for additional info
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  REVIEW_RECEIVED
+  VEHICLE_APPROVED
+  VEHICLE_REJECTED
+  SYSTEM_ANNOUNCEMENT
+}
+
+// Report System
+model Report {
+  id             String   @id @default(cuid())
+  reporterId     String
+  reporter       User     @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId String?
+  reportedUser   User?    @relation("ReportedReports", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  vehicleId      String?
+  vehicle        Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  bookingId      String?
+  booking        Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  // Report Details
+  type        ReportType
+  reason      String
+  description String
+  status      ReportStatus @default(PENDING)
+
+  // Evidence
+  images String[] // JSON array of image URLs
+
+  // Admin Response
+  adminResponse String?
+  adminId       String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reports")
+}
+
+enum ReportType {
+  USER_BEHAVIOR
+  VEHICLE_ISSUE
+  PAYMENT_ISSUE
+  SAFETY_CONCERN
+  FRAUD
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+// System Settings
+model SystemSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+// Support Tickets
+model SupportTicket {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Ticket Details
+  subject  String
+  message  String
+  priority TicketPriority @default(MEDIUM)
+  status   TicketStatus   @default(OPEN)
+
+  // Admin Response
+  adminResponse String?
+  adminId       String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("support_tickets")
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
