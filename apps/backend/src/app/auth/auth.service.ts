@@ -1,9 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto, LoginDto } from '../dto/user.dto';
 import { User } from '@prisma/client';
-import { createSuccessResponse } from '@rental-app/shared-utils';
+import { createSuccessResponse, createErrorResponse, ApiResponse, HTTP_STATUS } from '@rental-app/shared-utils';
 
 export interface JwtPayload {
   sub: string;
@@ -11,27 +11,15 @@ export interface JwtPayload {
   role: string;
 }
 
-export interface LoginResponse {
-  success: boolean;
-  message: string;
-  data: {
-    user: Omit<User, 'password'>;
-    accessToken: string;
-    refreshToken: string;
-  };
-  timestamp: string;
+export interface AuthData {
+  user: Omit<User, 'password'>;
+  accessToken: string;
+  refreshToken: string;
 }
 
-export interface RegisterResponse {
-  success: boolean;
-  message: string;
-  data: {
-    user: Omit<User, 'password'>;
-    accessToken: string;
-    refreshToken: string;
-  };
-  timestamp: string;
-}
+export type LoginResponse = ApiResponse<AuthData>;
+export type RegisterResponse = ApiResponse<AuthData>;
+export type ErrorResponse = ApiResponse;
 
 @Injectable()
 export class AuthService {
@@ -40,7 +28,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(createUserDto: CreateUserDto): Promise<RegisterResponse> {
+  async register(createUserDto: CreateUserDto): Promise<RegisterResponse | ErrorResponse> {
     try {
       const user = await this.usersService.create(createUserDto);
       const tokens = await this.generateTokens(user);
@@ -55,39 +43,59 @@ export class AuthService {
       );
     } catch (error) {
       if (error instanceof ConflictException) {
-        throw error;
+        return createErrorResponse(
+          'Đăng ký thất bại',
+          error.message,
+          HTTP_STATUS.CONFLICT,
+          '/auth/register'
+        );
       }
-      throw new ConflictException('Đăng ký thất bại');
+      return createErrorResponse(
+        'Đăng ký thất bại',
+        'Có lỗi xảy ra trong quá trình đăng ký',
+        HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        '/auth/register'
+      );
     }
   }
 
-  async login(loginDto: LoginDto): Promise<LoginResponse> {
+  async login(loginDto: LoginDto): Promise<LoginResponse | ErrorResponse> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
-    if (!user) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+    if ('error' in user) {
+      return user;
     }
 
-    const tokens = await this.generateTokens(user);
+    const tokens = await this.generateTokens(user as User);
     
     return createSuccessResponse(
       'Đăng nhập thành công',
       {
-        user: this.excludePassword(user),
+        user: this.excludePassword(user as User),
         ...tokens,
       },
       '/auth/login'
     );
   }
 
-  async validateUser(email: string, password: string): Promise<User | null> {
+  async validateUser(email: string, password: string): Promise<User | ErrorResponse> {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      return null;
+      return createErrorResponse(
+        'Đăng nhập thất bại',
+        'Email hoặc mật khẩu không đúng',
+        HTTP_STATUS.UNAUTHORIZED,
+        '/auth/login'
+      );
     }
 
     const isPasswordValid = await this.usersService.verifyPassword(password, user.password);
     if (!isPasswordValid) {
-      return null;
+      return createErrorResponse(
+        'Đăng nhập thất bại',
+        'Email hoặc mật khẩu không đúng',
+        HTTP_STATUS.UNAUTHORIZED,
+        '/auth/login'
+      );
     }
 
     return user;

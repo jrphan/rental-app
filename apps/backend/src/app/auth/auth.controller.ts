@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
-import { AuthService, RegisterResponse, LoginResponse } from './auth.service';
+import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import { AuthService } from './auth.service';
 import { CreateUserDto, LoginDto } from '../dto/user.dto';
-import { createSuccessResponse } from '@rental-app/shared-utils';
+import { createSuccessResponse, HTTP_STATUS } from '@rental-app/shared-utils';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
@@ -9,14 +9,26 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() createUserDto: CreateUserDto): Promise<RegisterResponse> {
-    return this.authService.register(createUserDto);
+  async register(@Body() createUserDto: CreateUserDto, @Res() res: any): Promise<void> {
+    const result = await this.authService.register(createUserDto);
+    
+    if ('error' in result) {
+      res.status(result.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR).json(result);
+    } else {
+      res.status(HTTP_STATUS.CREATED).json(result);
+    }
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto): Promise<LoginResponse> {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Res() res: any): Promise<void> {
+    const result = await this.authService.login(loginDto);
+    
+    if ('error' in result) {
+      res.status(result.statusCode || HTTP_STATUS.UNAUTHORIZED).json(result);
+    } else {
+      res.status(HTTP_STATUS.OK).json(result);
+    }
   }
 
   @Post('refresh')
