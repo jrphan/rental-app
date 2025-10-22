@@ -1,10 +1,9 @@
-import { ScrollView } from "react-native";
-import ButtonDemo from "@/components/ButtonDemo";
+import { View, Text } from "react-native";
 
 export default function HomeScreen() {
   return (
-    <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
-      <ButtonDemo />
-    </ScrollView>
+    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <Text className="text-xl">Home</Text>
+    </View>
   );
 }
