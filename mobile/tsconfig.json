@@ -11,7 +11,8 @@
       "@/assets/*": ["./assets/*"],
       "@/utils/*": ["./utils/*"],
       "@/types/*": ["./types/*"],
-      "@/services/*": ["./services/*"]
+      "@/services/*": ["./services/*"],
+      "@/lib/*": ["./lib/*"]
     }
   },
   "include": [
