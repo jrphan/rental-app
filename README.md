@@ -1,118 +1,93 @@
-# Rental App - Simple Backend
+# Rental App - Full Stack Application
 
-Ứng dụng thuê xe máy với backend NestJS đơn giản và PostgreSQL.
+Ứng dụng cho thuê nhà với backend NestJS và mobile app React Native/Expo.
 
-## 🏗️ Kiến trúc
-
-- **Backend**: NestJS với Prisma ORM
-- **Database**: PostgreSQL
-- **Mobile**: React Native với Expo
-- **Authentication**: JWT tokens
-
-## 🚀 Cách chạy
-
-### 1. Khởi động Database
-
-```bash
-# Khởi động PostgreSQL
-docker-compose -f docker-compose.simple.yml up -d
-```
-
-### 2. Setup Backend
-
-```bash
-# Cài đặt dependencies
-pnpm install
-
-# Setup Prisma
-npm run db:setup
-
-# Chạy backend
-npm run backend
-```
-
-### 3. Chạy Mobile App
-
-```bash
-# Chạy mobile app
-npm run mobile
-
-# Chạy trên iOS
-npm run mobile:ios
-
-# Chạy trên Android
-npm run mobile:android
-
-# Chạy trên Web
-npm run mobile:web
-```
-
-## 📊 API Endpoints
-
-### Auth
-
-- `POST /api/auth/register` - Đăng ký
-- `POST /api/auth/login` - Đăng nhập
-- `GET /api/auth/profile` - Thông tin profile
-
-### Vehicles
-
-- `GET /api/vehicles` - Danh sách xe
-- `POST /api/vehicles` - Tạo xe mới
-- `GET /api/vehicles/:id` - Chi tiết xe
-- `PUT /api/vehicles/:id` - Cập nhật xe
-- `DELETE /api/vehicles/:id` - Xóa xe
-
-### Bookings
-
-- `GET /api/bookings` - Danh sách booking
-- `POST /api/bookings` - Tạo booking
-- `GET /api/bookings/:id` - Chi tiết booking
-- `PUT /api/bookings/:id` - Cập nhật booking
-- `DELETE /api/bookings/:id` - Hủy booking
-
-### Payments
-
-- `GET /api/payments` - Danh sách payment
-- `POST /api/payments` - Tạo payment
-- `GET /api/payments/:id` - Chi tiết payment
-
-## 🔧 Scripts
-
-- `npm run backend` - Chạy backend
-- `npm run mobile` - Chạy mobile app
-- `npm run mobile:ios` - Chạy trên iOS
-- `npm run mobile:android` - Chạy trên Android
-- `npm run mobile:web` - Chạy trên Web
-- `npm run build` - Build backend
-- `npm run build:all` - Build tất cả
-- `npm run db:setup` - Setup database
-- `npm run prisma:studio` - Mở Prisma Studio
-
-## 📁 Cấu trúc thư mục
+## Cấu trúc dự án
 
 ```
 rental-app/
-├── apps/
-│   ├── backend/          # NestJS Backend
-│   └── rental-mobile/    # React Native Mobile App
-├── packages/
-│   ├── shared-types/    # Shared TypeScript types
-│   └── shared-utils/    # Shared utility functions
-└── docker-compose.simple.yml
+├── backend/              # NestJS API Server
+├── mobile/               # React Native/Expo Mobile App
+├── package.json          # Root package với scripts quản lý
+└── pnpm-workspace.yaml   # PNPM workspace configuration
 ```
 
-## 🗄️ Database Schema
+## Cài đặt và chạy
 
-- **Users**: Thông tin người dùng
-- **Vehicles**: Thông tin xe máy
-- **Bookings**: Đặt xe
-- **Payments**: Thanh toán
+### 1. Cài đặt tất cả dependencies
 
-## 🔐 Authentication
+```bash
+# Cài đặt dependencies cho cả backend và mobile
+pnpm run install:all
 
-Sử dụng JWT tokens cho authentication. Gửi token trong header:
-
+# Hoặc cài đặt riêng lẻ
+pnpm run install:backend
+pnpm run install:mobile
 ```
-Authorization: Bearer <your-jwt-token>
+
+### 2. Chạy ứng dụng
+
+```bash
+# Chạy cả backend và mobile đồng thời
+pnpm start
+
+# Hoặc chạy riêng lẻ
+pnpm run start:backend    # Chạy backend (NestJS)
+pnpm run start:mobile     # Chạy mobile (Expo)
 ```
+
+### 3. Chạy mobile trên các platform khác nhau
+
+```bash
+pnpm run start:mobile:android    # Chạy trên Android
+pnpm run start:mobile:ios        # Chạy trên iOS
+pnpm run start:mobile:web        # Chạy trên Web
+```
+
+## Scripts có sẵn
+
+### Cài đặt
+
+- `pnpm run install:all` - Cài đặt dependencies cho cả backend và mobile
+- `pnpm run install:backend` - Cài đặt dependencies cho backend
+- `pnpm run install:mobile` - Cài đặt dependencies cho mobile
+
+### Chạy ứng dụng
+
+- `pnpm start` hoặc `pnpm run start:dev` - Chạy cả backend và mobile
+- `pnpm run start:backend` - Chạy backend development server
+- `pnpm run start:mobile` - Chạy mobile development server
+- `pnpm run start:mobile:android` - Chạy mobile trên Android
+- `pnpm run start:mobile:ios` - Chạy mobile trên iOS
+- `pnpm run start:mobile:web` - Chạy mobile trên Web
+
+### Build và Test
+
+- `pnpm run build` - Build backend
+- `pnpm run build:backend` - Build backend
+- `pnpm run test` - Chạy tests cho backend
+- `pnpm run test:backend` - Chạy tests cho backend
+
+### Lint và Clean
+
+- `pnpm run lint` - Lint cả backend và mobile
+- `pnpm run lint:backend` - Lint backend
+- `pnpm run lint:mobile` - Lint mobile
+- `pnpm run clean` - Xóa node_modules và build files
+- `pnpm run clean:backend` - Xóa node_modules và dist của backend
+- `pnpm run clean:mobile` - Xóa node_modules và .expo của mobile
+
+## Yêu cầu hệ thống
+
+- Node.js >= 18
+- pnpm (khuyến nghị) hoặc npm
+- Expo CLI (cho mobile development)
+- Android Studio (cho Android development)
+- Xcode (cho iOS development trên macOS)
+
+## Phát triển
+
+1. **Backend**: NestJS API server chạy trên port mặc định (thường là 3000)
+2. **Mobile**: Expo development server với Metro bundler
+
+Để phát triển, chạy `pnpm start` để khởi động cả hai services đồng thời.
