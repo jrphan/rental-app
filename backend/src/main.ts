@@ -1,8 +1,49 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from '@/modules/app/app.module';
+import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
+
+const PORT = process.env.PORT ?? 3000;
+const GLOBAL_PREFIX = 'api';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+  //setup global prefix
+  app.setGlobalPrefix(GLOBAL_PREFIX);
+
+  //setup cors
+  app.enableCors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
+  //setup validation pipe
+  // app.useGlobalPipes(new ValidationPipe());
+
+  //setup global response interceptor
+  app.useGlobalInterceptors(new ResponseInterceptor());
+
+  //setup swagger
+  const config = new DocumentBuilder()
+    .setTitle('Rental App API')
+    .setDescription('API documentation for Rental App')
+    .setVersion('1.0')
+    .addTag('users', 'User management endpoints')
+    .addTag('app', 'Application endpoints')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup(`${GLOBAL_PREFIX}/docs`, app, document);
+
+  await app.listen(PORT);
+  console.log(
+    `Server is running on port http://localhost:${PORT}/${GLOBAL_PREFIX}`,
+  );
+  console.log(
+    `Swagger documentation available at http://localhost:${PORT}/${GLOBAL_PREFIX}/docs`,
+  );
 }
+
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 bootstrap();
