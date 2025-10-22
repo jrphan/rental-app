@@ -1,98 +1,157 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { ScrollView, TouchableOpacity, Alert, Text, View } from "react-native";
+import { Link } from "expo-router";
+import { HelloWave } from "@/components/hello-wave";
 
 export default function HomeScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      {/* Header Section */}
+      <View className="bg-blue-500 px-6 py-12">
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-4xl font-bold text-white">Chào mừng!</Text>
+          <HelloWave />
+        </View>
+        <Text className="text-blue-100 text-lg">
+          Ứng dụng thuê phòng hiện đại với Tailwind CSS
+        </Text>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* Stats Cards */}
+      <View className="px-6 py-6">
+        <View className="flex-row justify-between mb-6">
+          <View className="bg-white dark:bg-gray-800 rounded-xl p-4 flex-1 mr-3 shadow-lg">
+            <Text className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              1,234
+            </Text>
+            <Text className="text-gray-600 dark:text-gray-300 text-sm">
+              Phòng có sẵn
+            </Text>
+          </View>
+          <View className="bg-white dark:bg-gray-800 rounded-xl p-4 flex-1 ml-3 shadow-lg">
+            <Text className="text-2xl font-bold text-green-600 dark:text-green-400">
+              567
+            </Text>
+            <Text className="text-gray-600 dark:text-gray-300 text-sm">
+              Đã thuê
+            </Text>
+          </View>
+        </View>
+
+        {/* Feature Cards */}
+        <View className="space-y-4">
+          <View className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <View className="flex-row items-center mb-3">
+              <View className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full items-center justify-center mr-4">
+                <Text className="text-blue-600 dark:text-blue-400 text-xl">
+                  🏠
+                </Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Tìm phòng
+                </Text>
+                <Text className="text-gray-600 dark:text-gray-300 text-sm">
+                  Khám phá các phòng trọ phù hợp
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              className="bg-blue-500 rounded-lg py-3 px-4"
+              onPress={() =>
+                Alert.alert("Tìm phòng", "Tính năng đang phát triển!")
+              }
+            >
+              <Text className="text-white text-center font-medium">
+                Bắt đầu tìm kiếm
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <View className="flex-row items-center mb-3">
+              <View className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full items-center justify-center mr-4">
+                <Text className="text-green-600 dark:text-green-400 text-xl">
+                  📋
+                </Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Đăng tin
+                </Text>
+                <Text className="text-gray-600 dark:text-gray-300 text-sm">
+                  Chia sẻ phòng trọ của bạn
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              className="bg-green-500 rounded-lg py-3 px-4"
+              onPress={() =>
+                Alert.alert("Đăng tin", "Tính năng đang phát triển!")
+              }
+            >
+              <Text className="text-white text-center font-medium">
+                Đăng tin ngay
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <View className="flex-row items-center mb-3">
+              <View className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full items-center justify-center mr-4">
+                <Text className="text-purple-600 dark:text-purple-400 text-xl">
+                  💬
+                </Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Liên hệ
+                </Text>
+                <Text className="text-gray-600 dark:text-gray-300 text-sm">
+                  Hỗ trợ 24/7
+                </Text>
+              </View>
+            </View>
+            <Link href="/modal" asChild>
+              <TouchableOpacity className="bg-purple-500 rounded-lg py-3 px-4">
+                <Text className="text-white text-center font-medium">
+                  Liên hệ ngay
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View className="mt-8">
+          <Text className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            Thao tác nhanh
+          </Text>
+          <View className="flex-row space-x-3">
+            <TouchableOpacity className="bg-gray-200 dark:bg-gray-700 rounded-lg py-3 px-4 flex-1">
+              <Text className="text-gray-700 dark:text-gray-300 text-center font-medium">
+                🔍 Tìm kiếm
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="bg-gray-200 dark:bg-gray-700 rounded-lg py-3 px-4 flex-1">
+              <Text className="text-gray-700 dark:text-gray-300 text-center font-medium">
+                ⭐ Yêu thích
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="bg-gray-200 dark:bg-gray-700 rounded-lg py-3 px-4 flex-1">
+              <Text className="text-gray-700 dark:text-gray-300 text-center font-medium">
+                📱 Thông báo
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Footer */}
+        <View className="mt-8 mb-6">
+          <Text className="text-gray-500 dark:text-gray-400 text-sm text-center">
+            Được xây dựng với ❤️ bằng React Native + Tailwind CSS
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
