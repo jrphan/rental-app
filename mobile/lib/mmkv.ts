@@ -1,9 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { MMKV } = require("react-native-mmkv");
+import { createMMKV } from "react-native-mmkv";
 
-export const storage = new MMKV();
+export const storage = createMMKV();
 
-export function setItem<T>(key: string, value: T) {
+export function setItem<T>(key: string, value: T): void {
   const str = JSON.stringify(value);
   storage.set(key, str);
 }
@@ -19,5 +18,5 @@ export function getItem<T>(key: string, fallback?: T): T | undefined {
 }
 
 export function removeItem(key: string) {
-  storage.delete(key);
+  storage.remove(key);
 }

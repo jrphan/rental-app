@@ -1,11 +1,34 @@
+import { getItem, removeItem, setItem } from "@/lib/mmkv";
 import { create } from "zustand";
+import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 
-type AppState = {
-  isDarkMode: boolean;
-  setDarkMode: (value: boolean) => void;
+// Custom storage adapter for Zustand
+const zustandStorage: StateStorage<void> = {
+  setItem: <T>(name: string, value: T): void => {
+    return setItem(name, value);
+  },
+  getItem: <T>(name: string): T | null => {
+    const value = getItem<T>(name);
+    return value ?? null;
+  },
+  removeItem: (name: string): void => {
+    return removeItem(name);
+  },
 };
 
-export const useAppStore = create<AppState>((set) => ({
-  isDarkMode: false,
-  setDarkMode: (value) => set({ isDarkMode: value }),
-}));
+type AppState = Record<string, never>;
+
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      // Empty state without theme
+    }),
+    {
+      name: "app-storage",
+      storage: createJSONStorage(() => zustandStorage as StateStorage<void>),
+      partialize: (state) => ({
+        // No theme state to persist
+      }),
+    }
+  )
+);
