@@ -5,12 +5,14 @@
   "private": true,
   "workspaces": [
     "mobile",
-    "backend"
+    "backend",
+    "web"
   ],
   "scripts": {
-    "install:all": "pnpm run install:backend && pnpm run install:mobile",
+    "install:all": "pnpm run install:backend && pnpm run install:mobile && pnpm run install:web",
     "install:backend": "cd backend && pnpm install",
     "install:mobile": "cd mobile && pnpm install",
+    "install:web": "cd web && pnpm install",
     "start": "pnpm run start:dev",
     "start:dev": "concurrently \"pnpm run start:backend\" \"pnpm run start:mobile\"",
     "start:backend": "cd backend && pnpm run start:dev",
@@ -18,16 +20,20 @@
     "start:mobile:android": "cd mobile && pnpm run android",
     "start:mobile:ios": "cd mobile && pnpm run ios",
     "start:mobile:web": "cd mobile && pnpm run web",
+    "start:web": "cd web && pnpm start",
     "build": "pnpm run build:backend",
     "build:backend": "cd backend && pnpm run build",
-    "lint": "pnpm run lint:backend && pnpm run lint:mobile",
+    "build:web": "cd web && pnpm run build",
+    "lint": "pnpm run lint:backend && pnpm run lint:mobile && pnpm run lint:web",
     "lint:backend": "cd backend && pnpm run lint",
     "lint:mobile": "cd mobile && pnpm run lint",
+    "lint:web": "cd web && pnpm run lint",
     "test": "pnpm run test:backend",
     "test:backend": "cd backend && pnpm run test",
-    "clean": "pnpm run clean:backend && pnpm run clean:mobile",
+    "clean": "pnpm run clean:backend && pnpm run clean:mobile && pnpm run clean:web",
     "clean:backend": "cd backend && rm -rf node_modules dist",
-    "clean:mobile": "cd mobile && rm -rf node_modules .expo"
+    "clean:mobile": "cd mobile && rm -rf node_modules .expo",
+    "clean:web": "cd web && rm -rf node_modules dist"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
