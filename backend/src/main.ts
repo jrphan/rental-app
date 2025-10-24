@@ -7,42 +7,53 @@ const PORT = process.env.PORT ?? 3000;
 const GLOBAL_PREFIX = 'api';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  //setup global prefix
-  app.setGlobalPrefix(GLOBAL_PREFIX);
+  try {
+    const app = await NestFactory.create(AppModule);
+    //setup global prefix
+    app.setGlobalPrefix(GLOBAL_PREFIX);
 
-  //setup cors
-  app.enableCors({
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
+    //setup cors
+    app.enableCors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    });
 
-  //setup validation pipe
-  // app.useGlobalPipes(new ValidationPipe());
+    //setup validation pipe
+    // app.useGlobalPipes(new ValidationPipe());
 
-  //setup global response interceptor
-  app.useGlobalInterceptors(new ResponseInterceptor());
+    //setup global response interceptor
+    app.useGlobalInterceptors(new ResponseInterceptor());
 
-  //setup swagger
-  const config = new DocumentBuilder()
-    .setTitle('Rental App API')
-    .setDescription('API documentation for Rental App')
-    .setVersion('1.0')
-    .addTag('users', 'User management endpoints')
-    .addTag('app', 'Application endpoints')
-    .build();
+    //setup swagger
+    const config = new DocumentBuilder()
+      .setTitle('Rental App API')
+      .setDescription('API documentation for Rental App')
+      .setVersion('1.0')
+      .addTag('users', 'User management endpoints')
+      .addTag('app', 'Application endpoints')
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(`${GLOBAL_PREFIX}/docs`, app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup(`${GLOBAL_PREFIX}/docs`, app, document);
 
-  await app.listen(PORT);
-  console.log(
-    `Server is running on port http://localhost:${PORT}/${GLOBAL_PREFIX}`,
-  );
-  console.log(
-    `Swagger documentation available at http://localhost:${PORT}/${GLOBAL_PREFIX}/docs`,
-  );
+    await app.listen(PORT);
+    console.log(
+      `Server is running on port http://localhost:${PORT}/${GLOBAL_PREFIX}`,
+    );
+    console.log(
+      `Swagger documentation available at http://localhost:${PORT}/${GLOBAL_PREFIX}/docs`,
+    );
+  } catch (error) {
+    console.error(
+      'Failed to start application:',
+      error instanceof Error ? error.message : 'Unknown error',
+    );
+    console.log(
+      'Application will continue to run but some features may not work properly',
+    );
+    process.exit(1);
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
