@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '@/modules/app/app.module';
 import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
@@ -20,7 +21,13 @@ async function bootstrap() {
     });
 
     //setup validation pipe
-    // app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
 
     //setup global response interceptor
     app.useGlobalInterceptors(new ResponseInterceptor());
@@ -31,7 +38,19 @@ async function bootstrap() {
       .setDescription('API documentation for Rental App')
       .setVersion('1.0')
       .addTag('users', 'User management endpoints')
+      .addTag('auth', 'Authentication endpoints')
       .addTag('app', 'Application endpoints')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Enter JWT token',
+          in: 'header',
+        },
+        'JWT-auth',
+      )
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
