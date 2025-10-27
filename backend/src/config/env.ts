@@ -4,6 +4,7 @@ export const ENV = {
   jwtSecret: process.env.JWT_SECRET ?? 'your-secret-key-change-in-production',
   jwtExpiration: process.env.JWT_EXPIRATION ?? '7d',
   frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+
   // Mail configuration
   mailHost: process.env.MAIL_HOST,
   mailPort: process.env.MAIL_PORT ? parseInt(process.env.MAIL_PORT) : 587,
