@@ -21,7 +21,8 @@
       "@/modules/*": ["src/modules/*"],
       "@/common/*": ["src/common/*"],
       "@/config/*": ["src/config/*"],
-      "@/dto/*": ["src/dto/*"]
+      "@/dto/*": ["src/dto/*"],
+      "@/mail/*": ["src/mail/*"]
     },
     "incremental": true,
     "skipLibCheck": true,

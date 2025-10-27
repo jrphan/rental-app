@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
+import { MailService } from '@/mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
@@ -20,6 +21,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
@@ -73,6 +75,13 @@ export class AuthService {
 
     // Generate JWT token
     const accessToken = this.generateToken(user);
+
+    // Send welcome email (async, don't wait for it)
+    this.mailService
+      .sendWelcomeEmail(user.email, user.email.split('@')[0])
+      .catch(err => {
+        console.error('Failed to send welcome email:', err);
+      });
 
     return {
       user: user as Omit<User, 'password'>,
