@@ -1,4 +1,4 @@
-import { getItem, removeItem, setItem } from "@/lib/mmkv";
+import { getItem, removeItem, setItem } from "@/lib/async-storage";
 import { create } from "zustand";
 import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 

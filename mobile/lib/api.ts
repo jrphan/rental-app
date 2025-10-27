@@ -1,16 +1,22 @@
-import axios, { AxiosError, AxiosResponse } from "axios";
+import axios, {
+  AxiosError,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios";
 import {
   ApiResponse,
-  PaginatedResponse,
+  // PaginatedResponse,
   ErrorResponse,
   ResponseType,
   createErrorResponse,
   logResponse,
   validateResponse,
 } from "@/types";
+import { getAuthCache } from "@/store/auth";
+import { authApi } from "./api.auth";
 
 // Ưu tiên dùng biến môi trường Expo: EXPO_PUBLIC_API_URL
-const baseURL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+const baseURL = process.env.EXPO_PUBLIC_API_URL || "";
 
 export const api = axios.create({
   baseURL,
@@ -23,6 +29,13 @@ api.interceptors.request.use((config) => {
   // Thiết lập từng trường để khớp kiểu AxiosHeaders
   (config.headers as any)["Accept"] = "application/json";
   (config.headers as any)["Content-Type"] = "application/json";
+
+  // Thêm token vào header nếu có
+  const authData = getAuthCache();
+  if (authData?.token) {
+    config.headers.Authorization = `Bearer ${authData.token}`;
+  }
+
   return config;
 });
 
@@ -46,10 +59,46 @@ api.interceptors.response.use(
       return { ...response, data: wrappedResponse };
     }
   },
-  (error: AxiosError) => {
-    // Chuẩn hóa thông báo lỗi nhằm dễ debug
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
     const status = error.response?.status || 500;
     const responseData = error.response?.data as any;
+
+    // Nếu lỗi 401 và chưa retry, thử refresh token
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const authData = getAuthCache();
+
+      if (authData?.refreshToken) {
+        try {
+          // Refresh token
+          const tokens = await authApi.refreshToken(authData.refreshToken);
+
+          // Update cache và headers
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
+          }
+
+          // Update store
+          const { useAuthStore } = await import("@/store/auth");
+          useAuthStore.getState().updateTokens(tokens);
+
+          // Retry original request
+          return api(originalRequest);
+        } catch {
+          // Refresh thất bại, logout
+          const { useAuthStore } = await import("@/store/auth");
+          useAuthStore.getState().logout();
+          // Redirect to login
+          if (typeof window !== "undefined") {
+            // This will be handled by navigation guards
+          }
+        }
+      }
+    }
 
     let errorResponse: ErrorResponse;
 

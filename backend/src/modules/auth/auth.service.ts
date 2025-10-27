@@ -12,9 +12,19 @@ import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '@/generated/prisma';
 
+interface RefreshTokenPayload {
+  sub: string;
+  email: string;
+  role: string;
+  type?: string;
+  iat?: number;
+  exp?: number;
+}
+
 export interface AuthResponse {
   user: Omit<User, 'password'>;
   accessToken: string;
+  refreshToken: string;
 }
 
 @Injectable()
@@ -36,6 +46,8 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
+
+    this.logger.log(`Existing user: ${JSON.stringify(existingUser)}`);
 
     if (existingUser) {
       this.logger.warn(`Đăng ký thất bại - Email đã tồn tại: ${email}`);
@@ -82,8 +94,9 @@ export class AuthService {
       },
     });
 
-    // Generate JWT token
+    // Generate tokens
     const accessToken = this.generateToken(user);
+    const refreshToken = this.generateRefreshToken(user);
 
     this.logger.log(`Đăng ký thành công cho user: ${email}`);
 
@@ -97,6 +110,7 @@ export class AuthService {
     return {
       user: user as Omit<User, 'password'>,
       accessToken,
+      refreshToken,
     };
   }
 
@@ -131,8 +145,9 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
-    // Generate JWT token
+    // Generate tokens
     const accessToken = this.generateToken(user);
+    const refreshToken = this.generateRefreshToken(user);
 
     this.logger.log(`Đăng nhập thành công: ${email}`);
 
@@ -151,6 +166,7 @@ export class AuthService {
     return {
       user: userWithoutPassword as Omit<User, 'password'>,
       accessToken,
+      refreshToken,
     };
   }
 
@@ -187,7 +203,67 @@ export class AuthService {
       role: user.role,
     };
 
-    return this.jwtService.sign(payload);
+    return this.jwtService.sign(payload, { expiresIn: '7d' });
+  }
+
+  private generateRefreshToken(
+    user: Pick<User, 'id' | 'email' | 'role'>,
+  ): string {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      type: 'refresh',
+    };
+
+    return this.jwtService.sign(payload, { expiresIn: '30d' });
+  }
+
+  async refreshToken(refreshTokenString: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    try {
+      // Verify refresh token
+      const decoded = this.jwtService.verify(refreshTokenString) as unknown;
+
+      if (!decoded || typeof decoded !== 'object') {
+        throw new UnauthorizedException('Invalid token');
+      }
+
+      const payload = decoded as RefreshTokenPayload;
+
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('Invalid token type');
+      }
+
+      // Get user
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('Người dùng không tồn tại');
+      }
+
+      if (!user.isActive) {
+        throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+      }
+
+      // Generate new tokens
+      const newAccessToken = this.generateToken(user);
+      const newRefreshToken = this.generateRefreshToken(user);
+
+      this.logger.log(`Refresh token thành công cho user: ${user.email}`);
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      };
+    } catch (error) {
+      this.logger.error('Refresh token failed:', error);
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   async updatePassword(
