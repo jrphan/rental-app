@@ -1,15 +1,25 @@
+import { config } from 'dotenv';
+import { resolve } from 'path';
+// Load environment variables before anything else
+config({ path: resolve(__dirname, '../.env') });
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '@/modules/app/app.module';
 import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
+import { ENV } from '@/config/env';
 
-const PORT = process.env.PORT ?? 3000;
-const GLOBAL_PREFIX = 'api';
+const PORT = ENV.port;
+const GLOBAL_PREFIX = ENV.globalPrefix;
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
+
   try {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, {
+      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    });
+
     //setup global prefix
     app.setGlobalPrefix(GLOBAL_PREFIX);
 
@@ -57,18 +67,19 @@ async function bootstrap() {
     SwaggerModule.setup(`${GLOBAL_PREFIX}/docs`, app, document);
 
     await app.listen(PORT);
-    console.log(
+    logger.log(
       `Server is running on port http://localhost:${PORT}/${GLOBAL_PREFIX}`,
     );
-    console.log(
+    logger.log(
       `Swagger documentation available at http://localhost:${PORT}/${GLOBAL_PREFIX}/docs`,
     );
   } catch (error) {
-    console.error(
+    logger.error(
       'Failed to start application:',
       error instanceof Error ? error.message : 'Unknown error',
+      error instanceof Error ? error.stack : undefined,
     );
-    console.log(
+    logger.log(
       'Application will continue to run but some features may not work properly',
     );
     process.exit(1);

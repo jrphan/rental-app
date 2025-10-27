@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 
 interface MailOptions {
@@ -10,6 +10,8 @@ interface MailOptions {
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
+
   constructor(private readonly mailerService: MailerService) {}
 
   async sendEmail(options: MailOptions) {
@@ -20,9 +22,10 @@ export class MailService {
         template: options.template,
         context: options.context || {},
       });
+      this.logger.log(`Email sent to: ${options.to} - ${options.subject}`);
       return { success: true, message: 'Email đã được gửi thành công' };
     } catch (error) {
-      console.error('Error sending email:', error);
+      this.logger.error('Error sending email:', error);
       return { success: false, message: 'Không thể gửi email' };
     }
   }

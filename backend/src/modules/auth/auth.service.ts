@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -18,6 +19,8 @@ export interface AuthResponse {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -27,12 +30,15 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const { email, password, phone, role } = registerDto;
 
+    this.logger.log(`Đăng ký người dùng mới: ${email}`);
+
     // Check if email already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
+      this.logger.warn(`Đăng ký thất bại - Email đã tồn tại: ${email}`);
       throw new ConflictException('Email đã tồn tại trong hệ thống');
     }
 
@@ -43,6 +49,9 @@ export class AuthService {
       });
 
       if (existingPhone) {
+        this.logger.warn(
+          `Đăng ký thất bại - Số điện thoại đã tồn tại: ${phone}`,
+        );
         throw new ConflictException('Số điện thoại đã tồn tại trong hệ thống');
       }
     }
@@ -76,11 +85,13 @@ export class AuthService {
     // Generate JWT token
     const accessToken = this.generateToken(user);
 
+    this.logger.log(`Đăng ký thành công cho user: ${email}`);
+
     // Send welcome email (async, don't wait for it)
     this.mailService
       .sendWelcomeEmail(user.email, user.email.split('@')[0])
       .catch(err => {
-        console.error('Failed to send welcome email:', err);
+        this.logger.error('Failed to send welcome email:', err);
       });
 
     return {
@@ -92,17 +103,23 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<AuthResponse> {
     const { email, password: loginPassword } = loginDto;
 
+    this.logger.log(`Đăng nhập: ${email}`);
+
     // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
+      this.logger.warn(`Đăng nhập thất bại - User không tồn tại: ${email}`);
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
     // Check if user is active
     if (!user.isActive) {
+      this.logger.warn(
+        `Đăng nhập thất bại - Tài khoản bị vô hiệu hóa: ${email}`,
+      );
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
 
@@ -110,11 +127,14 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(loginPassword, user.password);
 
     if (!isPasswordValid) {
+      this.logger.warn(`Đăng nhập thất bại - Mật khẩu không đúng: ${email}`);
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
 
     // Generate JWT token
     const accessToken = this.generateToken(user);
+
+    this.logger.log(`Đăng nhập thành công: ${email}`);
 
     // Return user without password
     const userWithoutPassword = {
