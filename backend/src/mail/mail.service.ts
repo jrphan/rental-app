@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MailerService } from '@nestjs-modules/mailer';
+import { Resend } from 'resend';
+import { ENV } from '@/config/env';
+import { join } from 'path';
+import { readFile } from 'fs/promises';
+import Handlebars from 'handlebars';
 
 interface MailOptions {
   to: string;
@@ -11,24 +15,32 @@ interface MailOptions {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
+  private readonly resend = new Resend(ENV.resendApiKey);
 
-  constructor(private readonly mailerService: MailerService) {}
+  constructor() {}
 
   async sendEmail(options: MailOptions) {
     try {
-      const result = (await this.mailerService.sendMail({
+      const html = await this.renderTemplate(options.template, options.context);
+
+      const sendResult: unknown = await this.resend.emails.send({
+        from: `"Rental App" <${ENV.mailFrom}>`,
         to: options.to,
         subject: options.subject,
-        template: options.template,
-        context: options.context || {},
-      })) as { messageId?: string };
+        html,
+      });
 
       this.logger.log(
         `Email sent successfully to: ${options.to} - ${options.subject}`,
       );
 
-      // Safely access messageId
-      const messageId = result?.messageId || 'unknown';
+      // Safely access messageId from possible result shapes
+      let messageId = 'unknown';
+      if (typeof sendResult === 'object' && sendResult !== null) {
+        const possibleDirect = sendResult as { id?: string };
+        const possibleWrapped = sendResult as { data?: { id?: string } };
+        messageId = possibleDirect.id ?? possibleWrapped.data?.id ?? 'unknown';
+      }
       this.logger.debug(`Message ID: ${messageId}`);
 
       return {
@@ -56,28 +68,9 @@ export class MailService {
         }
 
         // Provide more specific error messages
-        if (
-          error.message.includes('timeout') ||
-          error.message.includes('ETIMEDOUT')
-        ) {
-          this.logger.error(
-            'Connection timeout - có thể do Render block SMTP ports. Khuyến nghị sử dụng API-based email service (Resend, SendGrid)',
-          );
-        } else if (error.message.includes('ECONNREFUSED')) {
-          this.logger.error(
-            'Connection refused - SMTP server không khả dụng hoặc sai host/port',
-          );
-        } else if (
-          error.message.includes('EAUTH') ||
-          error.message.includes('authentication')
-        ) {
-          this.logger.error(
-            'Authentication failed - kiểm tra MAIL_USER và MAIL_PASSWORD',
-          );
-        } else if (error.message.includes('TLS')) {
-          this.logger.error(
-            'TLS handshake failed - kiểm tra MAIL_SECURE và certificate',
-          );
+        // Với Resend, ưu tiên báo lỗi thiếu API key
+        if (!ENV.resendApiKey) {
+          this.logger.error('Thiếu RESEND_API_KEY trong biến môi trường.');
         }
       }
 
@@ -87,6 +80,52 @@ export class MailService {
         error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
+  }
+
+  private async renderTemplate(
+    templateName: string,
+    context: Record<string, any> = {},
+  ): Promise<string> {
+    const templatesDir = join(__dirname, 'templates');
+    const candidateFiles = [
+      join(templatesDir, `${templateName}.hbs`),
+      join(templatesDir, `${templateName}.html`),
+    ];
+
+    let source = '';
+    let lastError: unknown = null;
+    for (const filePath of candidateFiles) {
+      try {
+        source = await readFile(filePath, 'utf8');
+        break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!source) {
+      this.logger.error(
+        `Không tìm thấy template cho "${templateName}". Kiểm tra thư mục templates.`,
+      );
+      if (lastError) {
+        this.logger.debug(
+          lastError instanceof Error
+            ? lastError.message
+            : (() => {
+                try {
+                  return JSON.stringify(lastError);
+                } catch {
+                  return 'Unknown template read error';
+                }
+              })(),
+        );
+      }
+      // fallback HTML đơn giản
+      return `<p>${context?.message || 'Nội dung email trống.'}</p>`;
+    }
+
+    const compiled = Handlebars.compile(source, { strict: false });
+    return compiled(context);
   }
 
   async sendWelcomeEmail(email: string, name: string) {
