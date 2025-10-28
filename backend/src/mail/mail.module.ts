@@ -22,6 +22,27 @@ logger.log(`Email được cấu hình: ${isEmailConfigured}`);
               user: ENV.mailUser,
               pass: ENV.mailPassword,
             },
+            // Fix connection timeout issues on Render
+            connectionTimeout: 10000, // 10 seconds
+            greetingTimeout: 10000, // 10 seconds
+            socketTimeout: 10000, // 10 seconds
+            // Pool connections for better performance
+            pool: true,
+            maxConnections: 5,
+            maxMessages: 100,
+            rateDelta: 1000,
+            rateLimit: 5,
+            // Additional options for better reliability
+            logger: false, // Disable verbose logging
+            debug: false, // Disable debug output
+            // TLS options
+            tls: {
+              // Reject unauthorized certificates (set to false if using self-signed certs)
+              rejectUnauthorized: true,
+            },
+            // Retry logic
+            requireTLS: false,
+            ignoreTLS: false,
           }
         : {
             // Mock transport for development without email config
