@@ -14,12 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRegisterForm } from "@/forms/auth.forms";
 import { authApi } from "@/lib/api.auth";
-import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const login = useAuthStore((state) => state.login);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useRegisterForm();
@@ -27,11 +25,10 @@ export default function RegisterScreen() {
   const mutation = useMutation({
     mutationFn: authApi.register,
     onSuccess: (data) => {
-      login(data.user, {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
-      router.replace("/(tabs)");
+      // Navigate to verify OTP screen instead of logging in
+      router.push(
+        `/(auth)/verify-otp?userId=${data.userId}&email=${data.email}` as any
+      );
     },
     onError: (error: any) => {
       const errorMessage =

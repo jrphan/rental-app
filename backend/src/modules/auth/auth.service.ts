@@ -3,6 +3,7 @@ import {
   ConflictException,
   UnauthorizedException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -27,6 +28,12 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+export interface RegisterResponse {
+  userId: string;
+  email: string;
+  message: string;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -37,7 +44,7 @@ export class AuthService {
     private mailService: MailService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<AuthResponse> {
+  async register(registerDto: RegisterDto): Promise<RegisterResponse> {
     const { email, password, phone, role } = registerDto;
 
     this.logger.log(`Đăng ký người dùng mới: ${email}`);
@@ -46,8 +53,6 @@ export class AuthService {
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
-
-    this.logger.log(`Existing user: ${JSON.stringify(existingUser)}`);
 
     if (existingUser) {
       this.logger.warn(`Đăng ký thất bại - Email đã tồn tại: ${email}`);
@@ -85,32 +90,35 @@ export class AuthService {
       select: {
         id: true,
         email: true,
-        phone: true,
-        isActive: true,
-        isVerified: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
 
-    // Generate tokens
-    const accessToken = this.generateToken(user);
-    const refreshToken = this.generateRefreshToken(user);
+    this.logger.log(`User created: ${user.id}`);
 
-    this.logger.log(`Đăng ký thành công cho user: ${email}`);
+    // Generate and send OTP
+    const otpCode = this.generateOTPCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Send welcome email (async, don't wait for it)
-    this.mailService
-      .sendWelcomeEmail(user.email, user.email.split('@')[0])
-      .catch(err => {
-        this.logger.error('Failed to send welcome email:', err);
-      });
+    await this.prisma.otp.create({
+      data: {
+        userId: user.id,
+        code: otpCode,
+        expiresAt,
+      },
+    });
+
+    // Send OTP email (async, don't wait for it)
+    this.mailService.sendVerificationEmail(user.email, otpCode).catch(err => {
+      this.logger.error('Failed to send OTP email:', err);
+    });
+
+    this.logger.log(`OTP sent to ${email}`);
 
     return {
-      user: user as Omit<User, 'password'>,
-      accessToken,
-      refreshToken,
+      userId: user.id,
+      email: user.email,
+      message:
+        'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP xác thực.',
     };
   }
 
@@ -295,5 +303,129 @@ export class AuthService {
       where: { id: userId },
       data: { password: hashedPassword },
     });
+  }
+
+  // Generate 6-digit OTP code
+  private generateOTPCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // Verify OTP and complete registration
+  async verifyOTP(userId: string, otpCode: string): Promise<AuthResponse> {
+    this.logger.log(`Verifying OTP for user: ${userId}`);
+
+    // Find valid OTP
+    const otp = await this.prisma.otp.findFirst({
+      where: {
+        userId,
+        code: otpCode,
+        isUsed: false,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!otp) {
+      this.logger.warn(`Invalid or expired OTP for user: ${userId}`);
+      throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn');
+    }
+
+    // Get user
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        isVerified: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    // Mark OTP as used
+    await this.prisma.otp.update({
+      where: { id: otp.id },
+      data: { isUsed: true },
+    });
+
+    // Update user as verified
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isVerified: true },
+    });
+
+    this.logger.log(`User verified successfully: ${userId}`);
+
+    // Generate tokens
+    const accessToken = this.generateToken(user);
+    const refreshToken = this.generateRefreshToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    // Send welcome email (async, don't wait for it)
+    this.mailService
+      .sendWelcomeEmail(user.email, user.email.split('@')[0])
+      .catch(err => {
+        this.logger.error('Failed to send welcome email:', err);
+      });
+
+    return {
+      user: user as Omit<User, 'password'>,
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  // Resend OTP
+  async resendOTP(userId: string): Promise<void> {
+    this.logger.log(`Resending OTP for user: ${userId}`);
+
+    // Get user
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        isVerified: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('Tài khoản đã được xác thực');
+    }
+
+    // Generate new OTP
+    const otpCode = this.generateOTPCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.prisma.otp.create({
+      data: {
+        userId: user.id,
+        code: otpCode,
+        expiresAt,
+      },
+    });
+
+    // Send OTP email
+    await this.mailService.sendVerificationEmail(user.email, otpCode);
+
+    this.logger.log(`OTP resent to ${user.email}`);
   }
 }

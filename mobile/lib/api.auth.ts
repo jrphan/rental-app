@@ -24,19 +24,52 @@ export interface RefreshTokenResponse {
   refreshToken?: string;
 }
 
+export interface RegisterResponse {
+  userId: string;
+  email: string;
+  message: string;
+}
+
 /**
  * Auth API service
  */
 export const authApi = {
   /**
-   * Đăng ký tài khoản mới
+   * Đăng ký tài khoản mới (không tự động đăng nhập)
    */
-  async register(data: RegisterInput): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>("/auth/register", data);
+  async register(data: RegisterInput): Promise<RegisterResponse> {
+    const response = await apiClient.post<RegisterResponse>(
+      "/auth/register",
+      data
+    );
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data;
     }
     throw new Error(response.message || "Đăng ký thất bại");
+  },
+
+  /**
+   * Xác thực OTP
+   */
+  async verifyOTP(userId: string, otpCode: string): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>("/auth/verify-otp", {
+      userId,
+      otpCode,
+    });
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Xác thực OTP thất bại");
+  },
+
+  /**
+   * Gửi lại OTP
+   */
+  async resendOTP(userId: string): Promise<void> {
+    const response = await apiClient.post("/auth/resend-otp", { userId });
+    if (!response.success) {
+      throw new Error(response.message || "Gửi lại OTP thất bại");
+    }
   },
 
   /**

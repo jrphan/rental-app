@@ -16,7 +16,7 @@ import {
   ApiBearerAuth,
   ApiSecurity,
 } from '@nestjs/swagger';
-import { AuthService, AuthResponse } from './auth.service';
+import { AuthService, AuthResponse, RegisterResponse } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -67,8 +67,59 @@ export class AuthController {
     status: 409,
     description: 'Email hoặc số điện thoại đã tồn tại',
   })
-  async register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
+  async register(@Body() registerDto: RegisterDto): Promise<RegisterResponse> {
     return this.authService.register(registerDto);
+  }
+
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Xác thực OTP sau khi đăng ký' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string' },
+        otpCode: { type: 'string' },
+      },
+      required: ['userId', 'otpCode'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Xác thực thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        user: { type: 'object' },
+        accessToken: { type: 'string' },
+        refreshToken: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+  })
+  async verifyOTP(
+    @Body() body: { userId: string; otpCode: string },
+  ): Promise<AuthResponse> {
+    return this.authService.verifyOTP(body.userId, body.otpCode);
+  }
+
+  @Post('resend-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Gửi lại mã OTP' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string' },
+      },
+      required: ['userId'],
+    },
+  })
+  async resendOTP(@Body() body: { userId: string }): Promise<void> {
+    await this.authService.resendOTP(body.userId);
   }
 
   @Post('login')

@@ -38,6 +38,7 @@ model User {
   messages         Message[]      @relation("SenderMessages")
   receivedMessages Message[]      @relation("ReceiverMessages")
   payments         Payment[]
+  otps             Otp[]
 
   @@index([email])
   @@index([phone])
@@ -45,6 +46,24 @@ model User {
   @@index([role])
   @@index([createdAt])
   @@map("users")
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String   @db.VarChar(6)
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@index([isUsed])
+  @@index([expiresAt])
+  @@map("otps")
 }
 
 model UserProfile {
@@ -399,4 +418,10 @@ enum MessageType {
   IMAGE
   LOCATION
   SYSTEM
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  PHONE_VERIFICATION
 }
