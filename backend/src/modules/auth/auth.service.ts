@@ -55,10 +55,8 @@ export class AuthService {
     });
 
     if (existingUser) {
-      if (existingUser.isVerified) {
-        this.logger.warn(`Đăng ký thất bại - Email đã tồn tại: ${email}`);
-        throw new ConflictException('Email đã tồn tại và đã được xác thực');
-      }
+      this.logger.warn(`Đăng ký thất bại - Email đã tồn tại: ${email}`);
+      throw new ConflictException('Email đã tồn tại và đã được xác thực');
     }
 
     // Check if phone is provided and already exists
@@ -147,19 +145,47 @@ export class AuthService {
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
     }
 
-    if (!user.isVerified) {
-      this.logger.warn(
-        `Đăng nhập thất bại - Tài khoản chưa được xác thực: ${email}`,
-      );
-      throw new UnauthorizedException('Tài khoản chưa được xác thực');
-    }
-
-    // Verify password
+    // Verify password first
     const isPasswordValid = await bcrypt.compare(loginPassword, user.password);
 
     if (!isPasswordValid) {
       this.logger.warn(`Đăng nhập thất bại - Mật khẩu không đúng: ${email}`);
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+    }
+
+    // If password is correct but user not verified, send new OTP
+    if (!user.isVerified) {
+      this.logger.log(
+        `Tài khoản chưa xác thực - Gửi OTP mới cho user: ${email}`,
+      );
+
+      // Generate and send new OTP
+      const otpCode = this.generateOTPCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await this.prisma.otp.create({
+        data: {
+          userId: user.id,
+          code: otpCode,
+          expiresAt,
+        },
+      });
+
+      // Send OTP email
+      this.mailService.sendVerificationEmail(user.email, otpCode).catch(err => {
+        this.logger.error('Failed to send OTP email:', err);
+      });
+
+      this.logger.log(`OTP sent to ${email} for verification`);
+
+      // Throw exception with metadata to inform frontend that verification is required
+      throw new BadRequestException({
+        message:
+          'Tài khoản chưa được xác thực. Mã OTP mới đã được gửi đến email của bạn.',
+        userId: user.id,
+        email: user.email,
+        requiresVerification: true,
+      });
     }
 
     // Generate tokens

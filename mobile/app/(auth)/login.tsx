@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { View, TouchableOpacity, ActivityIndicator, Text } from "react-native";
+import {
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  Text,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -28,12 +34,26 @@ export default function LoginScreen() {
       router.replace("/(tabs)");
     },
     onError: (error: any) => {
+      const errorResponse = error?.response?.data;
       const errorMessage =
-        error?.message ||
-        error?.response?.data?.message ||
-        "Đăng nhập thất bại";
-      console.error("Login error:", errorMessage);
-      // You can show an alert or toast here
+        errorResponse?.message || error?.message || "Đăng nhập thất bại";
+
+      // Check if this is an unverified account error
+      if (
+        error?.response?.status === 400 &&
+        errorResponse?.requiresVerification
+      ) {
+        const { userId, email } = errorResponse;
+        // Navigate to verify OTP screen with user information
+        router.push({
+          pathname: "/(auth)/verify-otp",
+          params: { userId, email },
+        });
+      } else {
+        console.error("Login error:", errorMessage);
+        // You can show an alert or toast here for other errors
+        Alert.alert("Lỗi đăng nhập", errorMessage);
+      }
     },
   });
 

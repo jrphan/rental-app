@@ -156,6 +156,24 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Tài khoản chưa được xác thực. Mã OTP mới đã được gửi đến email.',
+    schema: {
+      type: 'object',
+      properties: {
+        message: {
+          type: 'string',
+          example:
+            'Tài khoản chưa được xác thực. Mã OTP mới đã được gửi đến email của bạn.',
+        },
+        userId: { type: 'string' },
+        email: { type: 'string' },
+        requiresVerification: { type: 'boolean', example: true },
+      },
+    },
+  })
   @ApiResponse({ status: 401, description: 'Email hoặc mật khẩu không đúng' })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
     return this.authService.login(loginDto);
