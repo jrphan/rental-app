@@ -1,2 +1,74 @@
 /* You can add global styles to this file, and also import other style files */
 @import 'tailwindcss';
+
+@theme {
+  /* Primary Colors - Orange (Shopee Orange) */
+  --color-primary-50: #fff5f2;
+  --color-primary-100: #ffe8df;
+  --color-primary-200: #ffd1b8;
+  --color-primary-300: #ffb085;
+  --color-primary-400: #ff8552;
+  --color-primary-500: #ff6b38;
+  --color-primary-600: #ff5722;
+  --color-primary-700: #e64a19;
+  --color-primary-800: #bf360c;
+  --color-primary-900: #8b2f00;
+  --color-primary-950: #5d1f00;
+
+  /* Secondary Colors */
+  --color-secondary-50: #f8f9fa;
+  --color-secondary-100: #f1f3f5;
+  --color-secondary-200: #e3e7ea;
+  --color-secondary-300: #ced0d3;
+  --color-secondary-400: #b5b8bd;
+  --color-secondary-500: #9ca0a6;
+  --color-secondary-600: #80848a;
+  --color-secondary-700: #66696e;
+  --color-secondary-800: #4d5052;
+  --color-secondary-900: #333638;
+  --color-secondary-950: #1a1c1e;
+
+  /* Accent Colors */
+  --color-accent-50: #f0fdf4;
+  --color-accent-100: #dcfce7;
+  --color-accent-200: #bbf7d0;
+  --color-accent-300: #86efac;
+  --color-accent-400: #4ade80;
+  --color-accent-500: #22c55e;
+  --color-accent-600: #16a34a;
+  --color-accent-700: #15803d;
+  --color-accent-800: #166534;
+  --color-accent-900: #14532d;
+  --color-accent-950: #0d2e1a;
+
+  /* Destructive Colors */
+  --color-destructive-50: #fff0f0;
+  --color-destructive-100: #ffdfdf;
+  --color-destructive-200: #ffbfbf;
+  --color-destructive-300: #ff9f9f;
+  --color-destructive-400: #ff7f7f;
+  --color-destructive-500: #ff5f5f;
+  --color-destructive-600: #ff4040;
+  --color-destructive-700: #e02020;
+  --color-destructive-800: #bf1515;
+  --color-destructive-900: #8b0f0f;
+  --color-destructive-950: #5d0a0a;
+
+  /* Neutral Colors */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0a0a0a;
+
+  /* Custom Shadows */
+  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  --shadow-medium: 0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-hard: 0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 2px 10px -2px rgba(0, 0, 0, 0.1);
+}

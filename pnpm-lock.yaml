@@ -311,6 +311,9 @@ importers:
       '@types/jasmine':
         specifier: ~5.1.0
         version: 5.1.12
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
       jasmine-core:
         specifier: ~5.9.0
         version: 5.9.0
