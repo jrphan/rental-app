@@ -4,8 +4,12 @@ import {
   registerSchema,
   loginSchema,
   changePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   LoginInput,
   ChangePasswordInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
 } from "@/schemas/auth.schema";
 
 /**
@@ -50,6 +54,38 @@ export function useChangePasswordForm() {
     resolver: zodResolver(changePasswordSchema),
     defaultValues: {
       oldPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+    mode: "onChange",
+  });
+
+  return form;
+}
+
+/**
+ * Hook cho form quên mật khẩu
+ */
+export function useForgotPasswordForm() {
+  const form = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: "",
+    },
+    mode: "onChange",
+  });
+
+  return form;
+}
+
+/**
+ * Hook cho form đặt lại mật khẩu
+ */
+export function useResetPasswordForm() {
+  const form = useForm<ResetPasswordInput>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      otpCode: "",
       newPassword: "",
       confirmPassword: "",
     },

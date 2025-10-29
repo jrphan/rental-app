@@ -30,6 +30,10 @@ export interface RegisterResponse {
   message: string;
 }
 
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
 /**
  * Auth API service
  */
@@ -121,5 +125,41 @@ export const authApi = {
       return response.data;
     }
     throw new Error(response.message || "Refresh token thất bại");
+  },
+
+  /**
+   * Quên mật khẩu - gửi OTP
+   */
+  async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+    const response = await apiClient.post<ForgotPasswordResponse>(
+      "/auth/forgot-password",
+      { email }
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Gửi OTP thất bại");
+  },
+
+  /**
+   * Đặt lại mật khẩu bằng OTP
+   */
+  async resetPassword(
+    email: string,
+    otpCode: string,
+    newPassword: string
+  ): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>(
+      "/auth/reset-password",
+      {
+        email,
+        otpCode,
+        newPassword,
+      }
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Đặt lại mật khẩu thất bại");
   },
 };

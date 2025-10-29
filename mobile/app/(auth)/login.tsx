@@ -146,6 +146,15 @@ export default function LoginScreen() {
         )}
       />
 
+      <TouchableOpacity
+        onPress={() => router.push("/(auth)/forgot-password")}
+        className="mb-4 self-end"
+      >
+        <Text className="text-base text-primary-600 font-medium">
+          Quên mật khẩu?
+        </Text>
+      </TouchableOpacity>
+
       <Button
         onPress={form.handleSubmit(onSubmit)}
         disabled={mutation.isPending}

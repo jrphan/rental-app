@@ -20,6 +20,8 @@ import { AuthService, AuthResponse, RegisterResponse } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from '@/generated/prisma';
@@ -270,5 +272,66 @@ export class AuthController {
       body.newPassword,
     );
     return { message: 'Đổi mật khẩu thành công' };
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Quên mật khẩu - gửi mã OTP' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Mã OTP đã được gửi đến email (nếu email tồn tại)',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+      },
+    },
+  })
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
+    await this.authService.forgotPassword(forgotPasswordDto);
+    return {
+      message: 'Nếu email tồn tại, mã OTP đã được gửi đến email của bạn.',
+    };
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đặt lại mật khẩu bằng mã OTP' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email' },
+        otpCode: { type: 'string' },
+        newPassword: { type: 'string' },
+      },
+      required: ['email', 'otpCode', 'newPassword'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Đặt lại mật khẩu thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        user: { type: 'object' },
+        accessToken: { type: 'string' },
+        refreshToken: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+  })
+  async resetPassword(
+    @Body() body: { email: string } & ResetPasswordDto,
+  ): Promise<AuthResponse> {
+    const { email, ...resetPasswordDto } = body;
+    return this.authService.resetPassword(email, resetPasswordDto);
   }
 }

@@ -10,6 +10,8 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { MailService } from '@/mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '@/generated/prisma';
 
@@ -56,7 +58,7 @@ export class AuthService {
 
     if (existingUser) {
       this.logger.warn(`Đăng ký thất bại - Email đã tồn tại: ${email}`);
-      throw new ConflictException('Email đã tồn tại và đã được xác thực');
+      throw new ConflictException('Email đã tồn tại');
     }
 
     // Check if phone is provided and already exists
@@ -462,5 +464,134 @@ export class AuthService {
     await this.mailService.sendVerificationEmail(user.email, otpCode);
 
     this.logger.log(`OTP resent to ${user.email}`);
+  }
+
+  // Forgot password - send OTP to email
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+    const { email } = forgotPasswordDto;
+
+    this.logger.log(`Forgot password request for: ${email}`);
+
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        isActive: true,
+      },
+    });
+
+    // Always return success for security reasons (don't reveal if email exists)
+    if (!user) {
+      this.logger.warn(`User not found for forgot password: ${email}`);
+      return;
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      this.logger.warn(`Inactive user tried to reset password: ${email}`);
+      return;
+    }
+
+    // Generate OTP
+    const otpCode = this.generateOTPCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.prisma.otp.create({
+      data: {
+        userId: user.id,
+        code: otpCode,
+        expiresAt,
+      },
+    });
+
+    // Send OTP email
+    this.mailService.sendVerificationEmail(user.email, otpCode).catch(err => {
+      this.logger.error('Failed to send forgot password OTP email:', err);
+    });
+
+    this.logger.log(`Forgot password OTP sent to ${email}`);
+  }
+
+  // Reset password using OTP
+  async resetPassword(
+    email: string,
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<AuthResponse> {
+    const { otpCode, newPassword } = resetPasswordDto;
+
+    this.logger.log(`Reset password request for: ${email}`);
+
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        isVerified: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+    }
+
+    // Find valid OTP
+    const otp = await this.prisma.otp.findFirst({
+      where: {
+        userId: user.id,
+        code: otpCode,
+        isUsed: false,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!otp) {
+      this.logger.warn(`Invalid or expired OTP for password reset: ${email}`);
+      throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn');
+    }
+
+    // Mark OTP as used
+    await this.prisma.otp.update({
+      where: { id: otp.id },
+      data: { isUsed: true },
+    });
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    this.logger.log(`Password reset successfully for: ${email}`);
+
+    // Generate tokens
+    const accessToken = this.generateToken(user);
+    const refreshToken = this.generateRefreshToken(user);
+
+    return {
+      user: user as Omit<User, 'password'>,
+      accessToken,
+      refreshToken,
+    };
   }
 }

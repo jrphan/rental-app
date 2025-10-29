@@ -124,7 +124,7 @@ export default function RegisterScreen() {
             fieldState: { error },
           }) => (
             <Input
-              label="Số điện thoại (*)"
+              label="Số điện thoại"
               placeholder="Nhập số điện thoại"
               value={value || ""}
               onChangeText={onChange}
