@@ -34,16 +34,23 @@ export default function LoginScreen() {
       router.replace("/(tabs)");
     },
     onError: (error: any) => {
-      const errorResponse = error?.response?.data;
-      const errorMessage =
-        errorResponse?.message || error?.message || "Đăng nhập thất bại";
+      console.log("Full error object:", error);
+
+      // The axios interceptor already formats the error to ErrorResponse
+      // So error will have: { success, message, statusCode, userId, email, requiresVerification }
+      const errorMessage = error?.message || "Đăng nhập thất bại";
 
       // Check if this is an unverified account error
-      if (
-        error?.response?.status === 400 &&
-        errorResponse?.requiresVerification
-      ) {
-        const { userId, email } = errorResponse;
+      // The error object directly contains requiresVerification, userId, email
+      if (error?.statusCode === 400 && error?.requiresVerification) {
+        const userId = error?.userId;
+        const email = error?.email;
+
+        console.log("Unverified account, navigating to verify OTP:", {
+          userId,
+          email,
+        });
+
         // Navigate to verify OTP screen with user information
         router.push({
           pathname: "/(auth)/verify-otp",
@@ -51,7 +58,6 @@ export default function LoginScreen() {
         });
       } else {
         console.error("Login error:", errorMessage);
-        // You can show an alert or toast here for other errors
         Alert.alert("Lỗi đăng nhập", errorMessage);
       }
     },

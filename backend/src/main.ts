@@ -8,6 +8,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from '@/modules/app/app.module';
 import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
 import { ENV } from '@/config/env';
+import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
 
 const PORT = ENV.port;
 const GLOBAL_PREFIX = ENV.globalPrefix;
@@ -41,6 +42,9 @@ async function bootstrap() {
 
     //setup global response interceptor
     app.useGlobalInterceptors(new ResponseInterceptor());
+
+    //setup global exception filter for consistent error structure
+    app.useGlobalFilters(new HttpExceptionFilter());
 
     //setup swagger
     const config = new DocumentBuilder()
