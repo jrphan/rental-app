@@ -15,9 +15,8 @@ export const registerSchema = z.object({
     ),
   phone: z
     .string()
-    .regex(/^[0-9]{10,11}$/, "Số điện thoại không hợp lệ")
-    .optional()
-    .or(z.literal("")),
+    .min(1, "Vui lòng nhập số điện thoại")
+    .regex(/^[0-9]{10,11}$/, "Số điện thoại không hợp lệ"),
   role: z.enum(["RENTER", "OWNER"]).optional().default("RENTER"),
 });
 

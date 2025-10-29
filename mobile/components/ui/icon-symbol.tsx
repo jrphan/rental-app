@@ -27,6 +27,8 @@ const MAPPING = {
   heart: "favorite",
   eye: "visibility",
   "eye.slash": "visibility-off",
+  // Vehicles
+  moped: "motorcycle",
 } as IconMapping;
 
 /**

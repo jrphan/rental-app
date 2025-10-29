@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { authApi } from "@/lib/api.auth";
 import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
+import { AuthLayout } from "@/components/auth/auth-layout";
 
 export default function VerifyOTPScreen() {
   const router = useRouter();
@@ -20,6 +20,30 @@ export default function VerifyOTPScreen() {
 
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [canResend, setCanResend] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const hiddenInputRef = useRef<TextInput>(null);
+
+  const handleOtpChange = (text: string) => {
+    const digits = text.replace(/\D/g, "").slice(0, 6);
+    const next = Array.from({ length: 6 }, (_, i) => digits[i] || "");
+    setOtpCode(next);
+  };
+
+  // Tìm index của ô hiện tại (ô trống đầu tiên hoặc ô cuối cùng nếu đã đầy)
+  const currentIndex = otpCode.findIndex((digit) => !digit);
+  const activeIndex = currentIndex === -1 ? 5 : currentIndex;
+
+  // Đếm ngược timer
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (resendTimer === 0 && !canResend) {
+      setCanResend(true);
+    }
+  }, [resendTimer, canResend]);
 
   const verifyMutation = useMutation({
     mutationFn: () => authApi.verifyOTP(params.userId!, otpCode.join("")),
@@ -50,9 +74,7 @@ export default function VerifyOTPScreen() {
       Alert.alert("Thành công", "Đã gửi lại mã OTP đến email của bạn");
       setCanResend(false);
       setOtpCode(["", "", "", "", "", ""]);
-
-      // Đếm ngược để cho phép gửi lại sau 60 giây
-      setTimeout(() => setCanResend(true), 60000);
+      setResendTimer(60); // Bắt đầu đếm ngược 60 giây
     },
     onError: (error: any) => {
       const errorMessage =
@@ -72,72 +94,12 @@ export default function VerifyOTPScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      {/* Decorative Background */}
-      <View className="absolute top-0 left-0 right-0 h-80 bg-primary-500 opacity-10" />
-
-      <View className="flex-1 px-6 py-8">
-        {/* Header */}
-        <View className="mb-8 items-center">
-          <View className="mb-4 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg">
-            <IconSymbol name="checkmark.circle.fill" size={40} color="white" />
-          </View>
-          <Text className="mb-2 text-3xl font-extrabold text-gray-900">
-            Xác thực Email
-          </Text>
-          <Text className="text-center text-base text-gray-600">
-            Chúng tôi đã gửi mã OTP đến địa chỉ
-          </Text>
-          <Text className="text-base font-bold text-primary-600">
-            {params.email}
-          </Text>
-        </View>
-
-        {/* OTP Input */}
-        <View className="mb-6">
-          <Text className="mb-4 text-center text-sm text-gray-600">
-            Vui lòng nhập mã 6 số để xác thực tài khoản
-          </Text>
-
-          <View className="flex-row justify-between">
-            {otpCode.map((digit, index) => (
-              <View
-                key={index}
-                className="h-14 w-12 items-center justify-center rounded-2xl border-2 border-gray-300 bg-white"
-              >
-                <Text className="text-2xl font-bold text-gray-900">
-                  {digit}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Text Input ẩn để nhập OTP */}
-          <View className="absolute opacity-0">
-            {/* TODO: Thêm TextInput ẩn để nhập OTP từ keyboard */}
-          </View>
-        </View>
-
-        {/* Verify Button */}
-        <TouchableOpacity
-          onPress={handleVerify}
-          disabled={verifyMutation.isPending || otpCode.some((digit) => !digit)}
-          className={`mb-4 rounded-2xl py-4 ${
-            verifyMutation.isPending || otpCode.some((digit) => !digit)
-              ? "bg-gray-300"
-              : "bg-primary-600"
-          }`}
-        >
-          {verifyMutation.isPending ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text className="text-center text-lg font-bold text-white">
-              Xác thực
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Resend OTP */}
+    <AuthLayout
+      title="Xác thực Email"
+      subtitle={"Chúng tôi đã gửi mã OTP đến địa chỉ:"}
+      email={params.email}
+      iconName="moped"
+      footer={
         <View className="items-center">
           <Text className="mb-2 text-sm text-gray-600">
             Không nhận được mã?
@@ -153,37 +115,90 @@ export default function VerifyOTPScreen() {
                   : "text-primary-600"
               }`}
             >
-              {resendMutation.isPending ? "Đang gửi..." : "Gửi lại mã OTP"}
+              {resendMutation.isPending
+                ? "Đang gửi..."
+                : canResend
+                  ? "Gửi lại mã OTP"
+                  : `Gửi lại mã OTP (${resendTimer}s)`}
             </Text>
           </TouchableOpacity>
         </View>
+      }
+    >
+      <View className="mb-2">
+        <Text className="text-2xl font-bold text-gray-900 text-center">
+          Nhập mã xác thực
+        </Text>
+      </View>
 
-        {/* Simple 6-digit input for now */}
-        <View className="mt-4">
-          <Text className="mb-2 text-sm text-gray-600">
-            Hoặc nhập mã dưới đây:
-          </Text>
-          <TouchableOpacity
-            onPress={() => {
-              // Tạm thời sử dụng Alert để nhập OTP
-              Alert.alert(
-                "Nhập mã OTP",
-                "Vui lòng nhập mã 6 số vào ô nhập văn bản",
-                [
-                  {
-                    text: "OK",
-                  },
-                ]
-              );
+      {/* OTP Input */}
+      <View className="mb-6">
+        <Text className="mb-4 text-center text-sm text-gray-600">
+          Vui lòng nhập mã 6 số để xác thực tài khoản
+        </Text>
+
+        <View className="relative flex-row justify-between mb-3">
+          {otpCode.map((digit, index) => (
+            <View
+              key={index}
+              className={`h-14 w-12 items-center justify-center rounded-2xl border-2 bg-white ${
+                index === activeIndex
+                  ? "border-primary-500 border-4"
+                  : digit
+                    ? "border-green-500"
+                    : "border-gray-300"
+              }`}
+            >
+              <Text className="text-2xl font-bold text-gray-900">{digit}</Text>
+            </View>
+          ))}
+
+          {/* TextInput ẩn overlay để nhập OTP từ keyboard */}
+          <TextInput
+            ref={hiddenInputRef}
+            value={otpCode.join("")}
+            onChangeText={handleOtpChange}
+            keyboardType="number-pad"
+            textContentType="oneTimeCode"
+            importantForAutofill="yes"
+            autoFocus
+            maxLength={6}
+            returnKeyType="done"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              opacity: 0,
+              zIndex: 1,
             }}
-            className="rounded-2xl border-2 border-gray-300 bg-white p-4"
-          >
-            <Text className="text-center text-6xl font-bold text-gray-900">
-              {otpCode.join("") || "------"}
-            </Text>
-          </TouchableOpacity>
+            onTouchStart={(e) => {
+              // Ensure keyboard stays open
+              hiddenInputRef.current?.focus();
+            }}
+          />
         </View>
       </View>
-    </SafeAreaView>
+
+      {/* Verify Button */}
+      <TouchableOpacity
+        onPress={handleVerify}
+        disabled={verifyMutation.isPending || otpCode.some((digit) => !digit)}
+        className={`mb-6 rounded-2xl py-4 ${
+          verifyMutation.isPending || otpCode.some((digit) => !digit)
+            ? "bg-gray-300"
+            : "bg-primary-600"
+        }`}
+      >
+        {verifyMutation.isPending ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text className="text-center text-lg font-bold text-white">
+            Xác thực
+          </Text>
+        )}
+      </TouchableOpacity>
+    </AuthLayout>
   );
 }

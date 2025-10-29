@@ -55,8 +55,10 @@ export class AuthService {
     });
 
     if (existingUser) {
-      this.logger.warn(`Đăng ký thất bại - Email đã tồn tại: ${email}`);
-      throw new ConflictException('Email đã tồn tại trong hệ thống');
+      if (existingUser.isVerified) {
+        this.logger.warn(`Đăng ký thất bại - Email đã tồn tại: ${email}`);
+        throw new ConflictException('Email đã tồn tại và đã được xác thực');
+      }
     }
 
     // Check if phone is provided and already exists
@@ -143,6 +145,13 @@ export class AuthService {
         `Đăng nhập thất bại - Tài khoản bị vô hiệu hóa: ${email}`,
       );
       throw new UnauthorizedException('Tài khoản đã bị vô hiệu hóa');
+    }
+
+    if (!user.isVerified) {
+      this.logger.warn(
+        `Đăng nhập thất bại - Tài khoản chưa được xác thực: ${email}`,
+      );
+      throw new UnauthorizedException('Tài khoản chưa được xác thực');
     }
 
     // Verify password
