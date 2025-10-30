@@ -21,9 +21,9 @@
     </div>
 
     <!-- Error Message -->
-    @if (error) {
+    @if (error()) {
       <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <p class="text-sm text-red-600">{{ error }}</p>
+        <p class="text-sm text-red-600">{{ error() }}</p>
       </div>
     }
 
@@ -36,11 +36,7 @@
         type="email"
         placeholder="Nhập email của bạn"
         [required]="true"
-        [error]="
-          loginForm.get('email')?.invalid && loginForm.get('email')?.touched
-            ? 'Email không hợp lệ'
-            : ''
-        "
+        [error]="getEmailError()"
       />
 
       <!-- Password Input -->
@@ -51,7 +47,7 @@
         </label>
         <div class="relative">
           <input
-            [type]="showPassword ? 'text' : 'password'"
+            [type]="showPassword() ? 'text' : 'password'"
             formControlName="password"
             placeholder="Nhập mật khẩu"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent pr-12 transition-all"
@@ -61,7 +57,7 @@
             (click)="togglePasswordVisibility()"
             class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
           >
-            @if (showPassword) {
+            @if (showPassword()) {
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   stroke-linecap="round"
@@ -88,19 +84,13 @@
             }
           </button>
         </div>
-        @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
-          <p class="mt-1 text-sm text-red-600">Mật khẩu phải có ít nhất 8 ký tự</p>
+        @if (getPasswordError()) {
+          <p class="mt-1 text-sm text-red-600">{{ getPasswordError() }}</p>
         }
       </div>
 
       <!-- Submit Button -->
-      <app-button
-        type="submit"
-        variant="primary"
-        [disabled]="loginForm.invalid || loading"
-        [loading]="loading"
-        class="mb-4"
-      >
+      <app-button type="submit" variant="primary" [loading]="loading()" class="mb-4">
         Đăng nhập
       </app-button>
 

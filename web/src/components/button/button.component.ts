@@ -1,5 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, computed, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost';
+type ButtonType = 'button' | 'submit' | 'reset';
 
 @Component({
   selector: 'app-button',
@@ -7,12 +10,15 @@ import { CommonModule } from '@angular/common';
   templateUrl: './button.component.html',
 })
 export class ButtonComponent {
-  @Input() type: 'button' | 'submit' | 'reset' = 'button';
-  @Input() variant: 'primary' | 'secondary' | 'outline' | 'ghost' = 'primary';
-  @Input() disabled: boolean = false;
-  @Input() loading: boolean = false;
+  type = input<ButtonType>('button');
+  variant = input<ButtonVariant>('primary');
+  disabled = input<boolean>(false);
+  loading = input<boolean>(false);
 
-  get buttonClasses(): string {
+  private disabledInternal = signal(false);
+  effectiveDisabled = computed(() => this.disabled() || this.disabledInternal());
+
+  buttonClasses = computed(() => {
     const baseClasses =
       'px-6 py-3 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed w-full';
 
@@ -25,8 +31,10 @@ export class ButtonComponent {
         'border-2 border-primary-500 text-primary-500 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
       ghost:
         'text-primary-500 hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
-    };
+    } as const;
 
-    return `${baseClasses} ${variantClasses[this.variant]}`;
-  }
+    const variantClass = variantClasses[this.variant()] ?? '';
+    const loadingClass = this.loading() ? ' cursor-wait opacity-75' : '';
+    return `${baseClasses} ${variantClass}${loadingClass}`;
+  });
 }

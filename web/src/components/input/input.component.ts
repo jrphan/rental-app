@@ -1,4 +1,4 @@
-import { Component, Input, forwardRef } from '@angular/core';
+import { Component, forwardRef, input, signal, computed } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
@@ -15,19 +15,22 @@ import { CommonModule } from '@angular/common';
   ],
 })
 export class InputComponent implements ControlValueAccessor {
-  @Input() label: string = '';
-  @Input() type: string = 'text';
-  @Input() placeholder: string = '';
-  @Input() error: string = '';
-  @Input() disabled: boolean = false;
-  @Input() required: boolean = false;
+  label = input<string>('');
+  type = input<string>('text');
+  placeholder = input<string>('');
+  error = input<string>('');
+  disabled = input<boolean>(false);
+  required = input<boolean>(false);
 
-  value: string = '';
+  value = signal<string>('');
   onChange = (value: string) => {};
   onTouched = () => {};
 
+  private disabledInternal = signal(false);
+  effectiveDisabled = computed(() => this.disabled() || this.disabledInternal());
+
   writeValue(value: string): void {
-    this.value = value || '';
+    this.value.set(value || '');
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -39,13 +42,14 @@ export class InputComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
+    this.disabledInternal.set(isDisabled);
   }
 
   onInputChange(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.value = input.value;
-    this.onChange(this.value);
+    const newValue = input.value;
+    this.value.set(newValue);
+    this.onChange(newValue);
   }
 
   onBlur(): void {

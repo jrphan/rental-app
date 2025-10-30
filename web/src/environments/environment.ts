@@ -2,5 +2,5 @@
 // Do not edit manually
 export const environment = {
   production: false,
-  apiUrl: 'https://rental-app-backend-8c3t.onrender.com/api',
+  apiUrl: 'http://localhost:3000/api',
 };

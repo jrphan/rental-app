@@ -1,5 +1,5 @@
-<button [type]="type" [disabled]="disabled || loading" [class]="buttonClasses">
-  @if (loading) {
+<button [type]="type()" [disabled]="effectiveDisabled()" [class]="buttonClasses()">
+  @if (loading()) {
     <span class="inline-flex items-center justify-center mr-2">
       <svg
         class="animate-spin h-5 w-5 text-white"
