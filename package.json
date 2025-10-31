@@ -20,7 +20,7 @@
     "start:mobile:android": "cd mobile && pnpm run android",
     "start:mobile:ios": "cd mobile && pnpm run ios",
     "start:mobile:web": "cd mobile && pnpm run web",
-    "start:web": "cd web && pnpm start",
+    "start:web": "cd web && pnpm dev",
     "build": "pnpm run build:backend",
     "build:backend": "cd backend && pnpm run build",
     "build:web": "cd web && pnpm run build",
