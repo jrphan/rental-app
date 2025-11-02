@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  View,
-  ActivityIndicator,
-  Text,
-  Alert,
-  TouchableOpacity,
-} from "react-native";
+import { View, ActivityIndicator, Text, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -16,6 +10,7 @@ import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useToast } from "@/lib/toast";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -24,6 +19,7 @@ export default function ResetPasswordScreen() {
   const login = useAuthStore((state) => state.login);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const toast = useToast();
 
   const form = useResetPasswordForm();
 
@@ -42,21 +38,22 @@ export default function ResetPasswordScreen() {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       });
-      Alert.alert(
-        "Đặt lại mật khẩu thành công",
+      toast.showSuccess(
         "Mật khẩu của bạn đã được đặt lại thành công. Bạn đã được đăng nhập tự động.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/(tabs)"),
-          },
-        ]
+        {
+          title: "Đặt lại mật khẩu thành công",
+          onPress: () => router.replace("/(tabs)"),
+          duration: 3000,
+        }
       );
+      // Navigate after showing toast
+      setTimeout(() => {
+        router.replace("/(tabs)");
+      }, 1000);
     },
     onError: (error: any) => {
       const errorMessage = error?.message || "Đặt lại mật khẩu thất bại";
-      console.error("Reset password error:", errorMessage);
-      Alert.alert("Lỗi", errorMessage);
+      toast.showError(errorMessage, { title: "Lỗi" });
     },
   });
 
@@ -74,6 +71,7 @@ export default function ResetPasswordScreen() {
       subtitle="Nhập mã OTP và mật khẩu mới"
       email={email}
       iconName="moped"
+      showBackButton={true}
     >
       <View className="mb-4">
         <Text className="text-xl font-bold text-gray-900 text-center">

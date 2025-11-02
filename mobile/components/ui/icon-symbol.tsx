@@ -18,6 +18,7 @@ type IconSymbolName = keyof typeof MAPPING;
  */
 const MAPPING = {
   "house.fill": "home",
+  house: "home",
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
@@ -29,6 +30,13 @@ const MAPPING = {
   "eye.slash": "visibility-off",
   // Vehicles
   moped: "motorcycle",
+  // Navigation icons
+  message: "chat-bubble-outline",
+  "message.fill": "chat-bubble",
+  car: "directions-car",
+  headphones: "headset",
+  person: "person-outline",
+  "person.fill": "person",
 } as IconMapping;
 
 /**

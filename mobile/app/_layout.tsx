@@ -11,6 +11,7 @@ import {
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { queryClient } from "@/lib/queryClient";
+import { ToastContainer } from "@/components/ui/toast";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -32,6 +33,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <RootLayoutNav />
+          <ToastContainer />
           <StatusBar style="dark" />
         </QueryClientProvider>
       </SafeAreaProvider>

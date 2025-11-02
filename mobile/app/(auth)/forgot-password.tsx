@@ -1,4 +1,4 @@
-import { View, ActivityIndicator, Text, Alert } from "react-native";
+import { View, ActivityIndicator, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -7,37 +7,45 @@ import { useForgotPasswordForm } from "@/forms/auth.forms";
 import { authApi } from "@/lib/api.auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
+import { useToast } from "@/lib/toast";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const form = useForgotPasswordForm();
+  const toast = useToast();
 
   const mutation = useMutation({
     mutationFn: authApi.forgotPassword,
     onSuccess: () => {
       const email = form.getValues("email");
-      Alert.alert(
-        "Đã gửi OTP",
+      toast.showSuccess(
         "Nếu email tồn tại, mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra email và nhập mã OTP để đặt lại mật khẩu.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              if (email) {
-                router.push({
-                  pathname: "/(auth)/reset-password",
-                  params: { email },
-                });
-              }
-            },
+        {
+          title: "Đã gửi OTP",
+          onPress: () => {
+            if (email) {
+              router.push({
+                pathname: "/(auth)/reset-password",
+                params: { email },
+              });
+            }
           },
-        ]
+          duration: 3000,
+        }
       );
+      // Navigate after showing toast
+      setTimeout(() => {
+        if (email) {
+          router.push({
+            pathname: "/(auth)/reset-password",
+            params: { email },
+          });
+        }
+      }, 1000);
     },
     onError: (error: any) => {
       const errorMessage = error?.message || "Gửi OTP thất bại";
-      console.error("Forgot password error:", errorMessage);
-      Alert.alert("Lỗi", errorMessage);
+      toast.showError(errorMessage, { title: "Lỗi" });
     },
   });
 
@@ -53,6 +61,7 @@ export default function ForgotPasswordScreen() {
       title="Quên mật khẩu?"
       subtitle="Nhập email của bạn để nhận mã OTP đặt lại mật khẩu"
       iconName="moped"
+      showBackButton={true}
     >
       <View className="mb-4">
         <Text className="text-xl font-bold text-gray-900 text-center">

@@ -1,10 +1,8 @@
 import { Redirect } from "expo-router";
-import { useAuthStore } from "@/store/auth";
 import { View, ActivityIndicator } from "react-native";
 import { useEffect, useState } from "react";
 
 export default function Index() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -14,15 +12,12 @@ export default function Index() {
 
   if (!isReady) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#2563EB" />
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#EA580C" />
       </View>
     );
   }
 
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)" />;
-  }
-
-  return <Redirect href="/(auth)/login" />;
+  // Always redirect to tabs - no auth required
+  return <Redirect href="/(tabs)" />;
 }

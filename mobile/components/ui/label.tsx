@@ -10,10 +10,7 @@ interface LabelProps extends TextProps {
 export function Label({ children, required, className, ...props }: LabelProps) {
   return (
     <Text
-      className={cn(
-        "mb-2 text-sm font-medium text-gray-700 dark:text-gray-300",
-        className
-      )}
+      className={cn("mb-2 text-sm font-medium text-gray-700", className)}
       {...props}
     >
       {children}

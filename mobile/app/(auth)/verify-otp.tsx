@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   TextInput,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -12,11 +11,13 @@ import { authApi } from "@/lib/api.auth";
 import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
+import { useToast } from "@/lib/toast";
 
 export default function VerifyOTPScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ userId: string; email: string }>();
   const login = useAuthStore((state) => state.login);
+  const toast = useToast();
 
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [canResend, setCanResend] = useState(false);
@@ -52,26 +53,31 @@ export default function VerifyOTPScreen() {
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
       });
-      Alert.alert("Xác thực thành công", "Chào mừng bạn đến với Rental App!", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/(tabs)"),
-        },
-      ]);
+      toast.showSuccess("Chào mừng bạn đến với Rental App!", {
+        title: "Xác thực thành công",
+        onPress: () => router.replace("/(tabs)"),
+        duration: 2000,
+      });
+      // Navigate after showing toast
+      setTimeout(() => {
+        router.replace("/(tabs)");
+      }, 1000);
     },
     onError: (error: any) => {
       const errorMessage =
         error?.message ||
         error?.response?.data?.message ||
         "Mã OTP không hợp lệ";
-      Alert.alert("Lỗi", errorMessage);
+      toast.showError(errorMessage, { title: "Lỗi" });
     },
   });
 
   const resendMutation = useMutation({
     mutationFn: () => authApi.resendOTP(params.userId!),
     onSuccess: () => {
-      Alert.alert("Thành công", "Đã gửi lại mã OTP đến email của bạn");
+      toast.showSuccess("Đã gửi lại mã OTP đến email của bạn", {
+        title: "Thành công",
+      });
       setCanResend(false);
       setOtpCode(["", "", "", "", "", ""]);
       setResendTimer(60); // Bắt đầu đếm ngược 60 giây
@@ -81,13 +87,13 @@ export default function VerifyOTPScreen() {
         error?.message ||
         error?.response?.data?.message ||
         "Gửi lại OTP thất bại";
-      Alert.alert("Lỗi", errorMessage);
+      toast.showError(errorMessage, { title: "Lỗi" });
     },
   });
 
   const handleVerify = () => {
     if (otpCode.some((digit) => !digit)) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ 6 số OTP");
+      toast.showError("Vui lòng nhập đầy đủ 6 số OTP", { title: "Lỗi" });
       return;
     }
     verifyMutation.mutate();
@@ -99,6 +105,7 @@ export default function VerifyOTPScreen() {
       subtitle={"Chúng tôi đã gửi mã OTP đến địa chỉ:"}
       email={params.email}
       iconName="moped"
+      showBackButton={true}
       footer={
         <View className="items-center">
           <Text className="mb-2 text-sm text-gray-600">
@@ -118,8 +125,8 @@ export default function VerifyOTPScreen() {
               {resendMutation.isPending
                 ? "Đang gửi..."
                 : canResend
-                  ? "Gửi lại mã OTP"
-                  : `Gửi lại mã OTP (${resendTimer}s)`}
+                ? "Gửi lại mã OTP"
+                : `Gửi lại mã OTP (${resendTimer}s)`}
             </Text>
           </TouchableOpacity>
         </View>
@@ -145,8 +152,8 @@ export default function VerifyOTPScreen() {
                 index === activeIndex
                   ? "border-primary-500 border-4"
                   : digit
-                    ? "border-green-500"
-                    : "border-gray-300"
+                  ? "border-green-500"
+                  : "border-gray-300"
               }`}
             >
               <Text className="text-2xl font-bold text-gray-900">{digit}</Text>

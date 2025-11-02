@@ -12,8 +12,10 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { KycSubmissionDto } from './dto/kyc-submission.dto';
 import * as bcrypt from 'bcrypt';
-import { User, UserRole } from '@/generated/prisma';
+import { User, UserRole, Prisma } from '@/generated/prisma';
 
 interface RefreshTokenPayload {
   sub: string;
@@ -592,6 +594,272 @@ export class AuthService {
       user: user as Omit<User, 'password'>,
       accessToken,
       refreshToken,
+    };
+  }
+
+  // Get user profile with UserProfile
+  async getProfile(userId: string): Promise<
+    Omit<User, 'password'> & {
+      profile?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        avatar?: string | null;
+        dateOfBirth?: Date | null;
+        gender?: string | null;
+        bio?: string | null;
+        address?: string | null;
+        cityId?: string | null;
+        zipCode?: string | null;
+      } | null;
+    }
+  > {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        isVerified: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+        profile: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+            dateOfBirth: true,
+            gender: true,
+            bio: true,
+            address: true,
+            cityId: true,
+            zipCode: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return user as Omit<User, 'password'> & {
+      profile?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        avatar?: string | null;
+        dateOfBirth?: Date | null;
+        gender?: string | null;
+        bio?: string | null;
+        address?: string | null;
+        cityId?: string | null;
+        zipCode?: string | null;
+      } | null;
+    };
+  }
+
+  // Update user profile
+  async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<
+    Omit<User, 'password'> & {
+      profile?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        avatar?: string | null;
+        dateOfBirth?: Date | null;
+        gender?: string | null;
+        bio?: string | null;
+        address?: string | null;
+        cityId?: string | null;
+        zipCode?: string | null;
+      } | null;
+    }
+  > {
+    this.logger.log(`Updating profile for user: ${userId}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    // Extract phone if provided (update in User table)
+    const { phone, ...profileData } = updateProfileDto;
+
+    // Prepare user update data
+    const userUpdateData: Prisma.UserUpdateInput = {};
+    if (phone !== undefined) {
+      // Check if phone already exists
+      if (phone) {
+        const existingUser = await this.prisma.user.findUnique({
+          where: { phone },
+        });
+        if (existingUser && existingUser.id !== userId) {
+          throw new ConflictException('Số điện thoại đã được sử dụng');
+        }
+      }
+      userUpdateData.phone = phone;
+    }
+
+    // Update user if needed
+    if (Object.keys(userUpdateData).length > 0) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: userUpdateData,
+      });
+    }
+
+    // Prepare profile update data
+    const profileUpdateData: Prisma.UserProfileUpdateInput = {};
+    if (profileData.firstName !== undefined) {
+      profileUpdateData.firstName = profileData.firstName;
+    }
+    if (profileData.lastName !== undefined) {
+      profileUpdateData.lastName = profileData.lastName;
+    }
+    if (profileData.avatar !== undefined) {
+      profileUpdateData.avatar = profileData.avatar;
+    }
+    if (profileData.dateOfBirth !== undefined) {
+      profileUpdateData.dateOfBirth = profileData.dateOfBirth
+        ? new Date(profileData.dateOfBirth)
+        : null;
+    }
+    if (profileData.gender !== undefined) {
+      profileUpdateData.gender = profileData.gender;
+    }
+    if (profileData.bio !== undefined) {
+      profileUpdateData.bio = profileData.bio;
+    }
+    if (profileData.address !== undefined) {
+      profileUpdateData.address = profileData.address;
+    }
+    if (profileData.cityId !== undefined) {
+      if (profileData.cityId) {
+        // Connect to city if cityId is provided
+        profileUpdateData.city = {
+          connect: { id: profileData.cityId },
+        };
+      } else {
+        // Disconnect if cityId is empty
+        profileUpdateData.city = { disconnect: true };
+      }
+    }
+    if (profileData.zipCode !== undefined) {
+      profileUpdateData.zipCode = profileData.zipCode;
+    }
+
+    // Check if profile exists
+    const existingProfile = await this.prisma.userProfile.findUnique({
+      where: { userId },
+    });
+
+    if (existingProfile) {
+      // Update existing profile
+      await this.prisma.userProfile.update({
+        where: { userId },
+        data: profileUpdateData,
+      });
+    } else {
+      // Create new profile if doesn't exist
+      if (!profileData.firstName || !profileData.lastName) {
+        throw new BadRequestException(
+          'firstName và lastName là bắt buộc khi tạo profile mới',
+        );
+      }
+      const createData: Prisma.UserProfileCreateInput = {
+        user: { connect: { id: userId } },
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        avatar: profileData.avatar,
+        dateOfBirth: profileData.dateOfBirth
+          ? new Date(profileData.dateOfBirth)
+          : null,
+        gender: profileData.gender,
+        bio: profileData.bio,
+        address: profileData.address,
+        zipCode: profileData.zipCode,
+      };
+
+      if (profileData.cityId) {
+        createData.city = { connect: { id: profileData.cityId } };
+      }
+
+      await this.prisma.userProfile.create({
+        data: createData,
+      });
+    }
+
+    // Return updated user with profile
+    return this.getProfile(userId);
+  }
+
+  // Submit KYC documents
+  async submitKYC(
+    userId: string,
+    kycSubmissionDto: KycSubmissionDto,
+  ): Promise<{ message: string }> {
+    this.logger.log(`Submitting KYC for user: ${userId}`);
+
+    // For now, we'll just store KYC data in user profile notes or create a KYC table later
+    // For simplicity, we'll update the profile with notes about KYC submission
+    // In production, you might want to create a separate KYC table
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    // Store KYC submission data (for now, we'll add notes to profile)
+    // In production, create a separate KYC model
+    const kycNotes = JSON.stringify({
+      ...kycSubmissionDto,
+      submittedAt: new Date().toISOString(),
+      status: 'PENDING',
+    });
+
+    if (user.profile) {
+      await this.prisma.userProfile.update({
+        where: { userId },
+        data: {
+          // We can use bio field temporarily or create a dedicated field
+          bio: kycNotes,
+        },
+      });
+    } else {
+      // Create profile if doesn't exist
+      await this.prisma.userProfile.create({
+        data: {
+          userId,
+          firstName: user.email.split('@')[0],
+          lastName: '',
+          bio: kycNotes,
+        },
+      });
+    }
+
+    // Mark user as pending KYC verification
+    // You might want to add a kycStatus field to User model
+    // For now, we'll use isVerified flag logic differently
+
+    this.logger.log(`KYC submitted for user: ${userId}`);
+
+    return {
+      message:
+        'Đã gửi thông tin KYC thành công. Chúng tôi sẽ xem xét và phản hồi trong vòng 24-48 giờ.',
     };
   }
 }

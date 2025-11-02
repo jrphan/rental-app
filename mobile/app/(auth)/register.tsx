@@ -9,10 +9,12 @@ import { authApi } from "@/lib/api.auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useToast } from "@/lib/toast";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const toast = useToast();
 
   const form = useRegisterForm();
 
@@ -27,8 +29,7 @@ export default function RegisterScreen() {
     onError: (error: any) => {
       const errorMessage =
         error?.message || error?.response?.data?.message || "Đăng ký thất bại";
-      console.error("Register error:", errorMessage);
-      // You can show an alert or toast here
+      toast.showError(errorMessage, { title: "Lỗi đăng ký" });
     },
   });
 
@@ -41,6 +42,8 @@ export default function RegisterScreen() {
       title="Tạo tài khoản mới"
       subtitle="Đăng ký để bắt đầu trải nghiệm dịch vụ cho thuê xe máy"
       iconName="moped"
+      showBackButton={true}
+      onBackPress={() => router.push("/(tabs)/profile")}
       footer={
         <View className="items-center">
           <View className="flex-row items-center">

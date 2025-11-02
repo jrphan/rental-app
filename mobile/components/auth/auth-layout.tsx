@@ -4,9 +4,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 interface AuthLayoutProps {
   title: string;
@@ -15,6 +18,8 @@ interface AuthLayoutProps {
   iconName: Parameters<typeof IconSymbol>[0]["name"];
   children: React.ReactNode;
   footer?: React.ReactNode;
+  showBackButton?: boolean;
+  onBackPress?: () => void;
 }
 
 export function AuthLayout({
@@ -24,7 +29,19 @@ export function AuthLayout({
   iconName,
   children,
   footer,
+  showBackButton = false,
+  onBackPress,
 }: AuthLayoutProps) {
+  const router = useRouter();
+
+  const handleBackPress = () => {
+    if (onBackPress) {
+      onBackPress();
+    } else {
+      router.back();
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       {/* Decorative Background */}
@@ -35,6 +52,17 @@ export function AuthLayout({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
       >
+        {/* Back Button */}
+        {showBackButton && (
+          <View className="absolute top-4 left-4 z-10">
+            <TouchableOpacity
+              onPress={handleBackPress}
+              className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg"
+            >
+              <MaterialIcons name="arrow-back" size={24} color="#EA580C" />
+            </TouchableOpacity>
+          </View>
+        )}
         <ScrollView
           className="flex-1"
           contentContainerClassName="px-6 py-8"

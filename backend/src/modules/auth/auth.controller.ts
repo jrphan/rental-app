@@ -22,6 +22,8 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { KycSubmissionDto } from './dto/kyc-submission.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from '@/generated/prisma';
@@ -211,7 +213,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  getProfile(@GetUser() user: Omit<User, 'password'>) {
+  getMe(@GetUser() user: Omit<User, 'password'>) {
     return user;
   }
 
@@ -333,5 +335,57 @@ export class AuthController {
   ): Promise<AuthResponse> {
     const { email, ...resetPasswordDto } = body;
     return this.authService.resetPassword(email, resetPasswordDto);
+  }
+
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({
+    summary: 'Lấy thông tin profile đầy đủ (User + UserProfile)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy thông tin profile thành công',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getProfile(@GetUser() user: Omit<User, 'password'>) {
+    return this.authService.getProfile(user.id);
+  }
+
+  @Put('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({ summary: 'Cập nhật thông tin profile' })
+  @ApiBody({ type: UpdateProfileDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Cập nhật profile thành công',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateProfile(
+    @GetUser() user: Omit<User, 'password'>,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(user.id, updateProfileDto);
+  }
+
+  @Post('profile/kyc')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({ summary: 'Gửi thông tin KYC để xác thực danh tính' })
+  @ApiBody({ type: KycSubmissionDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Gửi KYC thành công',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async submitKYC(
+    @GetUser() user: Omit<User, 'password'>,
+    @Body() kycSubmissionDto: KycSubmissionDto,
+  ) {
+    return this.authService.submitKYC(user.id, kycSubmissionDto);
   }
 }
