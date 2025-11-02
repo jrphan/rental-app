@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { View, ActivityIndicator, Text, Alert } from "react-native";
+import {
+  View,
+  ActivityIndicator,
+  Text,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -9,6 +15,7 @@ import { authApi } from "@/lib/api.auth";
 import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -56,8 +63,8 @@ export default function ResetPasswordScreen() {
   const onSubmit = (data: typeof form.formState.defaultValues) => {
     mutation.mutate({
       email,
-      otpCode: data.otpCode,
-      newPassword: data.newPassword,
+      otpCode: data?.otpCode ?? "",
+      newPassword: data?.newPassword ?? "",
     });
   };
 
@@ -66,7 +73,7 @@ export default function ResetPasswordScreen() {
       title="Đặt lại mật khẩu"
       subtitle="Nhập mã OTP và mật khẩu mới"
       email={email}
-      iconName="lock"
+      iconName="moped"
     >
       <View className="mb-4">
         <Text className="text-xl font-bold text-gray-900 text-center">
@@ -113,14 +120,20 @@ export default function ResetPasswordScreen() {
               secureTextEntry={!showNewPassword}
               autoComplete="password-new"
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-2 top-8"
+            <TouchableOpacity
               onPress={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-4 top-9"
+              accessibilityRole="button"
+              accessibilityLabel={
+                showNewPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+              }
             >
-              {showNewPassword ? "Ẩn" : "Hiện"}
-            </Button>
+              <IconSymbol
+                name={showNewPassword ? "eye" : "eye.slash"}
+                size={22}
+                color="#EA580C"
+              />
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -143,14 +156,20 @@ export default function ResetPasswordScreen() {
               secureTextEntry={!showConfirmPassword}
               autoComplete="password-new"
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-2 top-8"
+            <TouchableOpacity
               onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-4 top-9"
+              accessibilityRole="button"
+              accessibilityLabel={
+                showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+              }
             >
-              {showConfirmPassword ? "Ẩn" : "Hiện"}
-            </Button>
+              <IconSymbol
+                name={showConfirmPassword ? "eye" : "eye.slash"}
+                size={22}
+                color="#EA580C"
+              />
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -158,7 +177,7 @@ export default function ResetPasswordScreen() {
       <Button
         onPress={form.handleSubmit(onSubmit)}
         disabled={mutation.isPending}
-        className="mb-6 mt-6"
+        className="mb-4 mt-2"
         size="lg"
       >
         {mutation.isPending ? (

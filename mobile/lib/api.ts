@@ -14,9 +14,12 @@ import {
 } from "@/types";
 import { getAuthCache } from "@/store/auth";
 import { authApi } from "./api.auth";
+import { resolveApiUrl } from "./utils";
 
 // Ưu tiên dùng biến môi trường Expo: EXPO_PUBLIC_API_URL
-const baseURL = process.env.EXPO_PUBLIC_API_URL || "";
+// Tự động resolve localhost thành IP network khi chạy trên thiết bị thật
+const rawBaseURL = process.env.EXPO_PUBLIC_API_URL || "";
+const baseURL = resolveApiUrl(rawBaseURL);
 
 export const api = axios.create({
   baseURL,

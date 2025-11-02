@@ -52,7 +52,7 @@ export default function ForgotPasswordScreen() {
     <AuthLayout
       title="Quên mật khẩu?"
       subtitle="Nhập email của bạn để nhận mã OTP đặt lại mật khẩu"
-      iconName="key"
+      iconName="moped"
     >
       <View className="mb-4">
         <Text className="text-xl font-bold text-gray-900 text-center">
@@ -85,7 +85,7 @@ export default function ForgotPasswordScreen() {
       <Button
         onPress={form.handleSubmit(onSubmit)}
         disabled={mutation.isPending}
-        className="mb-6 mt-6"
+        className="mb-4 mt-2"
         size="lg"
       >
         {mutation.isPending ? <ActivityIndicator color="#FFF" /> : "Gửi mã OTP"}
