@@ -1,0 +1,145 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        background-color: #f9f9f9;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background-color: #333;
+        color: white;
+        padding: 20px;
+        border-radius: 10px 10px 0 0;
+        text-align: center;
+      }
+      .content {
+        background-color: white;
+        padding: 30px;
+        border-radius: 0 0 10px 10px;
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .status-approved {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+      .status-rejected {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .status-cancelled {
+        background-color: #d6d6d6;
+        color: #333;
+      }
+      .info-box {
+        background-color: #e7f3ff;
+        border-left: 4px solid #333;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        color: #666;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>📬 Cập nhật trạng thái đặt xe</h1>
+      </div>
+      <div class='content'>
+        <p>Xin chào,</p>
+
+        <p>Chúng tôi xin thông báo đến bạn về trạng thái mới của đơn đặt xe
+          <strong>#{{bookingId}}</strong>:</p>
+
+        {{#if (eq status 'approved')}}
+          <div class='status-badge status-approved'>
+            ✅ ĐƠN ĐÃ ĐƯỢC DUYỆT
+          </div>
+
+          <div class='info-box'>
+            <p><strong>Chúc mừng!</strong>
+              Đơn đặt xe của bạn đã được duyệt thành công.</p>
+            <p>Chúng tôi sẽ sớm liên hệ với bạn để hoàn tất các thủ tục cần
+              thiết.</p>
+          </div>
+        {{/if}}
+
+        {{#if (eq status 'pending')}}
+          <div class='status-badge status-pending'>
+            ⏳ ĐANG CHỜ XỬ LÝ
+          </div>
+
+          <div class='info-box'>
+            <p>Đơn đặt xe của bạn đang được xem xét và xử lý.</p>
+            <p>Chúng tôi sẽ cập nhật thông tin cho bạn ngay khi có kết quả.</p>
+          </div>
+        {{/if}}
+
+        {{#if (eq status 'rejected')}}
+          <div class='status-badge status-rejected'>
+            ❌ ĐƠN BỊ TỪ CHỐI
+          </div>
+
+          <div class='info-box'>
+            <p>Rất tiếc, đơn đặt xe của bạn đã không được duyệt.</p>
+            <p>Vui lòng liên hệ với chúng tôi để biết thêm chi tiết hoặc đặt xe
+              lại.</p>
+          </div>
+        {{/if}}
+
+        {{#if (eq status 'cancelled')}}
+          <div class='status-badge status-cancelled'>
+            🚫 ĐƠN ĐÃ HỦY
+          </div>
+
+          <div class='info-box'>
+            <p>Đơn đặt xe của bạn đã được hủy.</p>
+            <p>Nếu bạn cần hỗ trợ, vui lòng liên hệ với đội ngũ chăm sóc khách
+              hàng.</p>
+          </div>
+        {{/if}}
+
+        <p><strong>Thông tin đặt xe:</strong></p>
+        <ul>
+          <li>Mã đặt xe: <strong>#{{bookingId}}</strong></li>
+          <li>Trạng thái: <strong>{{status}}</strong></li>
+        </ul>
+
+        <p>Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với đội ngũ hỗ trợ
+          của chúng tôi.</p>
+
+        <p>Trân trọng,<br /><strong>Đội ngũ Rental App</strong></p>
+      </div>
+      <div class='footer'>
+        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+        <p>Rental App. Tất cả quyền được bảo lưu.</p>
+      </div>
+    </div>
+  </body>
+</html>

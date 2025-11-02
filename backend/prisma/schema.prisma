@@ -1,0 +1,427 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER MANAGEMENT ====================
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  phone      String?  @unique
+  password   String
+  isActive   Boolean  @default(true)
+  isVerified Boolean  @default(false)
+  role       UserRole @default(RENTER)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  profile          UserProfile?
+  vehicles         Vehicle[]
+  rentals          Rental[]       @relation("RenterRentals")
+  ownedRentals     Rental[]       @relation("OwnerRentals")
+  reviews          Review[]
+  receivedReviews  Review[]       @relation("ReceivedReviews")
+  notifications    Notification[]
+  messages         Message[]      @relation("SenderMessages")
+  receivedMessages Message[]      @relation("ReceiverMessages")
+  payments         Payment[]
+  otps             Otp[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([isActive])
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String   @db.VarChar(6)
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@index([isUsed])
+  @@index([expiresAt])
+  @@map("otps")
+}
+
+model UserProfile {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  firstName   String
+  lastName    String
+  avatar      String?
+  dateOfBirth DateTime?
+  gender      Gender?
+  bio         String?
+  address     String?
+  cityId      String?
+  zipCode     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city City? @relation(fields: [cityId], references: [id])
+
+  @@index([cityId])
+  @@index([createdAt])
+  @@map("user_profiles")
+}
+
+// ==================== VEHICLE MANAGEMENT ====================
+
+model VehicleType {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  vehicles Vehicle[]
+
+  @@index([isActive])
+  @@index([createdAt])
+  @@map("vehicle_types")
+}
+
+model Vehicle {
+  id            String       @id @default(cuid())
+  ownerId       String
+  vehicleTypeId String
+  brand         String
+  model         String
+  year          Int
+  color         String
+  licensePlate  String       @unique
+  engineSize    Float? // CC
+  fuelType      FuelType     @default(PETROL)
+  transmission  Transmission @default(MANUAL)
+  mileage       Int          @default(0)
+  description   String?
+  dailyRate     Decimal      @db.Decimal(10, 2)
+  hourlyRate    Decimal?     @db.Decimal(10, 2)
+  depositAmount Decimal      @db.Decimal(10, 2)
+  isAvailable   Boolean      @default(true)
+  isActive      Boolean      @default(true)
+  location      String? // Current location
+  latitude      Float?
+  longitude     Float?
+  cityId        String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  owner       User           @relation(fields: [ownerId], references: [id])
+  vehicleType VehicleType    @relation(fields: [vehicleTypeId], references: [id])
+  city        City?          @relation(fields: [cityId], references: [id])
+  images      VehicleImage[]
+  rentals     Rental[]
+  reviews     Review[]
+
+  @@index([ownerId])
+  @@index([vehicleTypeId])
+  @@index([isAvailable])
+  @@index([isActive])
+  @@index([cityId])
+  @@index([latitude, longitude])
+  @@index([dailyRate])
+  @@index([createdAt])
+  @@map("vehicles")
+}
+
+model VehicleImage {
+  id        String   @id @default(cuid())
+  vehicleId String
+  url       String
+  alt       String?
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  // Relations
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([isPrimary])
+  @@index([order])
+  @@map("vehicle_images")
+}
+
+// ==================== RENTAL MANAGEMENT ====================
+
+model Rental {
+  id              String       @id @default(cuid())
+  renterId        String
+  ownerId         String
+  vehicleId       String
+  startDate       DateTime
+  endDate         DateTime
+  totalDays       Int
+  totalHours      Int?
+  dailyRate       Decimal      @db.Decimal(10, 2)
+  hourlyRate      Decimal?     @db.Decimal(10, 2)
+  subtotal        Decimal      @db.Decimal(10, 2)
+  serviceFee      Decimal      @db.Decimal(10, 2)
+  totalAmount     Decimal      @db.Decimal(10, 2)
+  depositAmount   Decimal      @db.Decimal(10, 2)
+  status          RentalStatus @default(PENDING)
+  pickupLocation  String?
+  returnLocation  String?
+  pickupLatitude  Float?
+  pickupLongitude Float?
+  returnLatitude  Float?
+  returnLongitude Float?
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  renter   User      @relation("RenterRentals", fields: [renterId], references: [id])
+  owner    User      @relation("OwnerRentals", fields: [ownerId], references: [id])
+  vehicle  Vehicle   @relation(fields: [vehicleId], references: [id])
+  payments Payment[]
+  reviews  Review[]
+
+  @@index([renterId])
+  @@index([ownerId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([createdAt])
+  @@map("rentals")
+}
+
+// ==================== PAYMENT MANAGEMENT ====================
+
+model Payment {
+  id            String          @id @default(cuid())
+  rentalId      String
+  userId        String
+  amount        Decimal         @db.Decimal(10, 2)
+  currency      String          @default("VND")
+  paymentMethod PaymentMethod
+  status        PaymentStatus   @default(PENDING)
+  transactionId String?         @unique
+  gateway       PaymentGateway?
+  gatewayData   Json?
+  description   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  rental Rental @relation(fields: [rentalId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([rentalId])
+  @@index([userId])
+  @@index([status])
+  @@index([paymentMethod])
+  @@index([transactionId])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+// ==================== LOCATION MANAGEMENT ====================
+
+model City {
+  id        String   @id @default(cuid())
+  name      String
+  province  String
+  country   String   @default("Vietnam")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  // Relations
+  users    UserProfile[]
+  vehicles Vehicle[]
+
+  @@unique([name, province])
+  @@index([isActive])
+  @@index([province])
+  @@index([country])
+  @@map("cities")
+}
+
+// ==================== REVIEW & RATING ====================
+
+model Review {
+  id         String   @id @default(cuid())
+  rentalId   String
+  reviewerId String
+  revieweeId String
+  vehicleId  String
+  rating     Int // 1-5 stars
+  comment    String?
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  rental   Rental  @relation(fields: [rentalId], references: [id])
+  reviewer User    @relation(fields: [reviewerId], references: [id])
+  reviewee User    @relation("ReceivedReviews", fields: [revieweeId], references: [id])
+  vehicle  Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@unique([rentalId, reviewerId])
+  @@index([reviewerId])
+  @@index([revieweeId])
+  @@index([vehicleId])
+  @@index([rating])
+  @@index([isPublic])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+// ==================== NOTIFICATION & MESSAGING ====================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Message {
+  id         String      @id @default(cuid())
+  senderId   String
+  receiverId String
+  rentalId   String?
+  content    String
+  type       MessageType @default(TEXT)
+  isRead     Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+
+  // Relations
+  sender   User @relation("SenderMessages", fields: [senderId], references: [id])
+  receiver User @relation("ReceiverMessages", fields: [receiverId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([rentalId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  RENTER
+  OWNER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum FuelType {
+  PETROL
+  ELECTRIC
+  HYBRID
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+  SEMI_AUTOMATIC
+}
+
+enum RentalStatus {
+  PENDING
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  E_WALLET
+  CASH
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentGateway {
+  VNPAY
+  MOMO
+  ZALOPAY
+  STRIPE
+  PAYPAL
+}
+
+enum NotificationType {
+  RENTAL_REQUEST
+  RENTAL_CONFIRMED
+  RENTAL_CANCELLED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  REVIEW_RECEIVED
+  MESSAGE_RECEIVED
+  SYSTEM_ANNOUNCEMENT
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  LOCATION
+  SYSTEM
+}
+
+enum OtpType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  PHONE_VERIFICATION
+}
