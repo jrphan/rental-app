@@ -123,8 +123,8 @@ export default function ProfileScreen() {
                 {user?.role === "RENTER"
                   ? "Người thuê"
                   : user?.role === "OWNER"
-                  ? "Chủ xe"
-                  : "User"}
+                    ? "Chủ xe"
+                    : "User"}
               </Text>
             </View>
             {profile?.dateOfBirth && (
@@ -142,8 +142,8 @@ export default function ProfileScreen() {
                   {profile.gender === "MALE"
                     ? "Nam"
                     : profile.gender === "FEMALE"
-                    ? "Nữ"
-                    : "Khác"}
+                      ? "Nữ"
+                      : "Khác"}
                 </Text>
               </View>
             )}

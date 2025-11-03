@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { View, ScrollView, ActivityIndicator, Text, TouchableOpacity } from "react-native";
+import {
+  View,
+  ScrollView,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -37,16 +43,17 @@ export default function ChangePasswordScreen() {
 
   const onSubmit = (data: typeof form.formState.defaultValues) => {
     mutation.mutate({
-      oldPassword: data.oldPassword,
-      newPassword: data.newPassword,
+      oldPassword: data?.oldPassword ?? "",
+      newPassword: data?.newPassword ?? "",
     });
   };
 
+  const handleShowOldPassword = () => {
+    setShowOldPassword(!showOldPassword);
+  };
+
   return (
-    <SafeAreaView
-      className="flex-1 bg-white"
-      edges={["top", "left", "right"]}
-    >
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
       <View className="flex-1 px-6">
         {/* Header */}
         <View className="flex-row items-center mb-6 pt-4">
@@ -57,9 +64,7 @@ export default function ChangePasswordScreen() {
             onPress={() => router.back()}
             style={{ marginRight: 12 }}
           />
-          <Text className="text-2xl font-bold text-gray-900">
-            Đổi mật khẩu
-          </Text>
+          <Text className="text-2xl font-bold text-gray-900">Đổi mật khẩu</Text>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -72,7 +77,10 @@ export default function ChangePasswordScreen() {
             <Controller
               control={form.control}
               name="oldPassword"
-              render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+              render={({
+                field: { onChange, onBlur, value },
+                fieldState: { error },
+              }) => (
                 <View className="mb-4">
                   <Input
                     label="Mật khẩu cũ"
@@ -89,7 +97,7 @@ export default function ChangePasswordScreen() {
                       name={showOldPassword ? "eye" : "eye.slash"}
                       size={22}
                       color="#EA580C"
-                      onPress={() => setShowOldPassword(!showOldPassword)}
+                      onPress={handleShowOldPassword}
                     />
                   </View>
                 </View>
@@ -99,7 +107,10 @@ export default function ChangePasswordScreen() {
             <Controller
               control={form.control}
               name="newPassword"
-              render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+              render={({
+                field: { onChange, onBlur, value },
+                fieldState: { error },
+              }) => (
                 <View className="mb-4">
                   <Input
                     label="Mật khẩu mới"
@@ -128,7 +139,10 @@ export default function ChangePasswordScreen() {
             <Controller
               control={form.control}
               name="confirmPassword"
-              render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+              render={({
+                field: { onChange, onBlur, value },
+                fieldState: { error },
+              }) => (
                 <View className="mb-4">
                   <Input
                     label="Xác nhận mật khẩu mới"
@@ -172,4 +186,3 @@ export default function ChangePasswordScreen() {
     </SafeAreaView>
   );
 }
-
