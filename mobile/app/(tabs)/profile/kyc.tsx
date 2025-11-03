@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { View, ScrollView, ActivityIndicator, Text, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  ScrollView,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -10,6 +17,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/lib/toast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { GalleryButton } from "@/components/gallery/gallery-button";
 
 export default function KycScreen() {
   const router = useRouter();
@@ -47,22 +55,14 @@ export default function KycScreen() {
     mutation.mutate(cleanedData);
   };
 
-  const handleUploadDocument = (fieldName: string) => {
-    // TODO: Implement image picker and upload
-    Alert.alert(
-      "Tải lên tài liệu",
-      "Tính năng tải lên hình ảnh sẽ được triển khai trong phiên bản tiếp theo. Vui lòng nhập URL hình ảnh tạm thời.",
-      [
-        { text: "OK", style: "default" },
-      ]
-    );
+  const handleSelectFromGallery = (fieldName: string, urls: string[]) => {
+    if (urls.length > 0) {
+      form.setValue(fieldName as any, urls[0]); // Set first URL if single select
+    }
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-white"
-      edges={["top", "left", "right"]}
-    >
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
       <View className="flex-1 px-6">
         {/* Header */}
         <View className="flex-row items-center mb-6 pt-4">
@@ -88,7 +88,10 @@ export default function KycScreen() {
             <Controller
               control={form.control}
               name="idNumber"
-              render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+              render={({
+                field: { onChange, onBlur, value },
+                fieldState: { error },
+              }) => (
                 <Input
                   label="Số CMND/CCCD"
                   placeholder="Nhập số CMND/CCCD"
@@ -109,7 +112,10 @@ export default function KycScreen() {
               <Controller
                 control={form.control}
                 name="idCardFrontUrl"
-                render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+                render={({
+                  field: { onChange, onBlur, value },
+                  fieldState: { error },
+                }) => (
                   <View>
                     <Input
                       label="Mặt trước CMND/CCCD (URL)"
@@ -120,14 +126,17 @@ export default function KycScreen() {
                       error={error?.message}
                       editable={!mutation.isPending}
                     />
-                    <TouchableOpacity
-                      onPress={() => handleUploadDocument("idCardFrontUrl")}
-                      className="mt-2"
-                    >
-                      <Text className="text-primary-600 font-medium">
-                        + Tải lên hình ảnh
-                      </Text>
-                    </TouchableOpacity>
+                    <View className="mt-2">
+                      <GalleryButton
+                        onSelect={(urls) =>
+                          handleSelectFromGallery("idCardFrontUrl", urls)
+                        }
+                        folder="kyc"
+                        multiple={false}
+                        label="Chọn từ thư viện"
+                        variant="outline"
+                      />
+                    </View>
                   </View>
                 )}
               />
@@ -137,7 +146,10 @@ export default function KycScreen() {
               <Controller
                 control={form.control}
                 name="idCardBackUrl"
-                render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+                render={({
+                  field: { onChange, onBlur, value },
+                  fieldState: { error },
+                }) => (
                   <View>
                     <Input
                       label="Mặt sau CMND/CCCD (URL)"
@@ -148,14 +160,17 @@ export default function KycScreen() {
                       error={error?.message}
                       editable={!mutation.isPending}
                     />
-                    <TouchableOpacity
-                      onPress={() => handleUploadDocument("idCardBackUrl")}
-                      className="mt-2"
-                    >
-                      <Text className="text-primary-600 font-medium">
-                        + Tải lên hình ảnh
-                      </Text>
-                    </TouchableOpacity>
+                    <View className="mt-2">
+                      <GalleryButton
+                        onSelect={(urls) =>
+                          handleSelectFromGallery("idCardBackUrl", urls)
+                        }
+                        folder="kyc"
+                        multiple={false}
+                        label="Chọn từ thư viện"
+                        variant="outline"
+                      />
+                    </View>
                   </View>
                 )}
               />
@@ -165,7 +180,10 @@ export default function KycScreen() {
               <Controller
                 control={form.control}
                 name="selfieUrl"
-                render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+                render={({
+                  field: { onChange, onBlur, value },
+                  fieldState: { error },
+                }) => (
                   <View>
                     <Input
                       label="Ảnh selfie với CMND/CCCD (URL)"
@@ -176,14 +194,17 @@ export default function KycScreen() {
                       error={error?.message}
                       editable={!mutation.isPending}
                     />
-                    <TouchableOpacity
-                      onPress={() => handleUploadDocument("selfieUrl")}
-                      className="mt-2"
-                    >
-                      <Text className="text-primary-600 font-medium">
-                        + Tải lên hình ảnh
-                      </Text>
-                    </TouchableOpacity>
+                    <View className="mt-2">
+                      <GalleryButton
+                        onSelect={(urls) =>
+                          handleSelectFromGallery("selfieUrl", urls)
+                        }
+                        folder="kyc"
+                        multiple={false}
+                        label="Chọn từ thư viện"
+                        variant="outline"
+                      />
+                    </View>
                   </View>
                 )}
               />
@@ -196,7 +217,10 @@ export default function KycScreen() {
               <Controller
                 control={form.control}
                 name="passportUrl"
-                render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+                render={({
+                  field: { onChange, onBlur, value },
+                  fieldState: { error },
+                }) => (
                   <Input
                     label="Passport (URL)"
                     placeholder="Nhập URL hình ảnh"
@@ -214,7 +238,10 @@ export default function KycScreen() {
               <Controller
                 control={form.control}
                 name="driverLicenseUrl"
-                render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+                render={({
+                  field: { onChange, onBlur, value },
+                  fieldState: { error },
+                }) => (
                   <Input
                     label="Bằng lái xe (URL)"
                     placeholder="Nhập URL hình ảnh"
@@ -232,7 +259,10 @@ export default function KycScreen() {
               <Controller
                 control={form.control}
                 name="notes"
-                render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+                render={({
+                  field: { onChange, onBlur, value },
+                  fieldState: { error },
+                }) => (
                   <Input
                     label="Ghi chú"
                     placeholder="Ghi chú bổ sung (nếu có)"
@@ -266,4 +296,3 @@ export default function KycScreen() {
     </SafeAreaView>
   );
 }
-

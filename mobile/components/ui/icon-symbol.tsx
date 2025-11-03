@@ -49,12 +49,14 @@ export function IconSymbol({
   size = 24,
   color,
   style,
+  onPress,
 }: {
   name: IconSymbolName;
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
+  onPress?: () => void;
 }) {
   return (
     <MaterialIcons
@@ -62,6 +64,7 @@ export function IconSymbol({
       size={size}
       name={MAPPING[name]}
       style={style}
+      onPress={onPress}
     />
   );
 }

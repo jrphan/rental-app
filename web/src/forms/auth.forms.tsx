@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-  registerSchema,
+  // registerSchema,
   loginSchema,
   changePasswordSchema,
   forgotPasswordSchema,
@@ -10,26 +10,26 @@ import {
   ChangePasswordInput,
   ForgotPasswordInput,
   ResetPasswordInput,
-  RegisterInput,
+  // RegisterInput,
 } from '@/schemas/auth.schema'
 
 /**
  * Hook cho form đăng ký
  */
-export function useRegisterForm() {
-  const form = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      phone: '',
-      role: 'RENTER',
-    },
-    mode: 'onChange',
-  })
+// export function useRegisterForm() {
+//   const form = useForm<RegisterInput>({
+//     resolver: zodResolver(registerSchema),
+//     defaultValues: {
+//       email: '',
+//       password: '',
+//       phone: '',
+//       role: 'RENTER',
+//     },
+//     mode: 'onChange',
+//   })
 
-  return form
-}
+//   return form
+// }
 
 /**
  * Hook cho form đăng nhập
@@ -95,4 +95,3 @@ export function useResetPasswordForm() {
 
   return form
 }
-
