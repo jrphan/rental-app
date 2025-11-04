@@ -29,8 +29,19 @@ api.interceptors.request.use((config) => {
   // Gắn thêm header mặc định nếu cần
   config.headers = config.headers ?? {};
   // Thiết lập từng trường để khớp kiểu AxiosHeaders
-  (config.headers as any)["Accept"] = "application/json";
-  (config.headers as any)["Content-Type"] = "application/json";
+  (config.headers as any)["Accept"] =
+    (config.headers as any)["Accept"] ?? "application/json";
+
+  // Không ép Content-Type khi gửi FormData (để axios tự set boundary)
+  const isFormData =
+    typeof FormData !== "undefined" && config.data instanceof FormData;
+
+  if (isFormData) {
+    // Xóa nếu lỡ set từ trước
+    delete (config.headers as any)["Content-Type"];
+  } else if (!(config.headers as any)["Content-Type"]) {
+    (config.headers as any)["Content-Type"] = "application/json";
+  }
 
   // Thêm token vào header nếu có
   const authData = getAuthCache();

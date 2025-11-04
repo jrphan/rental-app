@@ -44,6 +44,8 @@ export function ImageGalleryModal({
     enabled: visible,
   });
 
+  console.log("galleryFiles", galleryFiles);
+
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: (files: { uri: string; type: string; name: string }[]) =>

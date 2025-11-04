@@ -26,9 +26,7 @@ export const fileApi = {
       name: file.name,
     } as any);
 
-    const url = folder
-      ? `/api/files/upload?folder=${folder}`
-      : "/api/files/upload";
+    const url = folder ? `/files/upload?folder=${folder}` : "/files/upload";
 
     const response = await apiClient.post<FileUploadResult>(url, formData, {
       headers: {
@@ -36,7 +34,10 @@ export const fileApi = {
       },
     });
 
-    return response.data;
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Upload file thất bại");
   },
 
   /**
@@ -56,8 +57,8 @@ export const fileApi = {
     });
 
     const url = folder
-      ? `/api/files/upload-multiple?folder=${folder}`
-      : "/api/files/upload-multiple";
+      ? `/files/upload-multiple?folder=${folder}`
+      : "/files/upload-multiple";
 
     const response = await apiClient.post<FileUploadResult[]>(url, formData, {
       headers: {
@@ -65,25 +66,37 @@ export const fileApi = {
       },
     });
 
-    return response.data;
+    if (response.success && Array.isArray(response.data)) {
+      return response.data as FileUploadResult[];
+    }
+    throw new Error(response.message || "Upload nhiều file thất bại");
   },
 
   /**
    * Lấy danh sách files của user (gallery)
    */
   async getGallery(folder?: string): Promise<FileUploadResult[]> {
-    const url = folder
-      ? `/api/files/gallery?folder=${folder}`
-      : "/api/files/gallery";
+    const url = folder ? `/files/gallery?folder=${folder}` : "/files/gallery";
 
     const response = await apiClient.get<FileUploadResult[]>(url);
-    return response.data;
+    if (response.success) {
+      // Trường hợp chuẩn: data là mảng UploadResult
+      if (Array.isArray(response.data)) {
+        return response.data as FileUploadResult[];
+      }
+      // Trường hợp interceptor client đã wrap thêm 1 lớp: data = { success, data: [] }
+      const maybeWrapped = (response.data ?? {}) as any;
+      if (maybeWrapped && Array.isArray(maybeWrapped.data)) {
+        return maybeWrapped.data as FileUploadResult[];
+      }
+    }
+    throw new Error(response.message || "Lấy gallery thất bại");
   },
 
   /**
    * Xóa file
    */
   async deleteFile(key: string): Promise<void> {
-    await apiClient.delete(`/api/files/${encodeURIComponent(key)}`);
+    await apiClient.delete(`/files/${encodeURIComponent(key)}`);
   },
 };
