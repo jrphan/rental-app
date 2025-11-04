@@ -1,6 +1,16 @@
 import { PrismaService } from '@/prisma/prisma.service';
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { User, UserRole, Prisma } from '@/generated/prisma';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
+import {
+  User,
+  UserRole,
+  Prisma,
+  OwnerApplicationStatus,
+} from '@/generated/prisma';
 import { CreateUserDto, UpdateUserDto, QueryUserDto } from '@/common/dto/User';
 import {
   createPaginatedResponse,
@@ -174,5 +184,104 @@ export class UserService {
 
     this.logger.warn(`Soft delete user thành công: ${id}`);
     return user;
+  }
+
+  // ===== Owner Application =====
+  async submitOwnerApplication(userId: string, notes?: string) {
+    const existing = await this.prisma.ownerApplication.findUnique({
+      where: { userId },
+    });
+    if (existing) {
+      if (existing.status === OwnerApplicationStatus.PENDING) {
+        throw new BadRequestException('Yêu cầu đang chờ duyệt');
+      }
+      if (existing.status === OwnerApplicationStatus.APPROVED) {
+        throw new BadRequestException('Bạn đã được duyệt làm chủ xe');
+      }
+      // If rejected, allow resubmission by updating status back to PENDING
+      return this.prisma.ownerApplication.update({
+        where: { userId },
+        data: { status: OwnerApplicationStatus.PENDING, notes },
+      });
+    }
+
+    return this.prisma.ownerApplication.create({
+      data: { userId, status: OwnerApplicationStatus.PENDING, notes },
+    });
+  }
+
+  async getMyOwnerApplication(userId: string) {
+    return this.prisma.ownerApplication.findUnique({ where: { userId } });
+  }
+
+  async listOwnerApplications(
+    status?: OwnerApplicationStatus,
+    page = 1,
+    limit = 10,
+  ) {
+    const where: Prisma.OwnerApplicationWhereInput = {};
+    if (status) where.status = status;
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      this.prisma.ownerApplication.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              phone: true,
+              role: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.ownerApplication.count({ where }),
+    ]);
+
+    return createPaginatedResponse(
+      items,
+      { page, limit, total },
+      'Lấy danh sách yêu cầu chủ xe thành công',
+      '/api/users/owner-applications',
+    );
+  }
+
+  async approveOwnerApplication(applicationId: string) {
+    const app = await this.prisma.ownerApplication.findUnique({
+      where: { id: applicationId },
+    });
+    if (!app) throw new NotFoundException('Không tìm thấy yêu cầu');
+
+    const result = await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: app.userId },
+        data: { role: UserRole.OWNER },
+      }),
+      this.prisma.ownerApplication.update({
+        where: { id: applicationId },
+        data: { status: OwnerApplicationStatus.APPROVED },
+      }),
+    ]);
+
+    return { message: 'Đã duyệt yêu cầu làm chủ xe', user: result[0] };
+  }
+
+  async rejectOwnerApplication(applicationId: string, notes?: string) {
+    const app = await this.prisma.ownerApplication.findUnique({
+      where: { id: applicationId },
+    });
+    if (!app) throw new NotFoundException('Không tìm thấy yêu cầu');
+
+    await this.prisma.ownerApplication.update({
+      where: { id: applicationId },
+      data: { status: OwnerApplicationStatus.REJECTED, notes },
+    });
+    return { message: 'Đã từ chối yêu cầu làm chủ xe' };
   }
 }

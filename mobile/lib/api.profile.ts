@@ -93,5 +93,31 @@ export const profileApi = {
     }
     throw new Error(response.message || "Gửi KYC thất bại");
   },
+
+  /**
+   * Gửi yêu cầu đăng ký làm chủ xe
+   */
+  async submitOwnerApplication(notes?: string): Promise<{ id: string; status: string; notes?: string } | { message: string }> {
+    const response = await apiClient.post<
+      { id: string; status: string; notes?: string } | { message: string }
+    >("/users/owner-application", { notes });
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Gửi yêu cầu thất bại");
+  },
+
+  /**
+   * Lấy trạng thái yêu cầu làm chủ xe của tôi
+   */
+  async getMyOwnerApplication(): Promise<{ id: string; status: string; notes?: string } | null> {
+    const response = await apiClient.get<
+      { id: string; status: string; notes?: string } | null
+    >("/users/owner-application/me");
+    if (response.success) {
+      return (response.data as any) ?? null;
+    }
+    throw new Error(response.message || "Lấy trạng thái yêu cầu thất bại");
+  },
 };
 

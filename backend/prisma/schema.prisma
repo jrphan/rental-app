@@ -39,6 +39,7 @@ model User {
   receivedMessages Message[]      @relation("ReceiverMessages")
   payments         Payment[]
   otps             Otp[]
+  ownerApplication OwnerApplication?
 
   @@index([email])
   @@index([phone])
@@ -342,6 +343,24 @@ model Message {
   @@map("messages")
 }
 
+// ==================== OWNER APPLICATION ====================
+
+model OwnerApplication {
+  id        String                 @id @default(cuid())
+  userId    String                 @unique
+  status    OwnerApplicationStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("owner_applications")
+}
+
 // ==================== ENUMS ====================
 
 enum UserRole {
@@ -418,6 +437,12 @@ enum MessageType {
   IMAGE
   LOCATION
   SYSTEM
+}
+
+enum OwnerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum OtpType {

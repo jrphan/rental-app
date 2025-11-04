@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { profileApi } from "@/lib/api.profile";
 import { useToast } from "@/lib/toast";
 import { queryKeys } from "@/lib/queryClient";
@@ -24,6 +24,27 @@ export default function ProfileScreen() {
     queryKey: queryKeys.profile.detail(user?.id),
     queryFn: () => profileApi.getProfile(),
     enabled: !!user?.id && isAuthenticated,
+  });
+
+  const queryClient = useQueryClient();
+
+  const { data: myOwnerApplication } = useQuery({
+    queryKey: ["owner-application", user?.id],
+    queryFn: () => profileApi.getMyOwnerApplication(),
+    enabled: !!user?.id && isAuthenticated && user?.role === "RENTER",
+  });
+
+  const submitOwnerApplicationMutation = useMutation({
+    mutationFn: (notes?: string) => profileApi.submitOwnerApplication(notes),
+    onSuccess: () => {
+      toast.showSuccess("Đã gửi yêu cầu làm chủ xe", { title: "Thành công" });
+      queryClient.invalidateQueries({
+        queryKey: ["owner-application", user?.id],
+      });
+    },
+    onError: (e: any) => {
+      toast.showError(e?.message || "Gửi yêu cầu thất bại", { title: "Lỗi" });
+    },
   });
 
   const profile = profileData?.profile;
@@ -168,6 +189,65 @@ export default function ProfileScreen() {
               </View>
               <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
             </TouchableOpacity>
+
+            {user?.role === "RENTER" && (
+              <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-200">
+                <View className="flex-row items-center justify-between mb-2">
+                  <View className="flex-row items-center">
+                    <MaterialIcons name="drive-eta" size={24} color="#EA580C" />
+                    <Text className="ml-3 text-base font-medium text-gray-900">
+                      Đăng ký làm chủ xe
+                    </Text>
+                  </View>
+                </View>
+                {myOwnerApplication ? (
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <View
+                        className={`w-2 h-2 rounded-full mr-2 ${
+                          myOwnerApplication.status === "PENDING"
+                            ? "bg-yellow-500"
+                            : myOwnerApplication.status === "APPROVED"
+                              ? "bg-green-500"
+                              : "bg-red-500"
+                        }`}
+                      />
+                      <Text className="text-sm font-semibold text-gray-900">
+                        {myOwnerApplication.status === "PENDING"
+                          ? "Đang chờ duyệt"
+                          : myOwnerApplication.status === "APPROVED"
+                            ? "Đã được duyệt"
+                            : "Bị từ chối"}
+                      </Text>
+                    </View>
+                    {myOwnerApplication.status === "REJECTED" && (
+                      <Button
+                        size="sm"
+                        onPress={() =>
+                          submitOwnerApplicationMutation.mutate(undefined)
+                        }
+                        disabled={submitOwnerApplicationMutation.isPending}
+                      >
+                        <Text className="text-white font-semibold">
+                          Gửi lại
+                        </Text>
+                      </Button>
+                    )}
+                  </View>
+                ) : (
+                  <Button
+                    onPress={() =>
+                      submitOwnerApplicationMutation.mutate(undefined)
+                    }
+                    disabled={submitOwnerApplicationMutation.isPending}
+                  >
+                    <Text className="text-white font-semibold">
+                      Gửi yêu cầu
+                    </Text>
+                  </Button>
+                )}
+              </View>
+            )}
 
             <TouchableOpacity
               onPress={() => router.push("/(tabs)/profile/change-password")}
