@@ -13,7 +13,6 @@ import {
   validateResponse,
 } from "@/types";
 import { getAuthCache } from "@/store/auth";
-import { authApi } from "./api.auth";
 import { resolveApiUrl } from "./utils";
 
 // Ưu tiên dùng biến môi trường Expo: EXPO_PUBLIC_API_URL
@@ -77,6 +76,8 @@ api.interceptors.response.use(
 
       if (authData?.refreshToken) {
         try {
+          // Lazy import để tránh circular dependency
+          const { authApi } = await import("./api.auth");
           // Refresh token
           const tokens = await authApi.refreshToken(authData.refreshToken);
 

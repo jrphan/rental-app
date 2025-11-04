@@ -88,19 +88,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="trips"
-        options={{
-          title: "CHUYẾN ĐI",
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons
-              name="two-wheeler"
-              size={focused ? 28 : 26}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="support"
         options={{
           title: "HỖ TRỢ",
@@ -124,25 +111,6 @@ export default function TabLayout() {
               color={color}
             />
           ),
-        }}
-      />
-      {/* Register sub-screens but hide from tab bar */}
-      <Tabs.Screen
-        name="profile/edit-profile"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="profile/change-password"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="profile/kyc"
-        options={{
-          href: null,
         }}
       />
     </Tabs>
