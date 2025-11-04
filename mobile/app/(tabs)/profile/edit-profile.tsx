@@ -13,20 +13,22 @@ import { ProfileFieldEditor } from "@/components/profile/profile-field-editor";
 import { useUpdateProfileForm } from "@/forms/profile.forms";
 import { profileApi } from "@/lib/api.profile";
 import { useAuthStore } from "@/store/auth";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/lib/toast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { queryKeys } from "@/lib/queryClient";
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const toast = useToast();
   const { user, updateUser } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   // Fetch profile data
   const { data: profileData, isLoading } = useQuery({
-    queryKey: ["profile", user?.id],
+    queryKey: queryKeys.profile.detail(user?.id),
     queryFn: () => profileApi.getProfile(),
     enabled: !!user?.id,
   });
@@ -72,12 +74,18 @@ export default function EditProfileScreen() {
   const mutation = useMutation({
     mutationFn: profileApi.updateProfile,
     onSuccess: (data) => {
-      // Update user in store
-      if (data) {
+      // Update user in store (only phone field belongs to User table)
+      // Other profile fields (firstName, lastName, avatar, etc.) are stored
+      // in UserProfile table and will be refetched via query cache invalidation
+      if (data?.phone !== undefined) {
         updateUser({
           phone: data.phone || undefined,
         });
       }
+      // Invalidate profile query cache to refresh all profile data
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.profile.detail(user?.id),
+      });
       toast.showSuccess("Cập nhật thông tin thành công!", {
         title: "Thành công",
       });

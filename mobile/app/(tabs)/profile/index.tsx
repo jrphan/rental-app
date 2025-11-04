@@ -7,6 +7,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useQuery } from "@tanstack/react-query";
 import { profileApi } from "@/lib/api.profile";
 import { useToast } from "@/lib/toast";
+import { queryKeys } from "@/lib/queryClient";
 
 export default function ProfileScreen() {
   const { logout, user, isAuthenticated } = useAuthStore();
@@ -20,7 +21,7 @@ export default function ProfileScreen() {
 
   // Fetch profile data if authenticated
   const { data: profileData } = useQuery({
-    queryKey: ["profile", user?.id],
+    queryKey: queryKeys.profile.detail(user?.id),
     queryFn: () => profileApi.getProfile(),
     enabled: !!user?.id && isAuthenticated,
   });

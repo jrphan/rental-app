@@ -9,11 +9,12 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fileApi, FileUploadResult } from "@/lib/api.file";
 import { useToast } from "@/lib/toast";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
+import { queryKeys } from "@/lib/queryClient";
 
 interface ImageGalleryModalProps {
   visible: boolean;
@@ -33,15 +34,12 @@ export function ImageGalleryModal({
   maxSelections = 1,
 }: ImageGalleryModalProps) {
   const toast = useToast();
+  const queryClient = useQueryClient();
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
 
   // Fetch gallery
-  const {
-    data: galleryFiles,
-    isLoading: isLoadingGallery,
-    refetch,
-  } = useQuery({
-    queryKey: ["gallery", folder],
+  const { data: galleryFiles, isLoading: isLoadingGallery } = useQuery({
+    queryKey: queryKeys.gallery.list(folder),
     queryFn: () => fileApi.getGallery(folder),
     enabled: visible,
   });
@@ -51,7 +49,10 @@ export function ImageGalleryModal({
     mutationFn: (files: { uri: string; type: string; name: string }[]) =>
       fileApi.uploadFiles(files, folder),
     onSuccess: () => {
-      refetch();
+      // Invalidate gallery query cache to refresh data
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.gallery.list(folder),
+      });
       toast.showSuccess("Upload ảnh thành công");
     },
     onError: (error: any) => {
