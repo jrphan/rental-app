@@ -177,24 +177,11 @@ export default function ProfileScreen() {
               Cài đặt
             </Text>
 
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/profile/edit-profile")}
-              className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
-            >
-              <View className="flex-row items-center">
-                <MaterialIcons name="edit" size={24} color="#EA580C" />
-                <Text className="ml-3 text-base font-medium text-gray-900">
-                  Chỉnh sửa hồ sơ
-                </Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
-            </TouchableOpacity>
-
             {user?.role === "RENTER" && (
               <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-200">
                 <View className="flex-row items-center justify-between mb-2">
                   <View className="flex-row items-center">
-                    <MaterialIcons name="drive-eta" size={24} color="#EA580C" />
+                    <MaterialIcons name="person" size={24} color="#EA580C" />
                     <Text className="ml-3 text-base font-medium text-gray-900">
                       Đăng ký làm chủ xe
                     </Text>
@@ -247,6 +234,34 @@ export default function ProfileScreen() {
                   </Button>
                 )}
               </View>
+            )}
+
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/profile/edit-profile")}
+              className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
+            >
+              <View className="flex-row items-center">
+                <MaterialIcons name="edit" size={24} color="#EA580C" />
+                <Text className="ml-3 text-base font-medium text-gray-900">
+                  Chỉnh sửa hồ sơ
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            {user?.role === "OWNER" && (
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/profile/vehicle-create")}
+                className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
+              >
+                <View className="flex-row items-center">
+                  <MaterialIcons name="add-circle" size={24} color="#EA580C" />
+                  <Text className="ml-3 text-base font-medium text-gray-900">
+                    Đăng xe mới
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity

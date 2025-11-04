@@ -75,6 +75,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="vehicles"
+        options={{
+          title: "XE",
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialIcons
+              name={focused ? "directions-car" : "directions-car-filled"}
+              size={focused ? 28 : 26}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="messages"
         options={{
           title: "TIN NHẮN",

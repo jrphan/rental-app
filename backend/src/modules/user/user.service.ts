@@ -188,6 +188,19 @@ export class UserService {
 
   // ===== Owner Application =====
   async submitOwnerApplication(userId: string, notes?: string) {
+    // Enforce at least 1 verified vehicle
+    const verifiedVehicleCount = await this.prisma.vehicle.count({
+      where: {
+        ownerId: userId,
+        status: 'VERIFIED',
+      } as unknown as Prisma.VehicleWhereInput,
+    });
+    if (verifiedVehicleCount < 1) {
+      throw new BadRequestException(
+        'Bạn cần có ít nhất 1 xe đã được duyệt trước khi đăng ký làm chủ xe',
+      );
+    }
+
     const existing = await this.prisma.ownerApplication.findUnique({
       where: { userId },
     });

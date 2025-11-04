@@ -129,6 +129,7 @@ model Vehicle {
   depositAmount Decimal      @db.Decimal(10, 2)
   isAvailable   Boolean      @default(true)
   isActive      Boolean      @default(true)
+  status        VehicleStatus @default(DRAFT)
   location      String? // Current location
   latitude      Float?
   longitude     Float?
@@ -148,6 +149,7 @@ model Vehicle {
   @@index([vehicleTypeId])
   @@index([isAvailable])
   @@index([isActive])
+  @@index([status])
   @@index([cityId])
   @@index([latitude, longitude])
   @@index([dailyRate])
@@ -442,6 +444,13 @@ enum MessageType {
 enum OwnerApplicationStatus {
   PENDING
   APPROVED
+  REJECTED
+}
+
+enum VehicleStatus {
+  DRAFT
+  SUBMITTED
+  VERIFIED
   REJECTED
 }
 

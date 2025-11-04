@@ -30,7 +30,13 @@ export default function ProfileLayout() {
           animation: "slide_from_right",
         }}
       />
+      <Stack.Screen
+        name="vehicle-create"
+        options={{
+          presentation: "card",
+          animation: "slide_from_right",
+        }}
+      />
     </Stack>
   );
 }
-
