@@ -41,7 +41,7 @@ export default function KycScreen() {
   const onSubmit = (data: typeof form.formState.defaultValues) => {
     // Clean up empty strings
     const cleanedData: any = {};
-    Object.entries(data).forEach(([key, value]) => {
+    Object.entries(data || ({} as any)).forEach(([key, value]) => {
       if (value !== "" && value !== undefined && value !== null) {
         cleanedData[key] = value;
       }

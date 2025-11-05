@@ -214,13 +214,13 @@ export function ImageGalleryModal({
             data={galleryFiles}
             numColumns={3}
             keyExtractor={(item) => item.key}
-            contentContainerStyle={{ padding: 4 }}
+            contentContainerStyle={{ padding: 2 }}
             renderItem={({ item }) => {
               const isSelected = selectedUrls.includes(item.url);
               return (
                 <TouchableOpacity
                   onPress={() => toggleSelection(item.url)}
-                  className={`m-1 aspect-square rounded-lg overflow-hidden border-2 ${
+                  className={`m-1 w-1/3 aspect-square rounded-lg overflow-hidden border-2 ${
                     isSelected ? "border-blue-600" : "border-gray-200"
                   }`}
                 >
