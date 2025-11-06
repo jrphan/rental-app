@@ -10,7 +10,15 @@ import { RentalModule } from '@/modules/rental/rental.module';
 import { FileModule } from '@/modules/file/file.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, AuthModule, MailModule, FileModule, VehicleModule, RentalModule],
+  imports: [
+    PrismaModule,
+    UserModule,
+    AuthModule,
+    MailModule,
+    FileModule,
+    VehicleModule,
+    RentalModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

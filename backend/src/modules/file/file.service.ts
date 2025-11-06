@@ -34,7 +34,7 @@ export class FileService {
     // Tạo key cho file với userId prefix
     const originalName: string = String(file.originalname || 'file');
     const fileExtension = path.extname(originalName);
-    const uuid = uuidv4() as string;
+    const uuid = uuidv4();
     const fileName = customFileName || `${uuid}${fileExtension}`;
     // Lưu theo cấu trúc: users/{userId}/{folder}/{fileName}
     const userFolder = `users/${userId}`;

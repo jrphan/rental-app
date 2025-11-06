@@ -64,7 +64,9 @@ export default function VehiclesScreen() {
     >
       <View className="flex-1">
         <View className="flex-row items-center justify-between py-4">
-          <Text className="text-2xl font-bold text-gray-900">Danh sách xe</Text>
+          <Text className="text-2xl font-bold text-gray-900">
+            Danh sách xe cho thuê
+          </Text>
         </View>
         {isLoading ? (
           <Text className="text-gray-600">Đang tải...</Text>

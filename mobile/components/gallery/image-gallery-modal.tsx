@@ -37,22 +37,23 @@ export function ImageGalleryModal({
   const queryClient = useQueryClient();
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
 
-  // Fetch gallery
-  const { data: galleryFiles, isLoading: isLoadingGallery } = useQuery({
+  // Fetch gallery query
+  const galleryQuery = useQuery({
     queryKey: queryKeys.gallery.list(folder),
     queryFn: () => fileApi.getGallery(folder),
     enabled: visible,
   });
 
-  console.log("galleryFiles", galleryFiles);
+  const galleryFiles = galleryQuery.data;
+  const isLoadingGallery = galleryQuery.isLoading;
 
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: (files: { uri: string; type: string; name: string }[]) =>
       fileApi.uploadFiles(files, folder),
-    onSuccess: () => {
-      // Invalidate gallery query cache to refresh data
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      // Refetch gallery data immediately after upload
+      await queryClient.refetchQueries({
         queryKey: queryKeys.gallery.list(folder),
       });
       toast.showSuccess("Upload ảnh thành công");
@@ -75,16 +76,16 @@ export function ImageGalleryModal({
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: multiple || maxSelections > 1,
+      allowsMultipleSelection: true, // Always allow multiple selection for upload
       quality: 0.8,
       allowsEditing: false,
     });
 
-    if (!result.canceled && result.assets) {
-      const files = result.assets.map((asset) => ({
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const files = result.assets.map((asset, index) => ({
         uri: asset.uri,
-        type: "image/jpeg",
-        name: asset.fileName || `image_${Date.now()}.jpg`,
+        type: asset.mimeType || "image/jpeg",
+        name: asset.fileName || `image_${Date.now()}_${index}.jpg`,
       }));
 
       uploadMutation.mutate(files);
@@ -105,11 +106,11 @@ export function ImageGalleryModal({
       allowsEditing: false,
     });
 
-    if (!result.canceled && result.assets[0]) {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
       const file = {
         uri: result.assets[0].uri,
-        type: "image/jpeg",
-        name: `photo_${Date.now()}.jpg`,
+        type: result.assets[0].mimeType || "image/jpeg",
+        name: result.assets[0].fileName || `photo_${Date.now()}.jpg`,
       };
 
       uploadMutation.mutate([file]);
