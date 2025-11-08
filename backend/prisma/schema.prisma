@@ -17,15 +17,17 @@ datasource db {
 // ==================== USER MANAGEMENT ====================
 
 model User {
-  id         String   @id @default(cuid())
-  email      String   @unique
-  phone      String?  @unique
-  password   String
-  isActive   Boolean  @default(true)
-  isVerified Boolean  @default(false)
-  role       UserRole @default(RENTER)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  phone              String?  @unique
+  password           String
+  isActive           Boolean  @default(true)
+  isVerified         Boolean  @default(false)
+  role               UserRole @default(RENTER)
+  stripeAccountId    String?  @unique // Stripe Connected Account ID
+  stripeAccountStatus String? // 'active', 'restricted', 'pending', 'disabled'
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Relations
   profile          UserProfile?
@@ -39,11 +41,15 @@ model User {
   receivedMessages Message[]      @relation("ReceiverMessages")
   payments         Payment[]
   otps             Otp[]
+  ownerApplication OwnerApplication?
+  disputes         Dispute[]      @relation("RenterDisputes")
+  resolvedDisputes Dispute[]      @relation("AdminDisputes")
 
   @@index([email])
   @@index([phone])
   @@index([isActive])
   @@index([role])
+  @@index([stripeAccountId])
   @@index([createdAt])
   @@map("users")
 }
@@ -128,6 +134,7 @@ model Vehicle {
   depositAmount Decimal      @db.Decimal(10, 2)
   isAvailable   Boolean      @default(true)
   isActive      Boolean      @default(true)
+  status        VehicleStatus @default(DRAFT)
   location      String? // Current location
   latitude      Float?
   longitude     Float?
@@ -147,6 +154,7 @@ model Vehicle {
   @@index([vehicleTypeId])
   @@index([isAvailable])
   @@index([isActive])
+  @@index([status])
   @@index([cityId])
   @@index([latitude, longitude])
   @@index([dailyRate])
@@ -175,30 +183,35 @@ model VehicleImage {
 // ==================== RENTAL MANAGEMENT ====================
 
 model Rental {
-  id              String       @id @default(cuid())
-  renterId        String
-  ownerId         String
-  vehicleId       String
-  startDate       DateTime
-  endDate         DateTime
-  totalDays       Int
-  totalHours      Int?
-  dailyRate       Decimal      @db.Decimal(10, 2)
-  hourlyRate      Decimal?     @db.Decimal(10, 2)
-  subtotal        Decimal      @db.Decimal(10, 2)
-  serviceFee      Decimal      @db.Decimal(10, 2)
-  totalAmount     Decimal      @db.Decimal(10, 2)
-  depositAmount   Decimal      @db.Decimal(10, 2)
-  status          RentalStatus @default(PENDING)
-  pickupLocation  String?
-  returnLocation  String?
-  pickupLatitude  Float?
-  pickupLongitude Float?
-  returnLatitude  Float?
-  returnLongitude Float?
-  notes           String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                String       @id @default(cuid())
+  renterId          String
+  ownerId           String
+  vehicleId         String
+  startDate         DateTime
+  endDate           DateTime
+  totalDays         Int
+  totalHours        Int?
+  dailyRate         Decimal      @db.Decimal(10, 2)
+  hourlyRate        Decimal?     @db.Decimal(10, 2)
+  subtotal          Decimal      @db.Decimal(10, 2)
+  serviceFee        Decimal      @db.Decimal(10, 2)
+  totalAmount       Decimal      @db.Decimal(10, 2)
+  depositAmount     Decimal      @db.Decimal(10, 2)
+  status            RentalStatus @default(PENDING)
+  pickupLocation    String?
+  returnLocation    String?
+  pickupLatitude    Float?
+  pickupLongitude   Float?
+  returnLatitude    Float?
+  returnLongitude   Float?
+  // Check-in/Check-out tracking
+  renterCheckInAt   DateTime?
+  ownerCheckInAt    DateTime?
+  renterCheckOutAt  DateTime?
+  ownerCheckOutAt   DateTime?
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   // Relations
   renter   User      @relation("RenterRentals", fields: [renterId], references: [id])
@@ -206,6 +219,7 @@ model Rental {
   vehicle  Vehicle   @relation(fields: [vehicleId], references: [id])
   payments Payment[]
   reviews  Review[]
+  disputes Dispute[]
 
   @@index([renterId])
   @@index([ownerId])
@@ -226,10 +240,11 @@ model Payment {
   amount        Decimal         @db.Decimal(10, 2)
   currency      String          @default("VND")
   paymentMethod PaymentMethod
+  type          PaymentType?    // CHARGE, REFUND, TRANSFER, PAYOUT
   status        PaymentStatus   @default(PENDING)
-  transactionId String?         @unique
+  transactionId String?         @unique // PaymentIntent ID, Refund ID, hoặc Transfer ID
   gateway       PaymentGateway?
-  gatewayData   Json?
+  gatewayData   Json?           // Lưu refundId, transferId, paymentIntentId, etc.
   description   String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -241,6 +256,7 @@ model Payment {
   @@index([rentalId])
   @@index([userId])
   @@index([status])
+  @@index([type])
   @@index([paymentMethod])
   @@index([transactionId])
   @@index([createdAt])
@@ -342,6 +358,74 @@ model Message {
   @@map("messages")
 }
 
+// ==================== OWNER APPLICATION ====================
+
+model OwnerApplication {
+  id        String                 @id @default(cuid())
+  userId    String                 @unique
+  status    OwnerApplicationStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("owner_applications")
+}
+
+// ==================== DISPUTE MANAGEMENT ====================
+
+model Dispute {
+  id            String         @id @default(cuid())
+  rentalId      String
+  renterId      String
+  ownerId       String
+  reason        String         // Lý do tranh chấp
+  description   String?        // Mô tả chi tiết
+  status        DisputeStatus  @default(PENDING)
+  penaltyAmount Decimal?       @db.Decimal(10, 2) // Số tiền phạt (từ tiền cọc)
+  resolvedBy    String?        // Admin ID đã xử lý
+  resolvedAt    DateTime?
+  resolutionNotes String?      // Ghi chú của Admin
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  rental   Rental @relation(fields: [rentalId], references: [id])
+  renter   User   @relation("RenterDisputes", fields: [renterId], references: [id])
+  resolver User?  @relation("AdminDisputes", fields: [resolvedBy], references: [id])
+
+  @@index([rentalId])
+  @@index([renterId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([resolvedBy])
+  @@index([createdAt])
+  @@map("disputes")
+}
+
+// ==================== STRIPE WEBHOOK EVENTS ====================
+
+model StripeWebhookEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique // Stripe event ID (evt_...)
+  type      String   // Event type (payment_intent.succeeded, etc.)
+  processed Boolean  @default(false)
+  data      Json?    // Event data (optional, for debugging)
+  error     String?  // Error message if processing failed
+  createdAt DateTime @default(now())
+  processedAt DateTime?
+
+  @@index([eventId])
+  @@index([type])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("stripe_webhook_events")
+}
+
 // ==================== ENUMS ====================
 
 enum UserRole {
@@ -411,6 +495,8 @@ enum NotificationType {
   REVIEW_RECEIVED
   MESSAGE_RECEIVED
   SYSTEM_ANNOUNCEMENT
+  DISPUTE_CREATED
+  DISPUTE_RESOLVED
 }
 
 enum MessageType {
@@ -420,8 +506,35 @@ enum MessageType {
   SYSTEM
 }
 
+enum OwnerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VehicleStatus {
+  DRAFT
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
 enum OtpType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
   PHONE_VERIFICATION
+}
+
+enum PaymentType {
+  CHARGE   // Thanh toán từ Renter
+  REFUND   // Hoàn tiền cho Renter
+  TRANSFER // Chuyển tiền cho Owner
+  PAYOUT   // Payout từ Stripe (nếu cần track)
+}
+
+enum DisputeStatus {
+  PENDING   // Đang chờ xử lý
+  UNDER_REVIEW // Admin đang xem xét
+  RESOLVED  // Đã xử lý xong
+  CANCELLED // Đã hủy
 }

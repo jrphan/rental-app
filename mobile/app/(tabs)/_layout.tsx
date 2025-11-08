@@ -2,9 +2,12 @@ import { Tabs } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuthStore } from "@/store/auth";
+import { USER_ROLES } from "@/constants/constants";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
 
   // Primary color from tailwind config: hsl(14, 85%, 48%) -> #EA580C (primary-600)
   const primaryColor = "#EA580C";
@@ -75,25 +78,34 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="vehicles"
+        options={{
+          title: "XE",
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialIcons
+              name={focused ? "directions-car" : "directions-car-filled"}
+              size={focused ? 28 : 26}
+              color={color}
+            />
+          ),
+          tabBarItemStyle:
+            user?.role !== USER_ROLES.OWNER
+              ? {
+                  display: "none",
+                  width: 0,
+                  height: 0,
+                  overflow: "hidden",
+                }
+              : undefined,
+        }}
+      />
+      <Tabs.Screen
         name="messages"
         options={{
           title: "TIN NHẮN",
           tabBarIcon: ({ color, focused }) => (
             <MaterialIcons
               name={focused ? "chat-bubble" : "chat-bubble-outline"}
-              size={focused ? 28 : 26}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="trips"
-        options={{
-          title: "CHUYẾN ĐI",
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons
-              name="two-wheeler"
               size={focused ? 28 : 26}
               color={color}
             />
@@ -124,25 +136,6 @@ export default function TabLayout() {
               color={color}
             />
           ),
-        }}
-      />
-      {/* Register sub-screens but hide from tab bar */}
-      <Tabs.Screen
-        name="profile/edit-profile"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="profile/change-password"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="profile/kyc"
-        options={{
-          href: null,
         }}
       />
     </Tabs>

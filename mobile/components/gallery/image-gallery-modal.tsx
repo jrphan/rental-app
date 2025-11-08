@@ -9,11 +9,12 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fileApi, FileUploadResult } from "@/lib/api.file";
 import { useToast } from "@/lib/toast";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
+import { queryKeys } from "@/lib/queryClient";
 
 interface ImageGalleryModalProps {
   visible: boolean;
@@ -33,25 +34,28 @@ export function ImageGalleryModal({
   maxSelections = 1,
 }: ImageGalleryModalProps) {
   const toast = useToast();
+  const queryClient = useQueryClient();
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
 
-  // Fetch gallery
-  const {
-    data: galleryFiles,
-    isLoading: isLoadingGallery,
-    refetch,
-  } = useQuery({
-    queryKey: ["gallery", folder],
+  // Fetch gallery query
+  const galleryQuery = useQuery({
+    queryKey: queryKeys.gallery.list(folder),
     queryFn: () => fileApi.getGallery(folder),
     enabled: visible,
   });
+
+  const galleryFiles = galleryQuery.data;
+  const isLoadingGallery = galleryQuery.isLoading;
 
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: (files: { uri: string; type: string; name: string }[]) =>
       fileApi.uploadFiles(files, folder),
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      // Refetch gallery data immediately after upload
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.gallery.list(folder),
+      });
       toast.showSuccess("Upload ảnh thành công");
     },
     onError: (error: any) => {
@@ -72,16 +76,16 @@ export function ImageGalleryModal({
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: multiple || maxSelections > 1,
+      allowsMultipleSelection: true, // Always allow multiple selection for upload
       quality: 0.8,
       allowsEditing: false,
     });
 
-    if (!result.canceled && result.assets) {
-      const files = result.assets.map((asset) => ({
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const files = result.assets.map((asset, index) => ({
         uri: asset.uri,
-        type: "image/jpeg",
-        name: asset.fileName || `image_${Date.now()}.jpg`,
+        type: asset.mimeType || "image/jpeg",
+        name: asset.fileName || `image_${Date.now()}_${index}.jpg`,
       }));
 
       uploadMutation.mutate(files);
@@ -102,11 +106,11 @@ export function ImageGalleryModal({
       allowsEditing: false,
     });
 
-    if (!result.canceled && result.assets[0]) {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
       const file = {
         uri: result.assets[0].uri,
-        type: "image/jpeg",
-        name: `photo_${Date.now()}.jpg`,
+        type: result.assets[0].mimeType || "image/jpeg",
+        name: result.assets[0].fileName || `photo_${Date.now()}.jpg`,
       };
 
       uploadMutation.mutate([file]);
@@ -211,13 +215,13 @@ export function ImageGalleryModal({
             data={galleryFiles}
             numColumns={3}
             keyExtractor={(item) => item.key}
-            contentContainerStyle={{ padding: 4 }}
+            contentContainerStyle={{ padding: 2 }}
             renderItem={({ item }) => {
               const isSelected = selectedUrls.includes(item.url);
               return (
                 <TouchableOpacity
                   onPress={() => toggleSelection(item.url)}
-                  className={`m-1 aspect-square rounded-lg overflow-hidden border-2 ${
+                  className={`m-1 w-1/3 aspect-square rounded-lg overflow-hidden border-2 ${
                     isSelected ? "border-blue-600" : "border-gray-200"
                   }`}
                 >

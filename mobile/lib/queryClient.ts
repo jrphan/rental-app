@@ -14,7 +14,10 @@ export const queryClient = new QueryClient({
 });
 
 export const queryKeys = {
-  example: {
-    list: () => ["example"],
+  profile: {
+    detail: (userId?: string | null) => ["profile", userId] as const,
+  },
+  gallery: {
+    list: (folder: string) => ["gallery", folder] as const,
   },
 };
