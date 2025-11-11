@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TouchableOpacity, Text, View } from "react-native";
+import { TouchableOpacity, Text } from "react-native";
 import { ImageGalleryModal } from "./image-gallery-modal";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 

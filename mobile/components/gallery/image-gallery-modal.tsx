@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fileApi, FileUploadResult } from "@/lib/api.file";
+import { fileApi } from "@/lib/api.file";
 import { useToast } from "@/lib/toast";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
@@ -75,7 +75,7 @@ export function ImageGalleryModal({
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: "images",
       allowsMultipleSelection: true, // Always allow multiple selection for upload
       quality: 0.8,
       allowsEditing: false,
@@ -101,7 +101,7 @@ export function ImageGalleryModal({
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: "images",
       quality: 0.8,
       allowsEditing: false,
     });

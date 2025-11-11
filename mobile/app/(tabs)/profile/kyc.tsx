@@ -1,12 +1,4 @@
-import { useState } from "react";
-import {
-  View,
-  ScrollView,
-  ActivityIndicator,
-  Text,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { View, ScrollView, ActivityIndicator, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";

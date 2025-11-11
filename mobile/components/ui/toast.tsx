@@ -76,6 +76,7 @@ function ToastItem({
         friction: 8,
       }),
     ]).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleHide = () => {
