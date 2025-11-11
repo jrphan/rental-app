@@ -227,6 +227,8 @@ export class AuthService {
         isActive: true,
         isVerified: true,
         role: true,
+        stripeAccountId: true,
+        stripeAccountStatus: true,
         createdAt: true,
         updatedAt: true,
       },

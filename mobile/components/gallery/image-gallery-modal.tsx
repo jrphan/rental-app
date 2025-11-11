@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fileApi, FileUploadResult } from "@/lib/api.file";
+import { fileApi } from "@/lib/api.file";
 import { useToast } from "@/lib/toast";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
