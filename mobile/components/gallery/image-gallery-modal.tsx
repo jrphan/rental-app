@@ -75,7 +75,7 @@ export function ImageGalleryModal({
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: "images",
       allowsMultipleSelection: true, // Always allow multiple selection for upload
       quality: 0.8,
       allowsEditing: false,
@@ -101,7 +101,7 @@ export function ImageGalleryModal({
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: "images",
       quality: 0.8,
       allowsEditing: false,
     });
