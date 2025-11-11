@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { View, TouchableOpacity, ActivityIndicator, Text } from "react-native";
+import { View, ActivityIndicator, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -9,13 +8,12 @@ import { authApi } from "@/lib/api.auth";
 import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useToast } from "@/lib/toast";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
-  const [showPassword, setShowPassword] = useState(false);
   const toast = useToast();
 
   const form = useLoginForm();
@@ -107,32 +105,15 @@ export default function LoginScreen() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <View>
-            <Input
-              label="Mật khẩu"
-              placeholder="Nhập mật khẩu"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={error?.message}
-              secureTextEntry={!showPassword}
-              autoComplete="password"
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-9"
-              accessibilityRole="button"
-              accessibilityLabel={
-                showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
-              }
-            >
-              <IconSymbol
-                name={showPassword ? "eye" : "eye.slash"}
-                size={22}
-                color="#EA580C"
-              />
-            </TouchableOpacity>
-          </View>
+          <PasswordInput
+            label="Mật khẩu"
+            placeholder="Nhập mật khẩu"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            error={error?.message}
+            autoComplete="password"
+          />
         )}
       />
 
@@ -149,9 +130,13 @@ export default function LoginScreen() {
         onPress={form.handleSubmit(onSubmit)}
         disabled={mutation.isPending}
         className="mb-6 mt-2"
-        size="lg"
+        size="md"
       >
-        {mutation.isPending ? <ActivityIndicator color="#FFF" /> : "Đăng nhập"}
+        {mutation.isPending ? (
+          <ActivityIndicator color="#FFF" size="small" />
+        ) : (
+          "Đăng nhập"
+        )}
       </Button>
     </AuthLayout>
   );

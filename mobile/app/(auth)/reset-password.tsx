@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, ActivityIndicator, Text, TouchableOpacity } from "react-native";
+import { View, ActivityIndicator, Text } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -9,16 +9,14 @@ import { authApi } from "@/lib/api.auth";
 import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useToast } from "@/lib/toast";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ email: string }>();
   const email = params.email || "";
   const login = useAuthStore((state) => state.login);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const toast = useToast();
 
   const form = useResetPasswordForm();
@@ -107,32 +105,15 @@ export default function ResetPasswordScreen() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <View>
-            <Input
-              label="Mật khẩu mới"
-              placeholder="Nhập mật khẩu mới"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={error?.message}
-              secureTextEntry={!showNewPassword}
-              autoComplete="password-new"
-            />
-            <TouchableOpacity
-              onPress={() => setShowNewPassword(!showNewPassword)}
-              className="absolute right-4 top-9"
-              accessibilityRole="button"
-              accessibilityLabel={
-                showNewPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
-              }
-            >
-              <IconSymbol
-                name={showNewPassword ? "eye" : "eye.slash"}
-                size={22}
-                color="#EA580C"
-              />
-            </TouchableOpacity>
-          </View>
+          <PasswordInput
+            label="Mật khẩu mới"
+            placeholder="Nhập mật khẩu mới"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            error={error?.message}
+            autoComplete="password-new"
+          />
         )}
       />
 
@@ -143,32 +124,15 @@ export default function ResetPasswordScreen() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <View>
-            <Input
-              label="Xác nhận mật khẩu mới"
-              placeholder="Nhập lại mật khẩu mới"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={error?.message}
-              secureTextEntry={!showConfirmPassword}
-              autoComplete="password-new"
-            />
-            <TouchableOpacity
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-4 top-9"
-              accessibilityRole="button"
-              accessibilityLabel={
-                showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
-              }
-            >
-              <IconSymbol
-                name={showConfirmPassword ? "eye" : "eye.slash"}
-                size={22}
-                color="#EA580C"
-              />
-            </TouchableOpacity>
-          </View>
+          <PasswordInput
+            label="Xác nhận mật khẩu mới"
+            placeholder="Nhập lại mật khẩu mới"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            error={error?.message}
+            autoComplete="password-new"
+          />
         )}
       />
 

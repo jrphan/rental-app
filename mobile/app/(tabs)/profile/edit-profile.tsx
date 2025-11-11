@@ -294,7 +294,7 @@ export default function EditProfileScreen() {
           <Button
             onPress={form.handleSubmit(onSubmit)}
             disabled={mutation.isPending}
-            className="mb-24 mt-4"
+            className="mb-24"
             size="lg"
           >
             {mutation.isPending ? (

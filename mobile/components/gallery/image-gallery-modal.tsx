@@ -8,6 +8,8 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  useWindowDimensions,
+  StyleSheet,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fileApi } from "@/lib/api.file";
@@ -35,7 +37,7 @@ export function ImageGalleryModal({
 }: ImageGalleryModalProps) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
   // Fetch gallery query
   const galleryQuery = useQuery({
@@ -46,20 +48,55 @@ export function ImageGalleryModal({
 
   const galleryFiles = galleryQuery.data;
   const isLoadingGallery = galleryQuery.isLoading;
+  const { width: windowWidth } = useWindowDimensions();
+
+  console.log(galleryFiles, "galleryFiles");
+
+  const NUM_COLUMNS = 3;
+  const ITEM_GAP = 8;
+  const HORIZONTAL_PADDING = 16;
+  const itemSize = Math.max(
+    0,
+    (windowWidth - HORIZONTAL_PADDING * 2 - ITEM_GAP * (NUM_COLUMNS - 1)) /
+      NUM_COLUMNS
+  );
 
   // Upload mutation
   const uploadMutation = useMutation({
     mutationFn: (files: { uri: string; type: string; name: string }[]) =>
       fileApi.uploadFiles(files, folder),
     onSuccess: async () => {
-      // Refetch gallery data immediately after upload
+      // Invalidate and refetch the gallery list for this folder
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.gallery.list(folder),
+      });
       await queryClient.refetchQueries({
         queryKey: queryKeys.gallery.list(folder),
+        type: "active",
       });
       toast.showSuccess("Upload ảnh thành công");
     },
     onError: (error: any) => {
       toast.showError(error?.message || "Upload ảnh thất bại");
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (keys: string[]) => fileApi.deleteFiles(keys),
+    onSuccess: async () => {
+      setSelectedKeys([]);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.gallery.list(folder),
+      });
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.gallery.list(folder),
+        type: "active",
+      });
+      toast.showSuccess("Đã xoá ảnh đã chọn");
+    },
+    onError: (error: any) => {
+      toast.showError(error?.message || "Xoá ảnh thất bại");
     },
   });
 
@@ -118,37 +155,41 @@ export function ImageGalleryModal({
   };
 
   // Handle image selection
-  const toggleSelection = (url: string) => {
-    if (selectedUrls.includes(url)) {
-      setSelectedUrls(selectedUrls.filter((u) => u !== url));
+  const toggleSelection = (key: string) => {
+    if (selectedKeys.includes(key)) {
+      setSelectedKeys(selectedKeys.filter((k) => k !== key));
     } else {
-      if (!multiple && selectedUrls.length >= maxSelections) {
+      if (!multiple && selectedKeys.length >= maxSelections) {
         if (maxSelections === 1) {
-          setSelectedUrls([url]);
+          setSelectedKeys([key]);
         } else {
           toast.showError(`Chỉ được chọn tối đa ${maxSelections} ảnh`);
         }
       } else {
-        setSelectedUrls([...selectedUrls, url]);
+        setSelectedKeys([...selectedKeys, key]);
       }
     }
   };
 
   // Confirm selection
   const handleConfirm = () => {
-    if (selectedUrls.length === 0) {
+    if (selectedKeys.length === 0) {
       toast.showError("Vui lòng chọn ít nhất một ảnh");
       return;
     }
-    onSelect(selectedUrls);
-    setSelectedUrls([]);
+    const urls =
+      galleryFiles
+        ?.filter((f) => selectedKeys.includes(f.key))
+        .map((f) => f.url) || [];
+    onSelect(urls);
+    setSelectedKeys([]);
     onClose();
   };
 
   // Reset when modal closes
   useEffect(() => {
     if (!visible) {
-      setSelectedUrls([]);
+      setSelectedKeys([]);
     }
   }, [visible]);
 
@@ -170,38 +211,79 @@ export function ImageGalleryModal({
           </Text>
           <TouchableOpacity
             onPress={handleConfirm}
-            disabled={selectedUrls.length === 0}
+            disabled={selectedKeys.length === 0}
           >
             <Text
               className={`text-lg font-semibold ${
-                selectedUrls.length === 0 ? "text-gray-400" : "text-blue-600"
+                selectedKeys.length === 0 ? "text-gray-400" : "text-blue-600"
               }`}
             >
-              Chọn ({selectedUrls.length})
+              Chọn ({selectedKeys.length})
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Actions */}
-        <View className="flex-row px-4 py-3 border-b border-gray-200 gap-3">
-          <TouchableOpacity
-            onPress={pickImages}
-            className="flex-1 flex-row items-center justify-center bg-blue-600 rounded-lg py-3 px-4"
-            disabled={uploadMutation.isPending}
-          >
-            <MaterialIcons name="photo-library" size={20} color="#fff" />
-            <Text className="ml-2 text-white font-medium">
-              Chọn từ thư viện
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={takePhoto}
-            className="flex-1 flex-row items-center justify-center bg-green-600 rounded-lg py-3 px-4"
-            disabled={uploadMutation.isPending}
-          >
-            <MaterialIcons name="camera-alt" size={20} color="#fff" />
-            <Text className="ml-2 text-white font-medium">Chụp ảnh</Text>
-          </TouchableOpacity>
+        <View className="px-4 py-3 border-b border-gray-200">
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              onPress={pickImages}
+              className={`flex-1 flex-row items-center justify-center rounded-lg py-3 px-4 ${
+                uploadMutation.isPending
+                  ? "opacity-60 bg-blue-600"
+                  : "bg-blue-600"
+              }`}
+              disabled={uploadMutation.isPending}
+            >
+              <MaterialIcons name="photo-library" size={20} color="#fff" />
+              <Text className="ml-2 text-white font-medium">
+                Chọn từ thư viện
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={takePhoto}
+              className={`flex-1 flex-row items-center justify-center rounded-lg py-3 px-4 ${
+                uploadMutation.isPending
+                  ? "opacity-60 bg-green-600"
+                  : "bg-green-600"
+              }`}
+              disabled={uploadMutation.isPending}
+            >
+              <MaterialIcons name="camera-alt" size={20} color="#fff" />
+              <Text className="ml-2 text-white font-medium">Chụp ảnh</Text>
+            </TouchableOpacity>
+          </View>
+          <View className="flex-row justify-end gap-3 mt-3">
+            <TouchableOpacity
+              onPress={() => deleteMutation.mutate(selectedKeys)}
+              className="flex-row items-center justify-center rounded-full px-3 py-1 border bg-white border-gray-300"
+              disabled={deleteMutation.isPending || selectedKeys.length === 0}
+            >
+              <MaterialIcons name="delete-forever" size={18} color="#111827" />
+              <Text className="ml-1 text-gray-800 text-sm">Xoá đã chọn</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                if (!galleryFiles || galleryFiles.length === 0) return;
+                setSelectedKeys(galleryFiles.map((f) => f.key));
+              }}
+              className="flex-row items-center justify-center rounded-full px-3 py-1 border bg-white border-gray-300"
+              disabled={!galleryFiles || galleryFiles.length === 0}
+            >
+              <MaterialIcons name="select-all" size={18} color="#111827" />
+              <Text className="ml-1 text-gray-800 text-sm">Chọn tất cả</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setSelectedKeys([])}
+              className={`flex-row items-center justify-center rounded-full px-3 py-1 border bg-white border-gray-300 ${
+                selectedKeys.length === 0 ? "opacity-60" : ""
+              }`}
+              disabled={selectedKeys.length === 0}
+            >
+              <MaterialIcons name="close" size={18} color="#111827" />
+              <Text className="ml-1 text-gray-800 text-sm">Bỏ chọn</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Gallery */}
@@ -213,28 +295,39 @@ export function ImageGalleryModal({
         ) : galleryFiles && galleryFiles.length > 0 ? (
           <FlatList
             data={galleryFiles}
-            numColumns={3}
+            numColumns={NUM_COLUMNS}
             keyExtractor={(item) => item.key}
-            contentContainerStyle={{ padding: 2 }}
-            renderItem={({ item }) => {
-              const isSelected = selectedUrls.includes(item.url);
+            contentContainerStyle={{
+              paddingHorizontal: HORIZONTAL_PADDING,
+              paddingVertical: ITEM_GAP,
+            }}
+            extraData={selectedKeys}
+            renderItem={({ item, index }) => {
+              const isSelected = selectedKeys.includes(item.key);
+              const isLastInRow = (index + 1) % NUM_COLUMNS === 0;
               return (
                 <TouchableOpacity
-                  onPress={() => toggleSelection(item.url)}
-                  className={`m-1 w-1/3 aspect-square rounded-lg overflow-hidden border-2 ${
-                    isSelected ? "border-blue-600" : "border-gray-200"
-                  }`}
+                  onPress={() => toggleSelection(item.key)}
+                  style={[
+                    styles.imageItem,
+                    {
+                      width: itemSize,
+                      height: itemSize,
+                      marginRight: isLastInRow ? 0 : ITEM_GAP,
+                      marginBottom: ITEM_GAP,
+                      borderColor: isSelected ? "#2563EB" : "#E5E7EB",
+                    },
+                  ]}
                 >
-                  <Image
-                    source={{ uri: item.url }}
-                    className="w-full h-full"
-                    resizeMode="cover"
-                  />
-                  {isSelected && (
-                    <View className="absolute top-2 right-2 bg-blue-600 rounded-full p-1">
-                      <MaterialIcons name="check" size={16} color="#fff" />
-                    </View>
-                  )}
+                  <Image source={{ uri: item.url }} style={styles.image} />
+                  {isSelected ? (
+                    <>
+                      <View style={styles.selectedOverlay} />
+                      <View style={styles.checkBadge}>
+                        <MaterialIcons name="check" size={18} color="#fff" />
+                      </View>
+                    </>
+                  ) : null}
                 </TouchableOpacity>
               );
             }}
@@ -251,3 +344,33 @@ export function ImageGalleryModal({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  imageItem: {
+    borderWidth: 2,
+    borderRadius: 12,
+    overflow: "hidden",
+    position: "relative",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  selectedOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(37, 99, 235, 0.18)",
+  },
+  checkBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "#2563EB",
+    borderRadius: 999,
+    padding: 4,
+  },
+});
