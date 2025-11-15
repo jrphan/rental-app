@@ -12,22 +12,26 @@ import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { useToast } from "@/lib/toast";
+import { Controller } from "react-hook-form";
+import { useOtpForm } from "@/forms/otp.forms";
 
 export default function VerifyOTPScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ userId: string; email: string }>();
   const login = useAuthStore((state) => state.login);
   const toast = useToast();
+  const form = useOtpForm();
 
-  const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [canResend, setCanResend] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const hiddenInputRef = useRef<TextInput>(null);
 
+  const otpValue = form.watch("otpCode");
+  const otpCode = Array.from({ length: 6 }, (_, i) => otpValue[i] || "");
+
   const handleOtpChange = (text: string) => {
     const digits = text.replace(/\D/g, "").slice(0, 6);
-    const next = Array.from({ length: 6 }, (_, i) => digits[i] || "");
-    setOtpCode(next);
+    form.setValue("otpCode", digits, { shouldValidate: true });
   };
 
   // Tìm index của ô hiện tại (ô trống đầu tiên hoặc ô cuối cùng nếu đã đầy)
@@ -47,7 +51,7 @@ export default function VerifyOTPScreen() {
   }, [resendTimer, canResend]);
 
   const verifyMutation = useMutation({
-    mutationFn: () => authApi.verifyOTP(params.userId!, otpCode.join("")),
+    mutationFn: (otp: string) => authApi.verifyOTP(params.userId!, otp),
     onSuccess: (data) => {
       login(data.user, {
         accessToken: data.accessToken,
@@ -79,7 +83,7 @@ export default function VerifyOTPScreen() {
         title: "Thành công",
       });
       setCanResend(false);
-      setOtpCode(["", "", "", "", "", ""]);
+      form.setValue("otpCode", "");
       setResendTimer(60); // Bắt đầu đếm ngược 60 giây
     },
     onError: (error: any) => {
@@ -91,12 +95,10 @@ export default function VerifyOTPScreen() {
     },
   });
 
-  const handleVerify = () => {
-    if (otpCode.some((digit) => !digit)) {
-      toast.showError("Vui lòng nhập đầy đủ 6 số OTP", { title: "Lỗi" });
-      return;
+  const handleVerify = (data: typeof form.formState.defaultValues) => {
+    if (data?.otpCode) {
+      verifyMutation.mutate(data.otpCode);
     }
-    verifyMutation.mutate();
   };
 
   return (
@@ -161,51 +163,73 @@ export default function VerifyOTPScreen() {
           ))}
 
           {/* TextInput ẩn overlay để nhập OTP từ keyboard */}
-          <TextInput
-            ref={hiddenInputRef}
-            value={otpCode.join("")}
-            onChangeText={handleOtpChange}
-            keyboardType="number-pad"
-            textContentType="oneTimeCode"
-            importantForAutofill="yes"
-            autoFocus
-            maxLength={6}
-            returnKeyType="done"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              opacity: 0,
-              zIndex: 1,
-            }}
-            onTouchStart={(e) => {
-              // Ensure keyboard stays open
-              hiddenInputRef.current?.focus();
-            }}
+          <Controller
+            control={form.control}
+            name="otpCode"
+            render={({ field: { value, onChange } }) => (
+              <TextInput
+                ref={hiddenInputRef}
+                value={value}
+                onChangeText={(text) => {
+                  handleOtpChange(text);
+                  onChange(text.replace(/\D/g, "").slice(0, 6));
+                }}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                importantForAutofill="yes"
+                autoFocus
+                maxLength={6}
+                returnKeyType="done"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  opacity: 0,
+                  zIndex: 1,
+                }}
+                onTouchStart={(e) => {
+                  // Ensure keyboard stays open
+                  hiddenInputRef.current?.focus();
+                }}
+              />
+            )}
           />
         </View>
       </View>
 
       {/* Verify Button */}
-      <TouchableOpacity
-        onPress={handleVerify}
-        disabled={verifyMutation.isPending || otpCode.some((digit) => !digit)}
-        className={`mb-6 rounded-2xl py-4 ${
-          verifyMutation.isPending || otpCode.some((digit) => !digit)
-            ? "bg-gray-300"
-            : "bg-primary-600"
-        }`}
-      >
-        {verifyMutation.isPending ? (
-          <ActivityIndicator color="#FFF" />
-        ) : (
-          <Text className="text-center text-lg font-bold text-white">
-            Xác thực
-          </Text>
+      <Controller
+        control={form.control}
+        name="otpCode"
+        render={({ fieldState: { error } }) => (
+          <>
+            {error && (
+              <Text className="text-red-500 text-xs mb-3 text-center">
+                {error.message}
+              </Text>
+            )}
+            <TouchableOpacity
+              onPress={form.handleSubmit(handleVerify)}
+              disabled={verifyMutation.isPending || !form.formState.isValid}
+              className={`mb-6 rounded-2xl py-4 ${
+                verifyMutation.isPending || !form.formState.isValid
+                  ? "bg-gray-300"
+                  : "bg-primary-600"
+              }`}
+            >
+              {verifyMutation.isPending ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text className="text-center text-lg font-bold text-white">
+                  Xác thực
+                </Text>
+              )}
+            </TouchableOpacity>
+          </>
         )}
-      </TouchableOpacity>
+      />
     </AuthLayout>
   );
 }
