@@ -23,6 +23,7 @@ function RootLayoutNav() {
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="search" />
     </Stack>
   );
 }
@@ -34,7 +35,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <RootLayoutNav />
           <ToastContainer />
-          <StatusBar style="dark" />
+          <StatusBar style="dark" translucent={false} />
         </QueryClientProvider>
       </SafeAreaProvider>
     </NavigationThemeProvider>

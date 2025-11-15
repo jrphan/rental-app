@@ -15,6 +15,7 @@ export interface User {
   role: string;
   isActive: boolean;
   isVerified: boolean;
+  isPhoneVerified?: boolean; // Xác minh số điện thoại qua SMS
   createdAt: string;
   updatedAt: string;
 }

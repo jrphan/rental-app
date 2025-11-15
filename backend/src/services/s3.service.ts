@@ -32,28 +32,38 @@ export class S3Service {
   private readonly bucketName: string;
 
   constructor() {
-    if (
-      !ENV.aws.accessKeyId ||
-      !ENV.aws.secretAccessKey ||
-      !ENV.aws.s3BucketName
-    ) {
-      this.logger.warn(
-        'AWS S3 credentials chưa được cấu hình. Các chức năng upload file sẽ không hoạt động.',
+    // Validate required S3 configuration
+    if (!ENV.aws.s3BucketName) {
+      this.logger.error(
+        'AWS_S3_BUCKET_NAME chưa được cấu hình trong file .env. Vui lòng thêm biến môi trường này.',
+      );
+      throw new Error(
+        'S3 bucket name chưa được cấu hình. Vui lòng thêm AWS_S3_BUCKET_NAME vào file .env',
       );
     }
 
-    this.bucketName = ENV.aws.s3BucketName || '';
+    if (!ENV.aws.accessKeyId || !ENV.aws.secretAccessKey) {
+      this.logger.error(
+        'AWS credentials chưa được cấu hình. Vui lòng thêm AWS_ACCESS_KEY_ID và AWS_SECRET_ACCESS_KEY vào file .env',
+      );
+      throw new Error(
+        'AWS credentials chưa được cấu hình. Vui lòng thêm AWS_ACCESS_KEY_ID và AWS_SECRET_ACCESS_KEY vào file .env',
+      );
+    }
+
+    this.bucketName = ENV.aws.s3BucketName;
 
     this.s3Client = new S3Client({
       region: ENV.aws.region,
-      credentials:
-        ENV.aws.accessKeyId && ENV.aws.secretAccessKey
-          ? {
-              accessKeyId: ENV.aws.accessKeyId,
-              secretAccessKey: ENV.aws.secretAccessKey,
-            }
-          : undefined,
+      credentials: {
+        accessKeyId: ENV.aws.accessKeyId,
+        secretAccessKey: ENV.aws.secretAccessKey,
+      },
     });
+
+    this.logger.log(
+      `S3Service initialized with bucket: ${this.bucketName}, region: ${ENV.aws.region}`,
+    );
   }
 
   /**

@@ -7,6 +7,12 @@ export const ENV = {
   // Mail configuration - Resend
   mailFrom: process.env.MAIL_FROM ?? 'noreply@rentalapp.com',
   resendApiKey: process.env.RESEND_API_KEY,
+  // SMS configuration - Twilio
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER, // Số điện thoại Twilio đã mua
+  },
   // AWS S3 configuration
   aws: {
     region: process.env.AWS_REGION ?? 'ap-southeast-1',

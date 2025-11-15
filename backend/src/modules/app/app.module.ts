@@ -8,6 +8,8 @@ import { MailModule } from '@/mail/mail.module';
 import { VehicleModule } from '@/modules/vehicle/vehicle.module';
 import { RentalModule } from '@/modules/rental/rental.module';
 import { FileModule } from '@/modules/file/file.module';
+import { NotificationModule } from '@/modules/notification/notification.module';
+import { MessageModule } from '@/modules/message/message.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { FileModule } from '@/modules/file/file.module';
     FileModule,
     VehicleModule,
     RentalModule,
+    NotificationModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

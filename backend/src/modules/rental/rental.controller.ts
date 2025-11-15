@@ -10,7 +10,7 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { GetUser } from '@/modules/auth/decorators/get-user.decorator';
 import { Roles } from '@/modules/auth/decorators/roles.decorator';
 import { RolesGuard } from '@/modules/auth/guards/roles.guard';
-import { User, UserRole } from '@/generated/prisma';
+import { User, UserRole } from '@prisma/client';
 
 @ApiTags('rentals')
 @Controller('rentals')

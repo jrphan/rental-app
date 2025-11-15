@@ -2,12 +2,9 @@ import { Tabs } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuthStore } from "@/store/auth";
-import { USER_ROLES } from "@/constants/constants";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
 
   // Primary color from tailwind config: hsl(14, 85%, 48%) -> #EA580C (primary-600)
   const primaryColor = "#EA580C";
@@ -88,15 +85,21 @@ export default function TabLayout() {
               color={color}
             />
           ),
-          tabBarItemStyle:
-            user?.role !== USER_ROLES.OWNER
-              ? {
-                  display: "none",
-                  width: 0,
-                  height: 0,
-                  overflow: "hidden",
-                }
-              : undefined,
+          // tabBarItemStyle:
+          //   user?.role !== USER_ROLES.OWNER
+          //     ? {
+          //         display: "none",
+          //         width: 0,
+          //         height: 0,
+          //         overflow: "hidden",
+          //       }
+          //     : undefined,
+        }}
+      />
+      <Tabs.Screen
+        name="vehicles/[id]"
+        options={{
+          href: null, // Ẩn khỏi tab bar
         }}
       />
       <Tabs.Screen
@@ -110,19 +113,7 @@ export default function TabLayout() {
               color={color}
             />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="support"
-        options={{
-          title: "HỖ TRỢ",
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons
-              name={focused ? "headset" : "headset-mic"}
-              size={focused ? 28 : 26}
-              color={color}
-            />
-          ),
+          headerShown: false,
         }}
       />
       <Tabs.Screen

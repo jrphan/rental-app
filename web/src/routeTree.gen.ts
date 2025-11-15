@@ -11,16 +11,26 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VehiclesRouteImport } from './routes/vehicles'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
-import { Route as AdminDashboardRouteImport } from './routes/admin/dashboard'
 import { Route as AdminLayoutRouteImport } from './routes/admin/_layout'
+import { Route as AdminLayoutVehiclesRouteImport } from './routes/admin/_layout/vehicles'
+import { Route as AdminLayoutOwnersRouteImport } from './routes/admin/_layout/owners'
+import { Route as AdminLayoutNotificationsRouteImport } from './routes/admin/_layout/notifications'
+import { Route as AdminLayoutKycRouteImport } from './routes/admin/_layout/kyc'
+import { Route as AdminLayoutDashboardRouteImport } from './routes/admin/_layout/dashboard'
 
 const AdminRouteImport = createFileRoute('/admin')()
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VehiclesRoute = VehiclesRouteImport.update({
+  id: '/vehicles',
+  path: '/vehicles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -33,52 +43,112 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminDashboardRoute = AdminDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminLayoutRoute = AdminLayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLayoutVehiclesRoute = AdminLayoutVehiclesRouteImport.update({
+  id: '/vehicles',
+  path: '/vehicles',
+  getParentRoute: () => AdminLayoutRoute,
+} as any)
+const AdminLayoutOwnersRoute = AdminLayoutOwnersRouteImport.update({
+  id: '/owners',
+  path: '/owners',
+  getParentRoute: () => AdminLayoutRoute,
+} as any)
+const AdminLayoutNotificationsRoute =
+  AdminLayoutNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AdminLayoutRoute,
+  } as any)
+const AdminLayoutKycRoute = AdminLayoutKycRouteImport.update({
+  id: '/kyc',
+  path: '/kyc',
+  getParentRoute: () => AdminLayoutRoute,
+} as any)
+const AdminLayoutDashboardRoute = AdminLayoutDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AdminLayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminLayoutRoute
-  '/admin/dashboard': typeof AdminDashboardRoute
+  '/vehicles': typeof VehiclesRoute
+  '/admin': typeof AdminLayoutRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
+  '/admin/dashboard': typeof AdminLayoutDashboardRoute
+  '/admin/kyc': typeof AdminLayoutKycRoute
+  '/admin/notifications': typeof AdminLayoutNotificationsRoute
+  '/admin/owners': typeof AdminLayoutOwnersRoute
+  '/admin/vehicles': typeof AdminLayoutVehiclesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminLayoutRoute
-  '/admin/dashboard': typeof AdminDashboardRoute
+  '/vehicles': typeof VehiclesRoute
+  '/admin': typeof AdminLayoutRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
+  '/admin/dashboard': typeof AdminLayoutDashboardRoute
+  '/admin/kyc': typeof AdminLayoutKycRoute
+  '/admin/notifications': typeof AdminLayoutNotificationsRoute
+  '/admin/owners': typeof AdminLayoutOwnersRoute
+  '/admin/vehicles': typeof AdminLayoutVehiclesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/vehicles': typeof VehiclesRoute
   '/admin': typeof AdminRouteWithChildren
-  '/admin/_layout': typeof AdminLayoutRoute
-  '/admin/dashboard': typeof AdminDashboardRoute
+  '/admin/_layout': typeof AdminLayoutRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
+  '/admin/_layout/dashboard': typeof AdminLayoutDashboardRoute
+  '/admin/_layout/kyc': typeof AdminLayoutKycRoute
+  '/admin/_layout/notifications': typeof AdminLayoutNotificationsRoute
+  '/admin/_layout/owners': typeof AdminLayoutOwnersRoute
+  '/admin/_layout/vehicles': typeof AdminLayoutVehiclesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/admin/dashboard' | '/admin/login'
+  fullPaths:
+    | '/'
+    | '/vehicles'
+    | '/admin'
+    | '/admin/login'
+    | '/admin/dashboard'
+    | '/admin/kyc'
+    | '/admin/notifications'
+    | '/admin/owners'
+    | '/admin/vehicles'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/admin/dashboard' | '/admin/login'
+  to:
+    | '/'
+    | '/vehicles'
+    | '/admin'
+    | '/admin/login'
+    | '/admin/dashboard'
+    | '/admin/kyc'
+    | '/admin/notifications'
+    | '/admin/owners'
+    | '/admin/vehicles'
   id:
     | '__root__'
     | '/'
+    | '/vehicles'
     | '/admin'
     | '/admin/_layout'
-    | '/admin/dashboard'
     | '/admin/login'
+    | '/admin/_layout/dashboard'
+    | '/admin/_layout/kyc'
+    | '/admin/_layout/notifications'
+    | '/admin/_layout/owners'
+    | '/admin/_layout/vehicles'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  VehiclesRoute: typeof VehiclesRoute
   AdminRoute: typeof AdminRouteWithChildren
 }
 
@@ -89,6 +159,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vehicles': {
+      id: '/vehicles'
+      path: '/vehicles'
+      fullPath: '/vehicles'
+      preLoaderRoute: typeof VehiclesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -105,13 +182,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/dashboard': {
-      id: '/admin/dashboard'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AdminDashboardRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/_layout': {
       id: '/admin/_layout'
       path: '/admin'
@@ -119,18 +189,71 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLayoutRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/_layout/vehicles': {
+      id: '/admin/_layout/vehicles'
+      path: '/vehicles'
+      fullPath: '/admin/vehicles'
+      preLoaderRoute: typeof AdminLayoutVehiclesRouteImport
+      parentRoute: typeof AdminLayoutRoute
+    }
+    '/admin/_layout/owners': {
+      id: '/admin/_layout/owners'
+      path: '/owners'
+      fullPath: '/admin/owners'
+      preLoaderRoute: typeof AdminLayoutOwnersRouteImport
+      parentRoute: typeof AdminLayoutRoute
+    }
+    '/admin/_layout/notifications': {
+      id: '/admin/_layout/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminLayoutNotificationsRouteImport
+      parentRoute: typeof AdminLayoutRoute
+    }
+    '/admin/_layout/kyc': {
+      id: '/admin/_layout/kyc'
+      path: '/kyc'
+      fullPath: '/admin/kyc'
+      preLoaderRoute: typeof AdminLayoutKycRouteImport
+      parentRoute: typeof AdminLayoutRoute
+    }
+    '/admin/_layout/dashboard': {
+      id: '/admin/_layout/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminLayoutDashboardRouteImport
+      parentRoute: typeof AdminLayoutRoute
+    }
   }
 }
 
+interface AdminLayoutRouteChildren {
+  AdminLayoutDashboardRoute: typeof AdminLayoutDashboardRoute
+  AdminLayoutKycRoute: typeof AdminLayoutKycRoute
+  AdminLayoutNotificationsRoute: typeof AdminLayoutNotificationsRoute
+  AdminLayoutOwnersRoute: typeof AdminLayoutOwnersRoute
+  AdminLayoutVehiclesRoute: typeof AdminLayoutVehiclesRoute
+}
+
+const AdminLayoutRouteChildren: AdminLayoutRouteChildren = {
+  AdminLayoutDashboardRoute: AdminLayoutDashboardRoute,
+  AdminLayoutKycRoute: AdminLayoutKycRoute,
+  AdminLayoutNotificationsRoute: AdminLayoutNotificationsRoute,
+  AdminLayoutOwnersRoute: AdminLayoutOwnersRoute,
+  AdminLayoutVehiclesRoute: AdminLayoutVehiclesRoute,
+}
+
+const AdminLayoutRouteWithChildren = AdminLayoutRoute._addFileChildren(
+  AdminLayoutRouteChildren,
+)
+
 interface AdminRouteChildren {
-  AdminLayoutRoute: typeof AdminLayoutRoute
-  AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminLayoutRoute: typeof AdminLayoutRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminLayoutRoute: AdminLayoutRoute,
-  AdminDashboardRoute: AdminDashboardRoute,
+  AdminLayoutRoute: AdminLayoutRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
 }
 
@@ -138,6 +261,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  VehiclesRoute: VehiclesRoute,
   AdminRoute: AdminRouteWithChildren,
 }
 export const routeTree = rootRouteImport

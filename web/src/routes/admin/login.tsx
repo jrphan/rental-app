@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { useStore } from '@tanstack/react-store'
 import { authApi } from '@/lib/api.auth'
 import { authStore, authActions } from '@/store/auth'
 import { useLoginForm } from '@/forms/auth.forms'
@@ -10,6 +9,11 @@ import { Lock, Mail, Eye, EyeOff } from 'lucide-react'
 export const Route = createFileRoute('/admin/login')({
   beforeLoad: () => {
     const authState = authStore.state
+    // Wait for auth verification to complete
+    if (authState.isLoading) {
+      // Return and let component handle loading state
+      return
+    }
     // If authenticated, redirect to dashboard
     if (authState.isAuthenticated) {
       throw redirect({

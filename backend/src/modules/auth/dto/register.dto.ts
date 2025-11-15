@@ -7,7 +7,7 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '@/generated/prisma';
+import { UserRole } from '@prisma/client';
 
 export class RegisterDto {
   @ApiProperty({

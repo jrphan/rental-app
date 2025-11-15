@@ -20,7 +20,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { UserService } from '@/modules/user/user.service';
-import { User } from '@/generated/prisma';
+import { User } from '@prisma/client';
 import { CreateUserDto, UpdateUserDto, QueryUserDto } from '@/common/dto/User';
 import {
   ApiResponseDto,
@@ -29,7 +29,7 @@ import {
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/modules/auth/guards/roles.guard';
 import { Roles } from '@/modules/auth/decorators/roles.decorator';
-import { UserRole } from '@/generated/prisma';
+import { UserRole } from '@prisma/client';
 import { ApiBearerAuth, ApiSecurity } from '@nestjs/swagger';
 import { GetUser } from '@/modules/auth/decorators/get-user.decorator';
 
@@ -65,6 +65,37 @@ export class UserController {
   })
   async findAll(@Query() queryUserDto: QueryUserDto) {
     return this.userService.findAll(queryUserDto);
+  }
+
+  // ===== Owner Application Routes (must be before :id route) =====
+  @Get('owner-application/me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({ summary: 'Xem trạng thái yêu cầu làm chủ xe của tôi' })
+  async getMyOwnerApplication(@GetUser() user: Omit<User, 'password'>) {
+    return this.userService.getMyOwnerApplication(user.id);
+  }
+
+  @Get('owner-applications')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({ summary: 'Admin - danh sách yêu cầu làm chủ xe' })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async listOwnerApplications(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.userService.listOwnerApplications(
+      status as any,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+    );
   }
 
   @Get(':id')
@@ -141,36 +172,6 @@ export class UserController {
     @Body() body: { notes?: string },
   ) {
     return this.userService.submitOwnerApplication(user.id, body.notes);
-  }
-
-  @Get('owner-application/me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiSecurity('JWT-auth')
-  @ApiOperation({ summary: 'Xem trạng thái yêu cầu làm chủ xe của tôi' })
-  async getMyOwnerApplication(@GetUser() user: Omit<User, 'password'>) {
-    return this.userService.getMyOwnerApplication(user.id);
-  }
-
-  @Get('owner-applications')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth('JWT-auth')
-  @ApiSecurity('JWT-auth')
-  @ApiOperation({ summary: 'Admin - danh sách yêu cầu làm chủ xe' })
-  @ApiQuery({ name: 'status', required: false })
-  @ApiQuery({ name: 'page', required: false })
-  @ApiQuery({ name: 'limit', required: false })
-  async listOwnerApplications(
-    @Query('status') status?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.userService.listOwnerApplications(
-      status as any,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 10,
-    );
   }
 
   @Post('owner-applications/:id/approve')

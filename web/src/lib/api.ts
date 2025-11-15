@@ -16,6 +16,9 @@ export const api = axios.create({
   },
 })
 
+// Export api for direct use (e.g., refresh token to avoid interceptor loop)
+export { api as apiDirect }
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -70,6 +73,11 @@ api.interceptors.response.use(
             localStorage.setItem('accessToken', newTokens.accessToken)
             if (newTokens.refreshToken) {
               localStorage.setItem('refreshToken', newTokens.refreshToken)
+            }
+            // Update store with new tokens
+            if (typeof window !== 'undefined') {
+              const { authActions } = await import('@/store/auth')
+              authActions.updateTokens(newTokens)
             }
             // Retry original request
             if (originalRequest.headers) {

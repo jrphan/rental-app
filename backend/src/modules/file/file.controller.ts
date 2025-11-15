@@ -28,7 +28,7 @@ import { FileService } from './file.service';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { ApiResponseDto } from '@/common/dto/Response/response.dto';
 import { GetUser } from '@/modules/auth/decorators/get-user.decorator';
-import type { User } from '@/generated/prisma';
+import type { User } from '@prisma/client';
 
 @ApiTags('files')
 @Controller('files')
