@@ -23,6 +23,7 @@ export interface UserWithProfile {
   role: string;
   isActive: boolean;
   isVerified: boolean;
+  isPhoneVerified?: boolean;
   createdAt: string;
   updatedAt: string;
   profile?: UserProfile | null;
@@ -83,8 +84,8 @@ export const profileApi = {
   /**
    * Gửi thông tin KYC để xác thực danh tính
    */
-  async submitKYC(data: KycSubmissionInput): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>(
+  async submitKYC(data: KycSubmissionInput): Promise<{ message: string; kycId: string }> {
+    const response = await apiClient.post<{ message: string; kycId: string }>(
       "/auth/profile/kyc",
       data
     );
@@ -95,9 +96,64 @@ export const profileApi = {
   },
 
   /**
+   * Lấy trạng thái KYC của mình
+   */
+  async getMyKYC(): Promise<{
+    id: string;
+    userId: string;
+    idNumber?: string | null;
+    idCardFrontUrl?: string | null;
+    idCardBackUrl?: string | null;
+    passportUrl?: string | null;
+    driverLicenseUrl?: string | null;
+    selfieUrl?: string | null;
+    notes?: string | null;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    reviewedBy?: string | null;
+    reviewedAt?: string | null;
+    reviewNotes?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    reviewer?: {
+      id: string;
+      email: string;
+    } | null;
+  } | null> {
+    const response = await apiClient.get<{
+      id: string;
+      userId: string;
+      idNumber?: string | null;
+      idCardFrontUrl?: string | null;
+      idCardBackUrl?: string | null;
+      passportUrl?: string | null;
+      driverLicenseUrl?: string | null;
+      selfieUrl?: string | null;
+      notes?: string | null;
+      status: "PENDING" | "APPROVED" | "REJECTED";
+      reviewedBy?: string | null;
+      reviewedAt?: string | null;
+      reviewNotes?: string | null;
+      createdAt: string;
+      updatedAt: string;
+      reviewer?: {
+        id: string;
+        email: string;
+      } | null;
+    } | null>("/auth/profile/kyc");
+    if (response.success) {
+      return response.data ?? null;
+    }
+    throw new Error(response.message || "Lấy thông tin KYC thất bại");
+  },
+
+  /**
    * Gửi yêu cầu đăng ký làm chủ xe
    */
-  async submitOwnerApplication(notes?: string): Promise<{ id: string; status: string; notes?: string } | { message: string }> {
+  async submitOwnerApplication(
+    notes?: string
+  ): Promise<
+    { id: string; status: string; notes?: string } | { message: string }
+  > {
     const response = await apiClient.post<
       { id: string; status: string; notes?: string } | { message: string }
     >("/users/owner-application", { notes });
@@ -110,14 +166,19 @@ export const profileApi = {
   /**
    * Lấy trạng thái yêu cầu làm chủ xe của tôi
    */
-  async getMyOwnerApplication(): Promise<{ id: string; status: string; notes?: string } | null> {
-    const response = await apiClient.get<
-      { id: string; status: string; notes?: string } | null
-    >("/users/owner-application/me");
+  async getMyOwnerApplication(): Promise<{
+    id: string;
+    status: string;
+    notes?: string;
+  } | null> {
+    const response = await apiClient.get<{
+      id: string;
+      status: string;
+      notes?: string;
+    } | null>("/users/owner-application/me");
     if (response.success) {
       return (response.data as any) ?? null;
     }
     throw new Error(response.message || "Lấy trạng thái yêu cầu thất bại");
   },
 };
-

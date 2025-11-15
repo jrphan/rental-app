@@ -7,11 +7,12 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "build:prod": "pnpm run prisma:generate && pnpm run build",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node -r tsconfig-paths/register dist/main",
+    "start:prod": "node -r tsconfig-paths/register dist/src/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "migrate:dev": "npx prisma migrate dev",
     "migrate:dev:create": "npx prisma migrate dev --create-only",
@@ -68,6 +69,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   },

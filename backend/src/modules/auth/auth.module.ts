@@ -6,12 +6,14 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { MailModule } from '@/mail/mail.module';
+import { SmsModule } from '@/sms/sms.module';
 import { ENV } from '@/config/env';
 
 @Module({
   imports: [
     PrismaModule,
     MailModule,
+    SmsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: ENV.jwtSecret,

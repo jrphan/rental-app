@@ -5,7 +5,7 @@ import {
   IsEmail,
   IsBoolean,
 } from 'class-validator';
-import { UserRole } from '@/generated/prisma';
+import { UserRole } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateUserDto {

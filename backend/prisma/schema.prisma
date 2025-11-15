@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -23,6 +22,7 @@ model User {
   password           String
   isActive           Boolean  @default(true)
   isVerified         Boolean  @default(false)
+  isPhoneVerified    Boolean  @default(false) // Xác minh số điện thoại qua SMS
   role               UserRole @default(RENTER)
   stripeAccountId    String?  @unique // Stripe Connected Account ID
   stripeAccountStatus String? // 'active', 'restricted', 'pending', 'disabled'
@@ -42,12 +42,15 @@ model User {
   payments         Payment[]
   otps             Otp[]
   ownerApplication OwnerApplication?
+  kyc              Kyc?
   disputes         Dispute[]      @relation("RenterDisputes")
   resolvedDisputes Dispute[]      @relation("AdminDisputes")
+  reviewedKycs     Kyc[]          @relation("AdminReviewedKycs")
 
   @@index([email])
   @@index([phone])
   @@index([isActive])
+  @@index([isPhoneVerified])
   @@index([role])
   @@index([stripeAccountId])
   @@index([createdAt])
@@ -58,6 +61,8 @@ model Otp {
   id        String   @id @default(cuid())
   userId    String
   code      String   @db.VarChar(6)
+  type      OtpType  @default(EMAIL_VERIFICATION)
+  phone     String?  // Số điện thoại được xác minh (cho PHONE_VERIFICATION)
   expiresAt DateTime
   isUsed    Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -67,6 +72,8 @@ model Otp {
 
   @@index([userId])
   @@index([code])
+  @@index([type])
+  @@index([phone])
   @@index([isUsed])
   @@index([expiresAt])
   @@map("otps")
@@ -376,6 +383,36 @@ model OwnerApplication {
   @@map("owner_applications")
 }
 
+// ==================== KYC MANAGEMENT ====================
+
+model Kyc {
+  id              String      @id @default(cuid())
+  userId          String      @unique
+  idNumber        String?     // Số CMND/CCCD
+  idCardFrontUrl  String?     // URL mặt trước CMND/CCCD
+  idCardBackUrl   String?     // URL mặt sau CMND/CCCD
+  passportUrl     String?     // URL passport
+  driverLicenseUrl String?    // URL bằng lái xe
+  selfieUrl       String?     // URL selfie với CMND/CCCD
+  notes           String?     // Ghi chú từ user
+  status          KycStatus   @default(PENDING)
+  reviewedBy      String?     // Admin ID đã xem xét
+  reviewedAt      DateTime?
+  reviewNotes     String?     // Ghi chú từ admin khi duyệt/từ chối
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("AdminReviewedKycs", fields: [reviewedBy], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedBy])
+  @@index([createdAt])
+  @@map("kycs")
+}
+
 // ==================== DISPUTE MANAGEMENT ====================
 
 model Dispute {
@@ -537,4 +574,10 @@ enum DisputeStatus {
   UNDER_REVIEW // Admin đang xem xét
   RESOLVED  // Đã xử lý xong
   CANCELLED // Đã hủy
+}
+
+enum KycStatus {
+  PENDING   // Đang chờ admin duyệt
+  APPROVED  // Đã được duyệt
+  REJECTED  // Bị từ chối
 }

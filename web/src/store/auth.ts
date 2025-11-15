@@ -45,7 +45,7 @@ const loadAuthState = (): AuthState => {
         accessToken,
         refreshToken,
         isAuthenticated: true,
-        isLoading: false,
+        isLoading: true, // Set to true initially, will be set to false after verification
       }
     }
   } catch (error) {

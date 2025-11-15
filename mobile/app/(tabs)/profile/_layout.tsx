@@ -37,6 +37,13 @@ export default function ProfileLayout() {
           animation: "slide_from_right",
         }}
       />
+      <Stack.Screen
+        name="my-vehicles"
+        options={{
+          presentation: "card",
+          animation: "slide_from_right",
+        }}
+      />
     </Stack>
   );
 }

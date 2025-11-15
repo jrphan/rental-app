@@ -1,5 +1,15 @@
 import { apiClient } from './api'
 
+export interface VehicleImage {
+  id: string
+  vehicleId: string
+  url: string
+  alt?: string | null
+  isPrimary: boolean
+  order: number
+  createdAt: string
+}
+
 export interface VehicleItem {
   id: string
   ownerId: string
@@ -15,6 +25,12 @@ export interface VehicleItem {
   isActive: boolean
   isAvailable: boolean
   createdAt: string
+  owner?: {
+    id: string
+    email: string
+    phone?: string | null
+  }
+  images?: VehicleImage[]
 }
 
 export interface Paginated<T> {
@@ -60,6 +76,17 @@ export const vehiclesApi = {
 
   async reject(id: string, reason?: string) {
     return apiClient.post(`/vehicles/${id}/reject`, { reason })
+  },
+
+  // Vehicle Images
+  async getImages(vehicleId: string) {
+    const res = await apiClient.get<VehicleImage[]>(`/vehicles/${vehicleId}/images`)
+    if (res.success) {
+      if (Array.isArray(res.data)) return res.data
+      const wrapped = res.data as any
+      if (wrapped && Array.isArray(wrapped.data)) return wrapped.data
+    }
+    throw new Error(res.message || 'Lấy hình ảnh thất bại')
   },
 }
 

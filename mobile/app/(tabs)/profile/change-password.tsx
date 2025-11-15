@@ -1,14 +1,6 @@
-import { useState } from "react";
-import {
-  View,
-  ScrollView,
-  ActivityIndicator,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { View, ScrollView, ActivityIndicator, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useChangePasswordForm } from "@/forms/auth.forms";
 import { authApi } from "@/lib/api.auth";
@@ -16,14 +8,12 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/lib/toast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
   const toast = useToast();
-  const [showOldPassword, setShowOldPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // toggles moved into PasswordInput
 
   const form = useChangePasswordForm();
 
@@ -46,10 +36,6 @@ export default function ChangePasswordScreen() {
       oldPassword: data?.oldPassword ?? "",
       newPassword: data?.newPassword ?? "",
     });
-  };
-
-  const handleShowOldPassword = () => {
-    setShowOldPassword(!showOldPassword);
   };
 
   return (
@@ -81,26 +67,16 @@ export default function ChangePasswordScreen() {
                 field: { onChange, onBlur, value },
                 fieldState: { error },
               }) => (
-                <View className="mb-4">
-                  <Input
-                    label="Mật khẩu cũ"
-                    placeholder="Nhập mật khẩu cũ"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={error?.message}
-                    secureTextEntry={!showOldPassword}
-                    editable={!mutation.isPending}
-                  />
-                  <View className="absolute right-4 top-9">
-                    <IconSymbol
-                      name={showOldPassword ? "eye" : "eye.slash"}
-                      size={22}
-                      color="#EA580C"
-                      onPress={handleShowOldPassword}
-                    />
-                  </View>
-                </View>
+                <PasswordInput
+                  label="Mật khẩu cũ"
+                  placeholder="Nhập mật khẩu cũ"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={error?.message}
+                  editable={!mutation.isPending}
+                  toggleClassName="absolute right-4 top-10"
+                />
               )}
             />
 
@@ -111,28 +87,16 @@ export default function ChangePasswordScreen() {
                 field: { onChange, onBlur, value },
                 fieldState: { error },
               }) => (
-                <View className="mb-4">
-                  <Input
-                    label="Mật khẩu mới"
-                    placeholder="Nhập mật khẩu mới"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={error?.message}
-                    secureTextEntry={!showNewPassword}
-                    editable={!mutation.isPending}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-4 top-9"
-                  >
-                    <IconSymbol
-                      name={showNewPassword ? "eye" : "eye.slash"}
-                      size={22}
-                      color="#EA580C"
-                    />
-                  </TouchableOpacity>
-                </View>
+                <PasswordInput
+                  label="Mật khẩu mới"
+                  placeholder="Nhập mật khẩu mới"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={error?.message}
+                  editable={!mutation.isPending}
+                  toggleClassName="absolute right-4 top-10"
+                />
               )}
             />
 
@@ -143,28 +107,16 @@ export default function ChangePasswordScreen() {
                 field: { onChange, onBlur, value },
                 fieldState: { error },
               }) => (
-                <View className="mb-4">
-                  <Input
-                    label="Xác nhận mật khẩu mới"
-                    placeholder="Nhập lại mật khẩu mới"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={error?.message}
-                    secureTextEntry={!showConfirmPassword}
-                    editable={!mutation.isPending}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-9"
-                  >
-                    <IconSymbol
-                      name={showConfirmPassword ? "eye" : "eye.slash"}
-                      size={22}
-                      color="#EA580C"
-                    />
-                  </TouchableOpacity>
-                </View>
+                <PasswordInput
+                  label="Xác nhận mật khẩu mới"
+                  placeholder="Nhập lại mật khẩu mới"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={error?.message}
+                  editable={!mutation.isPending}
+                  toggleClassName="absolute right-4 top-10"
+                />
               )}
             />
           </View>
@@ -172,7 +124,7 @@ export default function ChangePasswordScreen() {
           <Button
             onPress={form.handleSubmit(onSubmit)}
             disabled={mutation.isPending}
-            className="mb-24 mt-4"
+            className="mb-24"
             size="lg"
           >
             {mutation.isPending ? (

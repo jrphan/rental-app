@@ -34,8 +34,20 @@ export const fileApi = {
       },
     });
 
-    if (response.success && response.data && !Array.isArray(response.data)) {
-      return response.data;
+    if (response.success) {
+      // Standard: data is the uploaded file object
+      if (response.data && !Array.isArray(response.data)) {
+        return response.data as FileUploadResult;
+      }
+      // Wrapped: data is another ApiResponse with data inside
+      const maybeWrapped = (response.data ?? {}) as any;
+      if (
+        maybeWrapped &&
+        maybeWrapped.data &&
+        !Array.isArray(maybeWrapped.data)
+      ) {
+        return maybeWrapped.data as FileUploadResult;
+      }
     }
     throw new Error(response.message || "Upload file thất bại");
   },
@@ -66,8 +78,16 @@ export const fileApi = {
       },
     });
 
-    if (response.success && Array.isArray(response.data)) {
-      return response.data as FileUploadResult[];
+    if (response.success) {
+      // Standard: data is the uploaded files array
+      if (Array.isArray(response.data)) {
+        return response.data as FileUploadResult[];
+      }
+      // Wrapped: data is another ApiResponse containing the array
+      const maybeWrapped = (response.data ?? {}) as any;
+      if (maybeWrapped && Array.isArray(maybeWrapped.data)) {
+        return maybeWrapped.data as FileUploadResult[];
+      }
     }
     throw new Error(response.message || "Upload nhiều file thất bại");
   },
@@ -98,5 +118,14 @@ export const fileApi = {
    */
   async deleteFile(key: string): Promise<void> {
     await apiClient.delete(`/files/${encodeURIComponent(key)}`);
+  },
+  /**
+   * Xóa nhiều file
+   */
+  async deleteFiles(keys: string[]): Promise<void> {
+    // Thực hiện tuần tự để đơn giản xử lý lỗi; có thể tối ưu Promise.allSettled
+    for (const key of keys) {
+      await apiClient.delete(`/files/${encodeURIComponent(key)}`);
+    }
   },
 };

@@ -12,6 +12,7 @@ export interface AuthResponse {
     role: string;
     isActive: boolean;
     isVerified: boolean;
+    isPhoneVerified?: boolean;
     createdAt: string;
     updatedAt: string;
   };
@@ -161,5 +162,53 @@ export const authApi = {
       return response.data;
     }
     throw new Error(response.message || "Đặt lại mật khẩu thất bại");
+  },
+
+  /**
+   * Gửi OTP qua SMS để xác minh số điện thoại
+   */
+  async sendPhoneOTP(phone: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/phone/send-otp",
+      { phone }
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Gửi OTP thất bại");
+  },
+
+  /**
+   * Xác minh OTP từ SMS
+   */
+  async verifyPhoneOTP(
+    phone: string,
+    otpCode: string
+  ): Promise<{ message: string; isPhoneVerified: boolean }> {
+    const response = await apiClient.post<{
+      message: string;
+      isPhoneVerified: boolean;
+    }>("/auth/phone/verify-otp", {
+      phone,
+      otpCode,
+    });
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Xác minh OTP thất bại");
+  },
+
+  /**
+   * Gửi lại OTP qua SMS
+   */
+  async resendPhoneOTP(phone: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/phone/resend-otp",
+      { phone }
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Gửi lại OTP thất bại");
   },
 };

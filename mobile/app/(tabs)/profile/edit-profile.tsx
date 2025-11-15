@@ -74,21 +74,40 @@ export default function EditProfileScreen() {
   const mutation = useMutation({
     mutationFn: profileApi.updateProfile,
     onSuccess: (data) => {
+      // Lưu số điện thoại cũ để so sánh
+      const oldPhone = user?.phone;
+      const newPhone = data?.phone;
+      const phoneChanged = oldPhone !== newPhone;
+
       // Update user in store (only phone field belongs to User table)
       // Other profile fields (firstName, lastName, avatar, etc.) are stored
       // in UserProfile table and will be refetched via query cache invalidation
       if (data?.phone !== undefined) {
         updateUser({
           phone: data.phone || undefined,
+          isPhoneVerified: data.isPhoneVerified,
         });
       }
+
       // Invalidate profile query cache to refresh all profile data
       queryClient.invalidateQueries({
         queryKey: queryKeys.profile.detail(user?.id),
       });
-      toast.showSuccess("Cập nhật thông tin thành công!", {
-        title: "Thành công",
-      });
+
+      // Nếu đổi số điện thoại, thông báo cần verify
+      if (phoneChanged && newPhone) {
+        toast.showInfo(
+          "Số điện thoại đã được cập nhật. Vui lòng xác minh số điện thoại mới trong phần cài đặt.",
+          {
+            title: "Cần xác minh",
+            duration: 4000,
+          }
+        );
+      } else {
+        toast.showSuccess("Cập nhật thông tin thành công!", {
+          title: "Thành công",
+        });
+      }
       router.back();
     },
     onError: (error: any) => {
@@ -294,7 +313,7 @@ export default function EditProfileScreen() {
           <Button
             onPress={form.handleSubmit(onSubmit)}
             disabled={mutation.isPending}
-            className="mb-24 mt-4"
+            className="mb-24"
             size="lg"
           >
             {mutation.isPending ? (

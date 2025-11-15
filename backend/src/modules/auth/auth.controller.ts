@@ -7,6 +7,8 @@ import {
   Get,
   UseGuards,
   Put,
+  Param,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,9 +26,13 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { KycSubmissionDto } from './dto/kyc-submission.dto';
+import { SendPhoneOtpDto } from './dto/send-phone-otp.dto';
+import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
 import { GetUser } from './decorators/get-user.decorator';
-import { User } from '@/generated/prisma';
+import { User, UserRole, KycStatus } from '@prisma/client';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -205,6 +211,7 @@ export class AuthController {
             role: { type: 'string' },
             isActive: { type: 'boolean' },
             isVerified: { type: 'boolean' },
+            isPhoneVerified: { type: 'boolean' },
             createdAt: { type: 'string' },
             updatedAt: { type: 'string' },
           },
@@ -387,5 +394,190 @@ export class AuthController {
     @Body() kycSubmissionDto: KycSubmissionDto,
   ) {
     return this.authService.submitKYC(user.id, kycSubmissionDto);
+  }
+
+  @Get('profile/kyc')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({ summary: 'Xem trạng thái KYC của mình' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy thông tin KYC thành công',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMyKYC(@GetUser() user: Omit<User, 'password'>) {
+    return this.authService.getMyKYC(user.id);
+  }
+
+  @Get('admin/kyc')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({ summary: 'Admin - Lấy danh sách KYC submissions' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy danh sách KYC thành công',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
+  async listKYCSubmissions(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.authService.listKYCSubmissions(
+      status as KycStatus | undefined,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 10,
+    );
+  }
+
+  @Post('admin/kyc/:id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({ summary: 'Admin - Duyệt KYC' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reviewNotes: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Duyệt KYC thành công',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
+  async approveKYC(
+    @GetUser() admin: Omit<User, 'password'>,
+    @Param('id') kycId: string,
+    @Body('reviewNotes') reviewNotes?: string,
+  ) {
+    return this.authService.approveKYC(kycId, admin.id, reviewNotes);
+  }
+
+  @Post('admin/kyc/:id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @ApiOperation({ summary: 'Admin - Từ chối KYC' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reviewNotes: { type: 'string' },
+      },
+      required: ['reviewNotes'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Từ chối KYC thành công',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
+  async rejectKYC(
+    @GetUser() admin: Omit<User, 'password'>,
+    @Param('id') kycId: string,
+    @Body('reviewNotes') reviewNotes?: string,
+  ) {
+    return this.authService.rejectKYC(kycId, admin.id, reviewNotes);
+  }
+
+  @Post('phone/send-otp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Gửi mã OTP qua SMS để xác minh số điện thoại' })
+  @ApiBody({ type: SendPhoneOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Mã OTP đã được gửi đến số điện thoại',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Số điện thoại đã được xác minh hoặc không hợp lệ',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 409, description: 'Số điện thoại đã được sử dụng' })
+  async sendPhoneOTP(
+    @GetUser() user: Omit<User, 'password'>,
+    @Body() sendPhoneOtpDto: SendPhoneOtpDto,
+  ) {
+    return this.authService.sendPhoneVerificationOTP(user.id, sendPhoneOtpDto);
+  }
+
+  @Post('phone/verify-otp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Xác minh mã OTP từ SMS' })
+  @ApiBody({ type: VerifyPhoneOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Xác minh số điện thoại thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        isPhoneVerified: { type: 'boolean' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Mã OTP không hợp lệ hoặc đã hết hạn',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async verifyPhoneOTP(
+    @GetUser() user: Omit<User, 'password'>,
+    @Body() verifyPhoneOtpDto: VerifyPhoneOtpDto,
+  ) {
+    return this.authService.verifyPhoneOTP(user.id, verifyPhoneOtpDto);
+  }
+
+  @Post('phone/resend-otp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiSecurity('JWT-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Gửi lại mã OTP qua SMS' })
+  @ApiBody({ type: SendPhoneOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Mã OTP đã được gửi lại',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Số điện thoại đã được xác minh hoặc không hợp lệ',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 409, description: 'Số điện thoại đã được sử dụng' })
+  async resendPhoneOTP(
+    @GetUser() user: Omit<User, 'password'>,
+    @Body() sendPhoneOtpDto: SendPhoneOtpDto,
+  ) {
+    return this.authService.resendPhoneOTP(user.id, sendPhoneOtpDto);
   }
 }

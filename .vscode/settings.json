@@ -12,5 +12,11 @@
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  "editor.smoothScrolling": true,
+  "workbench.list.smoothScrolling": true,
+  "editor.cursorSmoothCaretAnimation": "on",
+  "terminal.integrated.smoothScrolling": true,
+  "editor.cursorBlinking": "smooth",
+  "terminal.integrated.scrollback": 10000
 }

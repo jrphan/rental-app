@@ -4,24 +4,31 @@ import {
   NotFoundException,
   Logger,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import {
   User,
   UserRole,
   Prisma,
   OwnerApplicationStatus,
-} from '@/generated/prisma';
+} from '@prisma/client';
 import { CreateUserDto, UpdateUserDto, QueryUserDto } from '@/common/dto/User';
 import {
   createPaginatedResponse,
   // createResponse,
 } from '@/common/utils/response.util';
+import { NotificationService } from '@/modules/notification/notification.service';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => NotificationService))
+    private notificationService: NotificationService,
+  ) {}
 
   async createUser(
     createUserDto: CreateUserDto,
@@ -78,6 +85,7 @@ export class UserService {
           phone: true,
           isActive: true,
           isVerified: true,
+          isPhoneVerified: true,
           role: true,
           createdAt: true,
           updatedAt: true,
@@ -105,6 +113,7 @@ export class UserService {
         phone: true,
         isActive: true,
         isVerified: true,
+        isPhoneVerified: true,
         role: true,
         stripeAccountId: true,
         stripeAccountStatus: true,
@@ -144,6 +153,7 @@ export class UserService {
         phone: true,
         isActive: true,
         isVerified: true,
+        isPhoneVerified: true,
         role: true,
         stripeAccountId: true,
         stripeAccountStatus: true,
@@ -180,6 +190,7 @@ export class UserService {
         phone: true,
         isActive: true,
         isVerified: true,
+        isPhoneVerified: true,
         role: true,
         stripeAccountId: true,
         stripeAccountStatus: true,
@@ -274,6 +285,14 @@ export class UserService {
   async approveOwnerApplication(applicationId: string) {
     const app = await this.prisma.ownerApplication.findUnique({
       where: { id: applicationId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
     });
     if (!app) throw new NotFoundException('Không tìm thấy yêu cầu');
 
@@ -288,12 +307,31 @@ export class UserService {
       }),
     ]);
 
+    // Tạo thông báo cho user
+    await this.notificationService.create(app.userId, {
+      type: 'SYSTEM_ANNOUNCEMENT',
+      title: 'Đăng ký làm chủ xe đã được duyệt',
+      message: `Yêu cầu đăng ký làm chủ xe của bạn đã được duyệt. Bạn giờ đã có thể cho thuê xe.`,
+      data: {
+        applicationId: applicationId,
+        type: 'OWNER_APPLICATION_APPROVED',
+      },
+    });
+
     return { message: 'Đã duyệt yêu cầu làm chủ xe', user: result[0] };
   }
 
   async rejectOwnerApplication(applicationId: string, notes?: string) {
     const app = await this.prisma.ownerApplication.findUnique({
       where: { id: applicationId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
     });
     if (!app) throw new NotFoundException('Không tìm thấy yêu cầu');
 
@@ -301,6 +339,19 @@ export class UserService {
       where: { id: applicationId },
       data: { status: OwnerApplicationStatus.REJECTED, notes },
     });
+
+    // Tạo thông báo cho user
+    await this.notificationService.create(app.userId, {
+      type: 'SYSTEM_ANNOUNCEMENT',
+      title: 'Đăng ký làm chủ xe bị từ chối',
+      message: `Yêu cầu đăng ký làm chủ xe của bạn đã bị từ chối.${notes ? ` Lý do: ${notes}` : ''}`,
+      data: {
+        applicationId: applicationId,
+        type: 'OWNER_APPLICATION_REJECTED',
+        notes: notes,
+      },
+    });
+
     return { message: 'Đã từ chối yêu cầu làm chủ xe' };
   }
 }

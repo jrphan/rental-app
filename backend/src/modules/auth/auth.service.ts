@@ -4,18 +4,22 @@ import {
   UnauthorizedException,
   Logger,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
 import { MailService } from '@/mail/mail.service';
+import { SmsService } from '@/sms/sms.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { KycSubmissionDto } from './dto/kyc-submission.dto';
+import { SendPhoneOtpDto } from './dto/send-phone-otp.dto';
+import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
 import * as bcrypt from 'bcrypt';
-import { User, UserRole, Prisma } from '@/generated/prisma';
+import { User, UserRole, Prisma, OtpType, KycStatus } from '@prisma/client';
 
 interface RefreshTokenPayload {
   sub: string;
@@ -46,6 +50,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private mailService: MailService,
+    private smsService: SmsService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<RegisterResponse> {
@@ -107,6 +112,7 @@ export class AuthService {
       data: {
         userId: user.id,
         code: otpCode,
+        type: OtpType.EMAIL_VERIFICATION,
         expiresAt,
       },
     });
@@ -116,13 +122,22 @@ export class AuthService {
       this.logger.error('Failed to send OTP email:', err);
     });
 
-    this.logger.log(`OTP sent to ${email}`);
+    // If phone is provided, send OTP via SMS as well
+    if (phone) {
+      this.smsService.sendOTP(phone, otpCode).catch(err => {
+        this.logger.error('Failed to send OTP SMS:', err);
+      });
+      this.logger.log(`OTP sent to email and SMS: ${email}, ${phone}`);
+    } else {
+      this.logger.log(`OTP sent to ${email}`);
+    }
 
     return {
       userId: user.id,
       email: user.email,
-      message:
-        'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP xác thực.',
+      message: phone
+        ? 'Đăng ký thành công. Vui lòng kiểm tra email và SMS để lấy mã OTP xác thực.'
+        : 'Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP xác thực.',
     };
   }
 
@@ -171,6 +186,7 @@ export class AuthService {
         data: {
           userId: user.id,
           code: otpCode,
+          type: OtpType.EMAIL_VERIFICATION,
           expiresAt,
         },
       });
@@ -205,6 +221,7 @@ export class AuthService {
       phone: user.phone,
       isActive: user.isActive,
       isVerified: user.isVerified,
+      isPhoneVerified: user.isPhoneVerified,
       role: user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -231,6 +248,7 @@ export class AuthService {
         stripeAccountStatus: true,
         createdAt: true,
         updatedAt: true,
+        isPhoneVerified: true,
       },
     });
 
@@ -355,11 +373,12 @@ export class AuthService {
   async verifyOTP(userId: string, otpCode: string): Promise<AuthResponse> {
     this.logger.log(`Verifying OTP for user: ${userId}`);
 
-    // Find valid OTP
+    // Find valid OTP (only EMAIL_VERIFICATION type)
     const otp = await this.prisma.otp.findFirst({
       where: {
         userId,
         code: otpCode,
+        type: OtpType.EMAIL_VERIFICATION,
         isUsed: false,
         expiresAt: {
           gt: new Date(),
@@ -460,6 +479,7 @@ export class AuthService {
       data: {
         userId: user.id,
         code: otpCode,
+        type: OtpType.EMAIL_VERIFICATION,
         expiresAt,
       },
     });
@@ -506,6 +526,7 @@ export class AuthService {
       data: {
         userId: user.id,
         code: otpCode,
+        type: OtpType.PASSWORD_RESET,
         expiresAt,
       },
     });
@@ -536,6 +557,7 @@ export class AuthService {
         phone: true,
         isActive: true,
         isVerified: true,
+        isPhoneVerified: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -624,6 +646,7 @@ export class AuthService {
         phone: true,
         isActive: true,
         isVerified: true,
+        isPhoneVerified: true,
         role: true,
         createdAt: true,
         updatedAt: true,
@@ -708,8 +731,20 @@ export class AuthService {
         if (existingUser && existingUser.id !== userId) {
           throw new ConflictException('Số điện thoại đã được sử dụng');
         }
+
+        // If phone is being changed, reset phone verification status
+        if (user.phone !== phone) {
+          userUpdateData.phone = phone;
+          userUpdateData.isPhoneVerified = false; // Yêu cầu xác minh lại
+          this.logger.log(
+            `Phone changed for user ${userId}. Phone verification required.`,
+          );
+        }
+      } else {
+        // If phone is being removed, also remove verification
+        userUpdateData.phone = null;
+        userUpdateData.isPhoneVerified = false;
       }
-      userUpdateData.phone = phone;
     }
 
     // Update user if needed
@@ -809,59 +844,430 @@ export class AuthService {
   async submitKYC(
     userId: string,
     kycSubmissionDto: KycSubmissionDto,
-  ): Promise<{ message: string }> {
+  ): Promise<{ message: string; kycId: string }> {
     this.logger.log(`Submitting KYC for user: ${userId}`);
-
-    // For now, we'll just store KYC data in user profile notes or create a KYC table later
-    // For simplicity, we'll update the profile with notes about KYC submission
-    // In production, you might want to create a separate KYC table
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true },
     });
 
     if (!user) {
       throw new UnauthorizedException('Người dùng không tồn tại');
     }
 
-    // Store KYC submission data (for now, we'll add notes to profile)
-    // In production, create a separate KYC model
-    const kycNotes = JSON.stringify({
-      ...kycSubmissionDto,
-      submittedAt: new Date().toISOString(),
-      status: 'PENDING',
+    // Check if KYC already exists
+    const existingKyc = await this.prisma.kyc.findUnique({
+      where: { userId },
     });
 
-    if (user.profile) {
-      await this.prisma.userProfile.update({
+    let kyc: { id: string };
+    if (existingKyc) {
+      // Update existing KYC (nếu bị reject, có thể submit lại)
+      if (existingKyc.status === KycStatus.APPROVED) {
+        throw new BadRequestException(
+          'KYC của bạn đã được duyệt. Không thể cập nhật.',
+        );
+      }
+
+      // Update KYC và reset status về PENDING
+      kyc = await this.prisma.kyc.update({
         where: { userId },
         data: {
-          // We can use bio field temporarily or create a dedicated field
-          bio: kycNotes,
+          ...kycSubmissionDto,
+          status: KycStatus.PENDING,
+          reviewedBy: null,
+          reviewedAt: null,
+          reviewNotes: null,
         },
+        select: { id: true },
       });
     } else {
-      // Create profile if doesn't exist
-      await this.prisma.userProfile.create({
+      // Create new KYC
+      kyc = await this.prisma.kyc.create({
         data: {
           userId,
-          firstName: user.email.split('@')[0],
-          lastName: '',
-          bio: kycNotes,
+          ...kycSubmissionDto,
+          status: KycStatus.PENDING,
         },
+        select: { id: true },
       });
     }
 
-    // Mark user as pending KYC verification
-    // You might want to add a kycStatus field to User model
-    // For now, we'll use isVerified flag logic differently
-
-    this.logger.log(`KYC submitted for user: ${userId}`);
+    this.logger.log(`KYC submitted for user: ${userId}, KYC ID: ${kyc.id}`);
 
     return {
       message:
         'Đã gửi thông tin KYC thành công. Chúng tôi sẽ xem xét và phản hồi trong vòng 24-48 giờ.',
+      kycId: kyc.id,
     };
+  }
+
+  // Get user's KYC status
+  async getMyKYC(userId: string): Promise<{
+    id: string;
+    userId: string;
+    idNumber: string | null;
+    idCardFrontUrl: string | null;
+    idCardBackUrl: string | null;
+    passportUrl: string | null;
+    driverLicenseUrl: string | null;
+    selfieUrl: string | null;
+    notes: string | null;
+    status: KycStatus;
+    reviewedBy: string | null;
+    reviewedAt: Date | null;
+    reviewNotes: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    reviewer: {
+      id: string;
+      email: string;
+    } | null;
+  } | null> {
+    const kyc = await this.prisma.kyc.findUnique({
+      where: { userId },
+      include: {
+        reviewer: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return kyc;
+  }
+
+  // ==================== ADMIN KYC MANAGEMENT ====================
+
+  /**
+   * Admin: Lấy danh sách KYC submissions
+   */
+  async listKYCSubmissions(
+    status?: KycStatus,
+    page = 1,
+    limit = 10,
+  ): Promise<{
+    items: Array<{
+      id: string;
+      userId: string;
+      idNumber: string | null;
+      idCardFrontUrl: string | null;
+      idCardBackUrl: string | null;
+      passportUrl: string | null;
+      driverLicenseUrl: string | null;
+      selfieUrl: string | null;
+      notes: string | null;
+      status: KycStatus;
+      reviewedBy: string | null;
+      reviewedAt: Date | null;
+      reviewNotes: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      user: {
+        id: string;
+        email: string;
+        phone: string | null;
+        role: UserRole;
+        createdAt: Date;
+      };
+      reviewer: {
+        id: string;
+        email: string;
+      } | null;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const where: Prisma.KycWhereInput = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      this.prisma.kyc.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              phone: true,
+              role: true,
+              createdAt: true,
+            },
+          },
+          reviewer: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.kyc.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * Admin: Duyệt KYC
+   */
+  async approveKYC(
+    kycId: string,
+    adminId: string,
+    reviewNotes?: string,
+  ): Promise<{ message: string }> {
+    const kyc = await this.prisma.kyc.findUnique({
+      where: { id: kycId },
+    });
+
+    if (!kyc) {
+      throw new NotFoundException('Không tìm thấy KYC submission');
+    }
+
+    if (kyc.status === KycStatus.APPROVED) {
+      throw new BadRequestException('KYC đã được duyệt trước đó');
+    }
+
+    await this.prisma.kyc.update({
+      where: { id: kycId },
+      data: {
+        status: KycStatus.APPROVED,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        reviewNotes,
+      },
+    });
+
+    this.logger.log(`KYC ${kycId} approved by admin ${adminId}`);
+
+    return {
+      message: 'Đã duyệt KYC thành công',
+    };
+  }
+
+  /**
+   * Admin: Từ chối KYC
+   */
+  async rejectKYC(
+    kycId: string,
+    adminId: string,
+    reviewNotes?: string,
+  ): Promise<{ message: string }> {
+    const kyc = await this.prisma.kyc.findUnique({
+      where: { id: kycId },
+    });
+
+    if (!kyc) {
+      throw new NotFoundException('Không tìm thấy KYC submission');
+    }
+
+    if (kyc.status === KycStatus.APPROVED) {
+      throw new BadRequestException('KYC đã được duyệt. Không thể từ chối.');
+    }
+
+    if (!reviewNotes) {
+      throw new BadRequestException(
+        'Vui lòng cung cấp lý do từ chối (reviewNotes)',
+      );
+    }
+
+    await this.prisma.kyc.update({
+      where: { id: kycId },
+      data: {
+        status: KycStatus.REJECTED,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        reviewNotes,
+      },
+    });
+
+    this.logger.log(`KYC ${kycId} rejected by admin ${adminId}`);
+
+    return {
+      message: 'Đã từ chối KYC',
+    };
+  }
+
+  // ==================== PHONE VERIFICATION ====================
+
+  /**
+   * Gửi OTP qua SMS để xác minh số điện thoại
+   * @param userId ID của user
+   * @param phone Số điện thoại cần xác minh
+   */
+  async sendPhoneVerificationOTP(
+    userId: string,
+    sendPhoneOtpDto: SendPhoneOtpDto,
+  ): Promise<{ message: string }> {
+    const { phone } = sendPhoneOtpDto;
+
+    this.logger.log(
+      `Sending phone verification OTP to ${phone} for user: ${userId}`,
+    );
+
+    // Get user
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        isPhoneVerified: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    // Check if phone is already verified and matches
+    if (user.isPhoneVerified && user.phone === phone) {
+      throw new BadRequestException('Số điện thoại này đã được xác minh');
+    }
+
+    // Check if phone is already used by another user
+    const existingUser = await this.prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (existingUser && existingUser.id !== userId) {
+      throw new ConflictException(
+        'Số điện thoại này đã được sử dụng bởi tài khoản khác',
+      );
+    }
+
+    // Generate OTP
+    const otpCode = this.generateOTPCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Create OTP record
+    await this.prisma.otp.create({
+      data: {
+        userId: user.id,
+        code: otpCode,
+        type: OtpType.PHONE_VERIFICATION,
+        phone,
+        expiresAt,
+      },
+    });
+
+    // Send OTP via SMS
+    const smsResult = await this.smsService.sendOTP(phone, otpCode);
+
+    if (!smsResult.success) {
+      this.logger.error(`Failed to send SMS to ${phone}: ${smsResult.message}`);
+      throw new BadRequestException('Không thể gửi SMS. Vui lòng thử lại sau.');
+    }
+
+    this.logger.log(
+      `Phone verification OTP sent to ${phone} for user: ${userId}`,
+    );
+
+    return {
+      message: 'Mã OTP đã được gửi đến số điện thoại của bạn',
+    };
+  }
+
+  /**
+   * Xác minh OTP từ SMS
+   * @param userId ID của user
+   * @param verifyPhoneOtpDto DTO chứa phone và otpCode
+   */
+  async verifyPhoneOTP(
+    userId: string,
+    verifyPhoneOtpDto: VerifyPhoneOtpDto,
+  ): Promise<{ message: string; isPhoneVerified: boolean }> {
+    const { phone, otpCode } = verifyPhoneOtpDto;
+
+    this.logger.log(`Verifying phone OTP for user: ${userId}, phone: ${phone}`);
+
+    // Get user
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        phone: true,
+        isPhoneVerified: true,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    // Find valid OTP
+    const otp = await this.prisma.otp.findFirst({
+      where: {
+        userId: user.id,
+        code: otpCode,
+        type: OtpType.PHONE_VERIFICATION,
+        phone,
+        isUsed: false,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!otp) {
+      this.logger.warn(
+        `Invalid or expired phone OTP for user: ${userId}, phone: ${phone}`,
+      );
+      throw new BadRequestException('Mã OTP không hợp lệ hoặc đã hết hạn');
+    }
+
+    // Mark OTP as used
+    await this.prisma.otp.update({
+      where: { id: otp.id },
+      data: { isUsed: true },
+    });
+
+    // Update user: set phone and mark as verified
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        phone,
+        isPhoneVerified: true,
+      },
+    });
+
+    this.logger.log(
+      `Phone verified successfully for user: ${userId}, phone: ${phone}`,
+    );
+
+    return {
+      message: 'Xác minh số điện thoại thành công',
+      isPhoneVerified: true,
+    };
+  }
+
+  /**
+   * Gửi lại OTP xác minh số điện thoại
+   * @param userId ID của user
+   * @param sendPhoneOtpDto DTO chứa phone
+   */
+  async resendPhoneOTP(
+    userId: string,
+    sendPhoneOtpDto: SendPhoneOtpDto,
+  ): Promise<{ message: string }> {
+    return this.sendPhoneVerificationOTP(userId, sendPhoneOtpDto);
   }
 }

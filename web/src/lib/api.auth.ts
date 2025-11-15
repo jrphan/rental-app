@@ -29,6 +29,7 @@ export const authApi = {
 
   /**
    * Refresh access token
+   * Uses apiClient but the interceptor will handle token refresh automatically
    */
   async refreshToken(refreshToken: string): Promise<{
     accessToken: string

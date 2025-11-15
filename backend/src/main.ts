@@ -1,7 +1,8 @@
 import { config } from 'dotenv';
 import { resolve } from 'path';
 // Load environment variables before anything else
-config({ path: resolve(__dirname, '../.env') });
+// When running from dist/, __dirname is dist/src, so we need to go up 2 levels to reach backend root
+config({ path: resolve(__dirname, '../../.env') });
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
