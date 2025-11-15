@@ -15,6 +15,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Controller } from 'react-hook-form'
+import { useKycReviewForm, useKycRejectForm } from '@/forms/review.forms'
 import {
   CheckCircle2,
   XCircle,
@@ -55,7 +57,10 @@ function KycPage() {
   const [selectedKyc, setSelectedKyc] = useState<KycSubmission | null>(null)
   const [showApproveModal, setShowApproveModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
-  const [reviewNotes, setReviewNotes] = useState('')
+
+  // Forms for review
+  const approveForm = useKycReviewForm()
+  const rejectForm = useKycRejectForm()
 
   const limit = 10
 
@@ -72,7 +77,13 @@ function KycPage() {
 
   // Approve mutation
   const approveMutation = useMutation({
-    mutationFn: (kycId: string) =>
+    mutationFn: ({
+      kycId,
+      reviewNotes,
+    }: {
+      kycId: string
+      reviewNotes?: string
+    }) =>
       kycApi.approveKYC(kycId, {
         reviewNotes: reviewNotes || undefined,
       }),
@@ -80,13 +91,19 @@ function KycPage() {
       queryClient.invalidateQueries({ queryKey: ['kyc-submissions'] })
       setShowApproveModal(false)
       setSelectedKyc(null)
-      setReviewNotes('')
+      approveForm.reset()
     },
   })
 
   // Reject mutation
   const rejectMutation = useMutation({
-    mutationFn: (kycId: string) =>
+    mutationFn: ({
+      kycId,
+      reviewNotes,
+    }: {
+      kycId: string
+      reviewNotes: string
+    }) =>
       kycApi.rejectKYC(kycId, {
         reviewNotes,
       }),
@@ -94,31 +111,41 @@ function KycPage() {
       queryClient.invalidateQueries({ queryKey: ['kyc-submissions'] })
       setShowRejectModal(false)
       setSelectedKyc(null)
-      setReviewNotes('')
+      rejectForm.reset()
     },
   })
 
   const handleApprove = (kyc: KycSubmission) => {
     setSelectedKyc(kyc)
-    setReviewNotes('')
+    approveForm.reset()
     setShowApproveModal(true)
   }
 
   const handleReject = (kyc: KycSubmission) => {
     setSelectedKyc(kyc)
-    setReviewNotes('')
+    rejectForm.reset()
     setShowRejectModal(true)
   }
 
-  const handleConfirmApprove = () => {
+  const handleConfirmApprove = (
+    data: typeof approveForm.formState.defaultValues,
+  ) => {
     if (selectedKyc) {
-      approveMutation.mutate(selectedKyc.id)
+      approveMutation.mutate({
+        kycId: selectedKyc.id,
+        reviewNotes: data?.reviewNotes,
+      })
     }
   }
 
-  const handleConfirmReject = () => {
-    if (selectedKyc && reviewNotes.trim()) {
-      rejectMutation.mutate(selectedKyc.id)
+  const handleConfirmReject = (
+    data: typeof rejectForm.formState.defaultValues,
+  ) => {
+    if (selectedKyc && data?.reviewNotes) {
+      rejectMutation.mutate({
+        kycId: selectedKyc.id,
+        reviewNotes: data.reviewNotes,
+      })
     }
   }
 
@@ -541,37 +568,53 @@ function KycPage() {
               Xác nhận duyệt yêu cầu xác thực danh tính này
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form
+            onSubmit={approveForm.handleSubmit(handleConfirmApprove)}
+            className="space-y-4"
+          >
             <div>
               <Label htmlFor="approve-notes">Ghi chú (tùy chọn)</Label>
-              <Textarea
-                id="approve-notes"
-                value={reviewNotes}
-                onChange={(e) => setReviewNotes(e.target.value)}
-                rows={4}
-                placeholder="Nhập ghi chú nếu có..."
-                className="mt-2"
+              <Controller
+                control={approveForm.control}
+                name="reviewNotes"
+                render={({ field, fieldState: { error } }) => (
+                  <>
+                    <Textarea
+                      id="approve-notes"
+                      {...field}
+                      rows={4}
+                      placeholder="Nhập ghi chú nếu có..."
+                      className={`mt-2 ${error ? 'border-red-500' : ''}`}
+                    />
+                    {error && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {error.message}
+                      </p>
+                    )}
+                  </>
+                )}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowApproveModal(false)
-                setReviewNotes('')
-              }}
-            >
-              Hủy
-            </Button>
-            <Button
-              onClick={handleConfirmApprove}
-              disabled={approveMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {approveMutation.isPending ? 'Đang xử lý...' : 'Xác nhận'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowApproveModal(false)
+                  approveForm.reset()
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                disabled={approveMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {approveMutation.isPending ? 'Đang xử lý...' : 'Xác nhận'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
@@ -584,40 +627,57 @@ function KycPage() {
               Vui lòng cung cấp lý do từ chối yêu cầu xác thực danh tính này
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form
+            onSubmit={rejectForm.handleSubmit(handleConfirmReject)}
+            className="space-y-4"
+          >
             <div>
               <Label htmlFor="reject-notes">
                 Lý do từ chối <span className="text-destructive">*</span>
               </Label>
-              <Textarea
-                id="reject-notes"
-                value={reviewNotes}
-                onChange={(e) => setReviewNotes(e.target.value)}
-                rows={4}
-                required
-                placeholder="Nhập lý do từ chối..."
-                className="mt-2"
+              <Controller
+                control={rejectForm.control}
+                name="reviewNotes"
+                render={({ field, fieldState: { error } }) => (
+                  <>
+                    <Textarea
+                      id="reject-notes"
+                      {...field}
+                      rows={4}
+                      placeholder="Nhập lý do từ chối..."
+                      className={`mt-2 ${error ? 'border-red-500' : ''}`}
+                    />
+                    {error && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {error.message}
+                      </p>
+                    )}
+                  </>
+                )}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowRejectModal(false)
-                setReviewNotes('')
-              }}
-            >
-              Hủy
-            </Button>
-            <Button
-              onClick={handleConfirmReject}
-              disabled={rejectMutation.isPending || !reviewNotes.trim()}
-              variant="destructive"
-            >
-              {rejectMutation.isPending ? 'Đang xử lý...' : 'Xác nhận'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowRejectModal(false)
+                  rejectForm.reset()
+                }}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  rejectMutation.isPending || !rejectForm.formState.isValid
+                }
+                variant="destructive"
+              >
+                {rejectMutation.isPending ? 'Đang xử lý...' : 'Xác nhận'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

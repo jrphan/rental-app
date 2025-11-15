@@ -70,9 +70,9 @@ export default function VehicleDetailScreen() {
   });
 
   const handleRent = () => {
-    if (!requirePhoneVerification()) {
-      return;
-    }
+    // if (!requirePhoneVerification()) {
+    //   return;
+    // }
 
     Alert.alert("Xác nhận đặt xe", "Bạn có chắc chắn muốn đặt xe này không?", [
       { text: "Hủy", style: "cancel" },

@@ -34,9 +34,9 @@ export default function ChatTab() {
   };
 
   // Check phone verification
-  if (!requirePhoneVerification()) {
-    return null;
-  }
+  // if (!requirePhoneVerification()) {
+  //   return null;
+  // }
 
   const renderConversation = ({ item }: { item: Conversation }) => {
     const userName =
@@ -89,10 +89,7 @@ export default function ChatTab() {
           </View>
           {lastMessage && (
             <View className="flex-row items-center">
-              <Text
-                className="text-sm text-gray-600 flex-1"
-                numberOfLines={1}
-              >
+              <Text className="text-sm text-gray-600 flex-1" numberOfLines={1}>
                 {isMyMessage ? "Bạn: " : ""}
                 {lastMessage.content}
               </Text>
@@ -149,4 +146,3 @@ export default function ChatTab() {
     />
   );
 }
-

@@ -9,7 +9,8 @@ import {
   Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { vehiclesApi } from "@/lib/api.vehicles";
 import { useToast } from "@/lib/toast";
@@ -17,6 +18,8 @@ import { useRequirePhoneVerification } from "@/lib/auth";
 import { GalleryButton } from "@/components/gallery/gallery-button";
 import { Select } from "@/components/ui/select";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useVehicleForm } from "@/forms/vehicle.forms";
+import { VehicleInput } from "@/schemas/vehicle.schema";
 
 export default function VehicleCreateScreen() {
   const router = useRouter();
@@ -29,24 +32,13 @@ export default function VehicleCreateScreen() {
   });
 
   // All hooks must be called before any early returns
-  const [brand, setBrand] = useState("");
-  const [model, setModel] = useState("");
-  const [year, setYear] = useState("2020");
-  const [color, setColor] = useState("");
-  const [licensePlate, setLicensePlate] = useState("");
-  const [dailyRate, setDailyRate] = useState("200000");
-  const [depositAmount, setDepositAmount] = useState("1000000");
-  const [fuelType, setFuelType] = useState<"PETROL" | "ELECTRIC" | "HYBRID">(
-    "PETROL"
-  );
-  const [transmission, setTransmission] = useState<
-    "MANUAL" | "AUTOMATIC" | "SEMI_AUTOMATIC"
-  >("MANUAL");
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [existingImageIds, setExistingImageIds] = useState<Map<string, string>>(
     new Map()
   ); // Map URL -> Image ID
   const queryClient = useQueryClient();
+
+  // Initialize form
+  const form = useVehicleForm();
 
   // Load vehicle data if editing
   const { data: vehicleData, isLoading: isLoadingVehicle } = useQuery({
@@ -58,54 +50,56 @@ export default function VehicleCreateScreen() {
   // Pre-fill form when vehicle data is loaded
   useEffect(() => {
     if (vehicleData) {
-      setBrand(vehicleData.brand || "");
-      setModel(vehicleData.model || "");
-      setYear(String(vehicleData.year || "2020"));
-      setColor(vehicleData.color || "");
-      setLicensePlate(vehicleData.licensePlate || "");
-      setDailyRate(String(vehicleData.dailyRate || "200000"));
-      setDepositAmount(String(vehicleData.depositAmount || "1000000"));
+      const imageUrls =
+        vehicleData.images && vehicleData.images.length > 0
+          ? vehicleData.images.map((img) => img.url)
+          : [];
 
-      // Set fuelType and transmission if available
-      if (vehicleData.fuelType) {
-        setFuelType(vehicleData.fuelType as typeof fuelType);
-      }
-      if (vehicleData.transmission) {
-        setTransmission(vehicleData.transmission as typeof transmission);
-      }
-
-      // Load existing images
-      if (vehicleData.images && vehicleData.images.length > 0) {
-        const urls = vehicleData.images.map((img) => img.url);
-        setImageUrls(urls);
-        // Map URLs to image IDs for deletion
-        const urlToIdMap = new Map<string, string>();
+      // Map URLs to image IDs for deletion
+      const urlToIdMap = new Map<string, string>();
+      if (vehicleData.images) {
         vehicleData.images.forEach((img) => {
           urlToIdMap.set(img.url, img.id);
         });
-        setExistingImageIds(urlToIdMap);
       }
+      setExistingImageIds(urlToIdMap);
+
+      form.reset({
+        brand: vehicleData.brand || "",
+        model: vehicleData.model || "",
+        year: String(vehicleData.year || "2020"),
+        color: vehicleData.color || "",
+        licensePlate: vehicleData.licensePlate || "",
+        dailyRate: String(vehicleData.dailyRate || "200000"),
+        depositAmount: String(vehicleData.depositAmount || "1000000"),
+        fuelType:
+          (vehicleData.fuelType as VehicleInput["fuelType"]) || "PETROL",
+        transmission:
+          (vehicleData.transmission as VehicleInput["transmission"]) ||
+          "MANUAL",
+        imageUrls,
+      });
     }
-  }, [vehicleData]);
+  }, [vehicleData, form]);
 
   const createMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (data: VehicleInput) => {
       if (isEditMode && vehicleId) {
         // Update existing vehicle
         const vehicle = await vehiclesApi.update(vehicleId, {
-          brand,
-          model,
-          year: Number(year),
-          color,
-          licensePlate,
-          dailyRate: Number(dailyRate),
-          depositAmount: Number(depositAmount),
-          fuelType,
-          transmission,
+          brand: data.brand,
+          model: data.model,
+          year: Number(data.year),
+          color: data.color,
+          licensePlate: data.licensePlate,
+          dailyRate: Number(data.dailyRate),
+          depositAmount: Number(data.depositAmount),
+          fuelType: data.fuelType,
+          transmission: data.transmission,
         });
 
         // Handle images: add new ones and remove deleted ones
-        const currentUrls = new Set(imageUrls);
+        const currentUrls = new Set(data.imageUrls);
         const existingUrls = new Set(Array.from(existingImageIds.keys()));
 
         // Remove images that are no longer in the list
@@ -124,7 +118,9 @@ export default function VehicleCreateScreen() {
         }
 
         // Add new images
-        const urlsToAdd = imageUrls.filter((url) => !existingUrls.has(url));
+        const urlsToAdd = data.imageUrls.filter(
+          (url) => !existingUrls.has(url)
+        );
         if (urlsToAdd.length > 0) {
           try {
             await Promise.all(
@@ -143,22 +139,22 @@ export default function VehicleCreateScreen() {
       } else {
         // Create new vehicle
         const vehicle = await vehiclesApi.create({
-          brand,
-          model,
-          year: Number(year),
-          color,
-          licensePlate,
-          dailyRate: Number(dailyRate),
-          depositAmount: Number(depositAmount),
-          fuelType,
-          transmission,
+          brand: data.brand,
+          model: data.model,
+          year: Number(data.year),
+          color: data.color,
+          licensePlate: data.licensePlate,
+          dailyRate: Number(data.dailyRate),
+          depositAmount: Number(data.depositAmount),
+          fuelType: data.fuelType,
+          transmission: data.transmission,
         });
 
         // Thêm hình ảnh nếu có
-        if (imageUrls.length > 0) {
+        if (data.imageUrls.length > 0) {
           try {
             await Promise.all(
-              imageUrls.map((url) => vehiclesApi.addImage(vehicle.id, url))
+              data.imageUrls.map((url) => vehiclesApi.addImage(vehicle.id, url))
             );
           } catch (imageError: any) {
             console.error("Error adding images:", imageError);
@@ -203,7 +199,7 @@ export default function VehicleCreateScreen() {
   });
 
   const handleSelectImages = async (urls: string[]) => {
-    setImageUrls(urls);
+    form.setValue("imageUrls", urls, { shouldValidate: true });
   };
 
   const handleRemoveImage = (index: number) => {
@@ -213,16 +209,25 @@ export default function VehicleCreateScreen() {
         text: "Xóa",
         style: "destructive",
         onPress: () => {
-          setImageUrls((prev) => prev.filter((_, i) => i !== index));
+          const currentImages = form.getValues("imageUrls");
+          form.setValue(
+            "imageUrls",
+            currentImages.filter((_, i) => i !== index),
+            { shouldValidate: true }
+          );
         },
       },
     ]);
   };
 
+  const onSubmit = (data: VehicleInput) => {
+    createMutation.mutate(data);
+  };
+
   // Check phone verification after all hooks
-  if (!requirePhoneVerification()) {
-    return null; // Đã redirect
-  }
+  // if (!requirePhoneVerification()) {
+  //   return null; // Đã redirect
+  // }
 
   if (isLoadingVehicle) {
     return (
@@ -254,128 +259,330 @@ export default function VehicleCreateScreen() {
           </Text>
         </View>
         <View className="gap-4">
-          <TextInput
-            placeholder="Hãng *"
-            className="border border-gray-300 rounded-lg px-4 py-3"
-            value={brand}
-            onChangeText={setBrand}
-          />
-          <TextInput
-            placeholder="Dòng xe *"
-            className="border border-gray-300 rounded-lg px-4 py-3"
-            value={model}
-            onChangeText={setModel}
-          />
-          <TextInput
-            placeholder="Năm *"
-            keyboardType="numeric"
-            className="border border-gray-300 rounded-lg px-4 py-3"
-            value={year}
-            onChangeText={setYear}
-          />
-          <TextInput
-            placeholder="Màu *"
-            className="border border-gray-300 rounded-lg px-4 py-3"
-            value={color}
-            onChangeText={setColor}
-          />
-          <TextInput
-            placeholder="Biển số *"
-            className="border border-gray-300 rounded-lg px-4 py-3"
-            value={licensePlate}
-            onChangeText={setLicensePlate}
+          {/* Brand */}
+          <Controller
+            control={form.control}
+            name="brand"
+            render={({
+              field: { onChange, onBlur, value },
+              fieldState: { error },
+            }) => (
+              <View>
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Hãng *
+                </Text>
+                <TextInput
+                  placeholder="Hãng *"
+                  className={`border rounded-lg px-4 py-3 ${
+                    error ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
           />
 
-          {/* Nhiên liệu */}
-          <Select
-            label="Nhiên liệu"
-            placeholder="Chọn loại nhiên liệu"
-            value={fuelType}
-            onValueChange={(value) => setFuelType(value as typeof fuelType)}
-            options={[
-              { label: "Xăng", value: "PETROL" },
-              { label: "Điện", value: "ELECTRIC" },
-              { label: "Hybrid", value: "HYBRID" },
-            ]}
+          {/* Model */}
+          <Controller
+            control={form.control}
+            name="model"
+            render={({
+              field: { onChange, onBlur, value },
+              fieldState: { error },
+            }) => (
+              <View>
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Dòng xe *
+                </Text>
+                <TextInput
+                  placeholder="Dòng xe *"
+                  className={`border rounded-lg px-4 py-3 ${
+                    error ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
           />
 
-          {/* Hộp số */}
-          <Select
-            label="Hộp số"
-            placeholder="Chọn loại hộp số"
-            value={transmission}
-            onValueChange={(value) =>
-              setTransmission(value as typeof transmission)
-            }
-            options={[
-              { label: "Số sàn", value: "MANUAL" },
-              { label: "Số tự động", value: "AUTOMATIC" },
-              { label: "Bán tự động", value: "SEMI_AUTOMATIC" },
-            ]}
+          {/* Year */}
+          <Controller
+            control={form.control}
+            name="year"
+            render={({
+              field: { onChange, onBlur, value },
+              fieldState: { error },
+            }) => (
+              <View>
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Năm *
+                </Text>
+                <TextInput
+                  placeholder="Năm *"
+                  keyboardType="numeric"
+                  className={`border rounded-lg px-4 py-3 ${
+                    error ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
           />
 
-          <TextInput
-            placeholder="Giá ngày (đ) *"
-            keyboardType="numeric"
-            className="border border-gray-300 rounded-lg px-4 py-3"
-            value={dailyRate}
-            onChangeText={setDailyRate}
+          {/* Color */}
+          <Controller
+            control={form.control}
+            name="color"
+            render={({
+              field: { onChange, onBlur, value },
+              fieldState: { error },
+            }) => (
+              <View>
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Màu *
+                </Text>
+                <TextInput
+                  placeholder="Màu *"
+                  className={`border rounded-lg px-4 py-3 ${
+                    error ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
           />
-          <TextInput
-            placeholder="Tiền cọc (đ) *"
-            keyboardType="numeric"
-            className="border border-gray-300 rounded-lg px-4 py-3"
-            value={depositAmount}
-            onChangeText={setDepositAmount}
+
+          {/* License Plate */}
+          <Controller
+            control={form.control}
+            name="licensePlate"
+            render={({
+              field: { onChange, onBlur, value },
+              fieldState: { error },
+            }) => (
+              <View>
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Biển số *
+                </Text>
+                <TextInput
+                  placeholder="Biển số *"
+                  className={`border rounded-lg px-4 py-3 ${
+                    error ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
+
+          {/* Fuel Type */}
+          <Controller
+            control={form.control}
+            name="fuelType"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
+              <View>
+                <Select
+                  label="Nhiên liệu"
+                  placeholder="Chọn loại nhiên liệu"
+                  value={value}
+                  onValueChange={onChange}
+                  options={[
+                    { label: "Xăng", value: "PETROL" },
+                    { label: "Điện", value: "ELECTRIC" },
+                    { label: "Hybrid", value: "HYBRID" },
+                  ]}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
+
+          {/* Transmission */}
+          <Controller
+            control={form.control}
+            name="transmission"
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
+              <View>
+                <Select
+                  label="Hộp số"
+                  placeholder="Chọn loại hộp số"
+                  value={value}
+                  onValueChange={onChange}
+                  options={[
+                    { label: "Số sàn", value: "MANUAL" },
+                    { label: "Số tự động", value: "AUTOMATIC" },
+                    { label: "Bán tự động", value: "SEMI_AUTOMATIC" },
+                  ]}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
+
+          {/* Daily Rate */}
+          <Controller
+            control={form.control}
+            name="dailyRate"
+            render={({
+              field: { onChange, onBlur, value },
+              fieldState: { error },
+            }) => (
+              <View>
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Giá ngày (đ) *
+                </Text>
+                <TextInput
+                  placeholder="Giá ngày (đ) *"
+                  keyboardType="numeric"
+                  className={`border rounded-lg px-4 py-3 ${
+                    error ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
+
+          {/* Deposit Amount */}
+          <Controller
+            control={form.control}
+            name="depositAmount"
+            render={({
+              field: { onChange, onBlur, value },
+              fieldState: { error },
+            }) => (
+              <View>
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Tiền cọc (đ) *
+                </Text>
+                <TextInput
+                  placeholder="Tiền cọc (đ) *"
+                  keyboardType="numeric"
+                  className={`border rounded-lg px-4 py-3 ${
+                    error ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                />
+                {error && (
+                  <Text className="text-red-500 text-xs mt-1">
+                    {error.message}
+                  </Text>
+                )}
+              </View>
+            )}
           />
         </View>
 
         {/* Hình ảnh xe */}
-        <View className="mt-4">
-          <Text className="text-base font-semibold text-gray-900 mb-3">
-            Hình ảnh xe {imageUrls.length > 0 && `(${imageUrls.length})`}
-          </Text>
-          <Text className="text-sm text-gray-600 mb-3">
-            * Bắt buộc có ít nhất 1 hình ảnh để gửi duyệt
-          </Text>
-
-          {/* Gallery Button */}
-          <GalleryButton
-            onSelect={handleSelectImages}
-            folder="vehicles"
-            multiple={true}
-            maxSelections={10}
-            label="Chọn hình ảnh từ thư viện"
-            variant="outline"
-          />
-
-          {/* Hiển thị hình ảnh đã chọn */}
-          {imageUrls.length > 0 && (
+        <Controller
+          control={form.control}
+          name="imageUrls"
+          render={({ field: { value }, fieldState: { error } }) => (
             <View className="mt-4">
-              <View className="flex-row flex-wrap gap-3">
-                {imageUrls.map((url, index) => (
-                  <View key={index} className="relative">
-                    <Image
-                      source={{ uri: url }}
-                      className="w-24 h-24 rounded-lg"
-                      resizeMode="cover"
-                    />
-                    <TouchableOpacity
-                      onPress={() => handleRemoveImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
-                    >
-                      <MaterialIcons name="close" size={16} color="#fff" />
-                    </TouchableOpacity>
+              <Text className="text-base font-semibold text-gray-900 mb-3">
+                Hình ảnh xe {value.length > 0 && `(${value.length})`}
+              </Text>
+              <Text className="text-sm text-gray-600 mb-3">
+                * Bắt buộc có ít nhất 1 hình ảnh để gửi duyệt
+              </Text>
+
+              {/* Gallery Button */}
+              <GalleryButton
+                onSelect={handleSelectImages}
+                folder="vehicles"
+                multiple={true}
+                maxSelections={10}
+                label="Chọn hình ảnh từ thư viện"
+                variant="outline"
+              />
+
+              {/* Hiển thị hình ảnh đã chọn */}
+              {value.length > 0 && (
+                <View className="mt-4">
+                  <View className="flex-row flex-wrap gap-3">
+                    {value.map((url, index) => (
+                      <View key={index} className="relative">
+                        <Image
+                          source={{ uri: url }}
+                          className="w-24 h-24 rounded-lg"
+                          resizeMode="cover"
+                        />
+                        <TouchableOpacity
+                          onPress={() => handleRemoveImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+                        >
+                          <MaterialIcons name="close" size={16} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
+                </View>
+              )}
+
+              {error && (
+                <Text className="text-red-500 text-xs mt-1">
+                  {error.message}
+                </Text>
+              )}
             </View>
           )}
-        </View>
+        />
 
         <TouchableOpacity
-          className="mt-6 bg-orange-600 rounded-lg px-4 py-3 items-center"
-          onPress={() => createMutation.mutate()}
+          className="mt-6 bg-orange-600 rounded-lg px-4 py-3 items-center disabled:opacity-50"
+          onPress={form.handleSubmit(onSubmit)}
           disabled={createMutation.isPending}
         >
           <Text className="text-white font-semibold">

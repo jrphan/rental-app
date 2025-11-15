@@ -19,6 +19,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Controller } from 'react-hook-form'
+import { useOwnerReviewForm } from '@/forms/review.forms'
 import {
   CheckCircle2,
   XCircle,
@@ -58,7 +60,9 @@ function OwnersPage() {
   const [selectedApp, setSelectedApp] = useState<OwnerApplication | null>(null)
   const [showApproveModal, setShowApproveModal] = useState(false)
   const [showRejectModal, setShowRejectModal] = useState(false)
-  const [reviewNotes, setReviewNotes] = useState('')
+
+  // Form for review
+  const rejectForm = useOwnerReviewForm()
 
   const limit = 10
 
@@ -80,31 +84,34 @@ function OwnersPage() {
       queryClient.invalidateQueries({ queryKey: ['owner-applications'] })
       setShowApproveModal(false)
       setSelectedApp(null)
-      setReviewNotes('')
     },
   })
 
   // Reject mutation
   const rejectMutation = useMutation({
-    mutationFn: (appId: string) =>
-      ownerApi.rejectOwnerApplication(appId, reviewNotes),
+    mutationFn: ({
+      appId,
+      reviewNotes,
+    }: {
+      appId: string
+      reviewNotes?: string
+    }) => ownerApi.rejectOwnerApplication(appId, reviewNotes || ''),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['owner-applications'] })
       setShowRejectModal(false)
       setSelectedApp(null)
-      setReviewNotes('')
+      rejectForm.reset()
     },
   })
 
   const handleApprove = (app: OwnerApplication) => {
     setSelectedApp(app)
-    setReviewNotes('')
     setShowApproveModal(true)
   }
 
   const handleReject = (app: OwnerApplication) => {
     setSelectedApp(app)
-    setReviewNotes('')
+    rejectForm.reset()
     setShowRejectModal(true)
   }
 
@@ -114,9 +121,14 @@ function OwnersPage() {
     }
   }
 
-  const handleConfirmReject = () => {
+  const handleConfirmReject = (
+    data: typeof rejectForm.formState.defaultValues,
+  ) => {
     if (selectedApp) {
-      rejectMutation.mutate(selectedApp.id)
+      rejectMutation.mutate({
+        appId: selectedApp.id,
+        reviewNotes: data?.reviewNotes,
+      })
     }
   }
 
@@ -526,7 +538,10 @@ function OwnersPage() {
               Vui lòng nhập lý do từ chối (tùy chọn)
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form
+            onSubmit={rejectForm.handleSubmit(handleConfirmReject)}
+            className="space-y-4"
+          >
             {selectedApp && (
               <div className="bg-muted rounded-lg p-4">
                 <p className="text-sm font-medium">
@@ -536,36 +551,51 @@ function OwnersPage() {
             )}
             <div>
               <Label htmlFor="reject-notes">Lý do từ chối</Label>
-              <Textarea
-                id="reject-notes"
-                placeholder="Nhập lý do từ chối (tùy chọn)"
-                value={reviewNotes}
-                onChange={(e) => setReviewNotes(e.target.value)}
-                className="mt-2"
-                rows={4}
+              <Controller
+                control={rejectForm.control}
+                name="reviewNotes"
+                render={({ field, fieldState: { error } }) => (
+                  <>
+                    <Textarea
+                      id="reject-notes"
+                      placeholder="Nhập lý do từ chối (tùy chọn)"
+                      {...field}
+                      className={`mt-2 ${error ? 'border-red-500' : ''}`}
+                      rows={4}
+                    />
+                    {error && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {error.message}
+                      </p>
+                    )}
+                  </>
+                )}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowRejectModal(false)
-                setSelectedApp(null)
-                setReviewNotes('')
-              }}
-              disabled={rejectMutation.isPending}
-            >
-              Hủy
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmReject}
-              disabled={rejectMutation.isPending}
-            >
-              {rejectMutation.isPending ? 'Đang xử lý...' : 'Xác nhận từ chối'}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowRejectModal(false)
+                  setSelectedApp(null)
+                  rejectForm.reset()
+                }}
+                disabled={rejectMutation.isPending}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={rejectMutation.isPending}
+              >
+                {rejectMutation.isPending
+                  ? 'Đang xử lý...'
+                  : 'Xác nhận từ chối'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
