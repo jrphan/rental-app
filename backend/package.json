@@ -20,9 +20,7 @@
     "prisma:studio": "npx prisma studio",
     "prisma:seed": "npx prisma db seed",
     "db:push": "npx prisma db push",
-    "db:push:force": "npx prisma db push --force-reset",
-    "create-admin": "tsx scripts/create-admin.ts",
-    "seed:vehicle-types": "tsx scripts/seed-vehicle-types.ts"
+    "db:push:force": "npx prisma db push --force-reset"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.922.0",

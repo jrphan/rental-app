@@ -1,11 +1,22 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { MessageType, Prisma } from '@prisma/client';
+import { MessageType, Prisma, NotificationType } from '@prisma/client';
 import { createPaginatedResponse } from '@/common/utils/response.util';
+import { NotificationService } from '@/modules/notification/notification.service';
 
 @Injectable()
 export class MessageService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => NotificationService))
+    private notificationService: NotificationService,
+  ) {}
 
   async sendMessage(
     senderId: string,
@@ -35,15 +46,14 @@ export class MessageService {
       const rental = await this.prisma.rental.findFirst({
         where: {
           id: data.rentalId,
-          OR: [
-            { renterId: senderId },
-            { ownerId: senderId },
-          ],
+          OR: [{ renterId: senderId }, { ownerId: senderId }],
         },
       });
 
       if (!rental) {
-        throw new NotFoundException('Không tìm thấy đơn thuê hoặc bạn không có quyền truy cập');
+        throw new NotFoundException(
+          'Không tìm thấy đơn thuê hoặc bạn không có quyền truy cập',
+        );
       }
     }
 
@@ -64,7 +74,7 @@ export class MessageService {
               select: {
                 firstName: true,
                 lastName: true,
-                avatarUrl: true,
+                avatar: true,
               },
             },
           },
@@ -77,7 +87,7 @@ export class MessageService {
               select: {
                 firstName: true,
                 lastName: true,
-                avatarUrl: true,
+                avatar: true,
               },
             },
           },
@@ -86,17 +96,16 @@ export class MessageService {
     });
 
     // Create notification for receiver
-    await this.prisma.notification.create({
+    const senderName =
+      message.sender.profile?.firstName || message.sender.email || 'Người dùng';
+    await this.notificationService.create(data.receiverId, {
+      type: NotificationType.MESSAGE_RECEIVED,
+      title: 'Tin nhắn mới',
+      message: `Bạn có tin nhắn mới từ ${senderName}`,
       data: {
-        userId: data.receiverId,
-        type: 'MESSAGE_RECEIVED',
-        title: 'Tin nhắn mới',
-        message: `Bạn có tin nhắn mới từ ${message.sender.profile?.firstName || message.sender.email}`,
-        data: {
-          messageId: message.id,
-          senderId: senderId,
-          rentalId: data.rentalId,
-        },
+        messageId: message.id,
+        senderId: senderId,
+        rentalId: data.rentalId,
       },
     });
 
@@ -118,12 +127,12 @@ export class MessageService {
     });
 
     const conversationUserIds = new Set<string>();
-    sentMessages.forEach((m) => conversationUserIds.add(m.receiverId));
-    receivedMessages.forEach((m) => conversationUserIds.add(m.senderId));
+    sentMessages.forEach(m => conversationUserIds.add(m.receiverId));
+    receivedMessages.forEach(m => conversationUserIds.add(m.senderId));
 
     // Get last message for each conversation
     const conversations = await Promise.all(
-      Array.from(conversationUserIds).map(async (otherUserId) => {
+      Array.from(conversationUserIds).map(async otherUserId => {
         const lastMessage = await this.prisma.message.findFirst({
           where: {
             OR: [
@@ -141,7 +150,7 @@ export class MessageService {
                   select: {
                     firstName: true,
                     lastName: true,
-                    avatarUrl: true,
+                    avatar: true,
                   },
                 },
               },
@@ -154,7 +163,7 @@ export class MessageService {
                   select: {
                     firstName: true,
                     lastName: true,
-                    avatarUrl: true,
+                    avatar: true,
                   },
                 },
               },
@@ -170,11 +179,14 @@ export class MessageService {
           },
         });
 
+        const otherUser =
+          lastMessage && otherUserId === lastMessage.senderId
+            ? lastMessage.sender
+            : lastMessage?.receiver || null;
+
         return {
           userId: otherUserId,
-          user: otherUserId === lastMessage?.senderId
-            ? lastMessage.sender
-            : lastMessage?.receiver,
+          user: otherUser,
           lastMessage,
           unreadCount,
         };
@@ -200,12 +212,7 @@ export class MessageService {
     );
   }
 
-  async getMessages(
-    userId: string,
-    otherUserId: string,
-    page = 1,
-    limit = 50,
-  ) {
+  async getMessages(userId: string, otherUserId: string, page = 1, limit = 50) {
     const where: Prisma.MessageWhereInput = {
       OR: [
         { senderId: userId, receiverId: otherUserId },
@@ -230,7 +237,7 @@ export class MessageService {
                 select: {
                   firstName: true,
                   lastName: true,
-                  avatarUrl: true,
+                  avatar: true,
                 },
               },
             },
@@ -243,7 +250,7 @@ export class MessageService {
                 select: {
                   firstName: true,
                   lastName: true,
-                  avatarUrl: true,
+                  avatar: true,
                 },
               },
             },
@@ -295,4 +302,3 @@ export class MessageService {
     });
   }
 }
-
