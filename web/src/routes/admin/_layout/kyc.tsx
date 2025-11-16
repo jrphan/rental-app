@@ -17,6 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Controller } from 'react-hook-form'
 import { useKycReviewForm, useKycRejectForm } from '@/forms/review.forms'
+import { PageHeader } from '@/components/admin/page-header'
 import {
   CheckCircle2,
   XCircle,
@@ -188,28 +189,15 @@ function KycPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate({ to: '/admin/dashboard' })}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                ← Quay lại
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900">Quản lý KYC</h1>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+    <>
+      <PageHeader
+        title="Quản lý KYC"
+        description="Duyệt và quản lý các yêu cầu xác thực danh tính"
+        showBackButton
+        backTo="/admin/dashboard"
+      />
+      {/* Filters */}
+      <div className="bg-card rounded-lg shadow-sm p-4 mb-6">
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium text-gray-700">
               Lọc theo trạng thái:
@@ -362,7 +350,6 @@ function KycPage() {
             )}
           </>
         )}
-      </main>
 
       {/* KYC Detail Modal */}
       <Dialog
@@ -680,6 +667,6 @@ function KycPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
