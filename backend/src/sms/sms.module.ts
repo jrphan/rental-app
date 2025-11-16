@@ -4,7 +4,7 @@ import { ENV } from '@/config/env';
 
 const logger = new Logger('SmsModule');
 logger.log(
-  `Twilio SMS service cấu hình: ${Boolean(ENV.twilio?.accountSid && ENV.twilio?.authToken)}`,
+  `SMS service provider: ${ENV.sms?.provider || 'development'} - ${ENV.sms?.provider === 'production' ? 'AWS SNS' : 'Development Mode (Logging only)'}`,
 );
 
 @Module({

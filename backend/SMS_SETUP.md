@@ -1,126 +1,120 @@
-# 📱 Cấu Hình SMS Service (Twilio)
+# 📱 Cấu Hình SMS Service
 
 ## Tổng quan
 
-Hệ thống đã được tích hợp SMS service để gửi OTP xác minh số điện thoại. Hiện tại sử dụng Twilio làm SMS provider.
+Hệ thống hỗ trợ 2 chế độ SMS:
 
-## 📋 Bước 1: Tạo tài khoản Twilio
+1. **Development Mode** (Mặc định): Log OTP vào console và file - **Không cần cấu hình gì, sẵn sàng dùng cho đồ án**
+2. **Production Mode**: Gửi SMS thật qua AWS SNS (free tier: 100 SMS/tháng)
 
-1. Truy cập: https://www.twilio.com/try-twilio
-2. Đăng ký tài khoản miễn phí
-3. Xác minh email và số điện thoại
-4. Vào Dashboard → **Account** → **API Keys & Tokens**
+## 🚀 Development Mode (Mặc định - Khuyến nghị cho đồ án)
 
-## 📋 Bước 2: Lấy Credentials
+**Không cần cấu hình gì!** Service sẽ tự động log OTP vào:
 
-1. **Account SID**: Tìm trong Dashboard (có dạng `ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`)
-2. **Auth Token**: Click "Show" để hiển thị (có dạng `your_auth_token_here`)
-3. **Phone Number**: Vào **Phone Numbers** → **Manage** → **Buy a number** (hoặc dùng số trial miễn phí)
+- Console (dễ nhìn khi chạy server)
+- File log: `logs/sms/sms-YYYY-MM-DD.log`
 
-⚠️ **Lưu ý về Trial Account**:
+Khi user yêu cầu OTP, bạn sẽ thấy trong console:
 
-- Trial account có giới hạn: **chỉ gửi SMS đến số điện thoại đã verify** trong Twilio Dashboard
-- Để gửi SMS đến bất kỳ số nào, cần upgrade account
-- Trial account có $15.50 credit miễn phí để test
-
-## 📋 Bước 2.1: Verify Số Điện Thoại (QUAN TRỌNG cho Trial)
-
-Để test SMS với trial account, bạn **PHẢI** verify số điện thoại nhận SMS trước:
-
-1. Vào Twilio Dashboard → **Phone Numbers** → **Verified Caller IDs**
-2. Click **Add a new Caller ID** hoặc **Verify a number**
-3. Nhập số điện thoại muốn nhận SMS (format: +84901234567)
-4. Chọn **Verify via SMS** hoặc **Verify via Call**
-5. Nhập mã OTP nhận được từ Twilio
-6. Sau khi verify thành công, số điện thoại sẽ xuất hiện trong danh sách **Verified Caller IDs**
-
-✅ **Sau khi verify**: Bạn có thể gửi SMS đến số đó từ trial account
-
-❌ **Nếu chưa verify**: SMS sẽ bị reject với lỗi "The number +84... is unverified"
-
-## 📋 Bước 3: Cài đặt Twilio SDK
-
-**BẮT BUỘC** để gửi SMS thật:
-
-```bash
-cd backend
-pnpm add twilio
+```
+═══════════════════════════════════════
+📱 SMS OTP (Development Mode)
+═══════════════════════════════════════
+To: +84901234567
+OTP Code: 123456
+Time: 2024-01-15T10:30:00.000Z
+Message: Mã xác thực của bạn là: 123456...
+═══════════════════════════════════════
 ```
 
-Sau đó cập nhật code trong `src/sms/sms.service.ts`:
+**Ưu điểm:**
 
-1. Uncomment import:
+- ✅ Hoàn toàn miễn phí
+- ✅ Không cần đăng ký dịch vụ nào
+- ✅ Dễ test và debug
+- ✅ Phù hợp cho đồ án, demo
 
-```typescript
-import twilio from 'twilio';
-```
+## 📋 Production Mode (AWS SNS)
 
-2. Uncomment code trong constructor:
+Nếu muốn gửi SMS thật trong production, có thể dùng AWS SNS:
 
-```typescript
-constructor() {
-  if (ENV.twilio.accountSid && ENV.twilio.authToken) {
-    this.twilioClient = twilio(ENV.twilio.accountSid, ENV.twilio.authToken);
-    this.logger.log('Twilio SMS service initialized');
-  } else {
-    this.logger.warn('Twilio credentials not found. SMS service will log messages only.');
-  }
-}
-```
+### Bước 1: Tạo AWS Account
 
-3. Uncomment code trong sendOTP method (thay thế phần dev mode):
+1. Truy cập: https://aws.amazon.com/
+2. Tạo tài khoản miễn phí (có 12 tháng free tier)
+3. AWS SNS SMS: **100 SMS/tháng miễn phí** (đủ cho demo)
 
-```typescript
-if (ENV.twilio?.accountSid && ENV.twilio?.authToken) {
-  const result = await this.twilioClient.messages.create({
-    body: message,
-    from: ENV.twilio.phoneNumber,
-    to: formattedPhone,
-  });
+### Bước 2: Tạo IAM User cho SMS
 
-  this.logger.log(
-    `SMS sent successfully to ${formattedPhone}. SID: ${result.sid}`,
-  );
-  return {
-    success: true,
-    message: 'SMS đã được gửi thành công',
-    messageId: result.sid,
-  };
-}
-```
+1. Vào **IAM** → **Users** → **Create user**
+2. Chọn **Access key - Programmatic access**
+3. Attach policy: `AmazonSNSFullAccess` (hoặc custom policy chỉ cho SMS)
+4. Lưu lại **Access Key ID** và **Secret Access Key**
 
-## 📋 Bước 4: Thêm Biến Môi Trường
+### Bước 3: Cấu hình Environment Variables
 
-### Local development (.env)
+Thêm vào `.env`:
 
 ```env
-# Twilio SMS Configuration
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=your_auth_token_here
-TWILIO_PHONE_NUMBER=+1234567890  # Số điện thoại Twilio của bạn (format: +84901234567)
+# SMS Configuration
+SMS_PROVIDER=production
+AWS_SMS_ACCESS_KEY_ID=your_access_key_id
+AWS_SMS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_SMS_REGION=ap-southeast-1  # Singapore (gần VN nhất)
 ```
 
-### Production (Render.com / Vercel / etc.)
-
-Thêm các biến môi trường tương tự trong dashboard của hosting provider.
-
-## 📋 Bước 5: Chạy Migration
-
-Sau khi cập nhật schema, chạy migration:
+### Bước 4: Cài đặt AWS SDK (nếu chưa có)
 
 ```bash
 cd backend
-pnpm migrate:dev
+pnpm add @aws-sdk/client-sns
 ```
 
-Migration sẽ thêm:
+### Bước 5: Kích hoạt SMS trong AWS SNS
 
-- Trường `isPhoneVerified` vào bảng `users`
-- Trường `type` và `phone` vào bảng `otps`
+1. Vào **AWS SNS Console** → **Text messaging (SMS)**
+2. Chọn **Sandbox** mode (free tier) hoặc **Production**
+3. Sandbox mode: Chỉ gửi được đến số đã verify (free)
+4. Production: Gửi được đến bất kỳ số nào (tốn phí sau 100 SMS/tháng)
 
-## 🚀 Sử dụng
+## 🔄 Chuyển đổi giữa Development và Production
 
-### API Endpoints
+### Development Mode (Mặc định)
+
+```env
+SMS_PROVIDER=development
+# Hoặc không set gì cả
+```
+
+### Production Mode
+
+```env
+SMS_PROVIDER=production
+AWS_SMS_ACCESS_KEY_ID=xxx
+AWS_SMS_SECRET_ACCESS_KEY=xxx
+AWS_SMS_REGION=ap-southeast-1
+```
+
+## 📝 Format số điện thoại
+
+Service tự động format số điện thoại:
+
+- `0901234567` → `+84901234567`
+- `84901234567` → `+84901234567`
+- `+84901234567` → `+84901234567` (giữ nguyên)
+
+## 🎯 Sử dụng trong Code
+
+Service đã được tích hợp sẵn, tự động detect mode:
+
+```typescript
+// Trong auth.service.ts
+await this.smsService.sendOTP(phone, otpCode);
+// Development: Log OTP
+// Production: Gửi SMS thật
+```
+
+## 📊 API Endpoints
 
 1. **Gửi OTP qua SMS**:
 
@@ -145,40 +139,47 @@ Migration sẽ thêm:
    Body: { "phone": "0901234567" }
    ```
 
-### Flow xác minh số điện thoại
+## 💡 Khuyến nghị cho đồ án
 
-1. User đăng ký với số điện thoại → OTP được gửi qua email và SMS (nếu có)
-2. User đăng nhập → Nếu chưa xác minh số điện thoại, có thể gọi API để xác minh
-3. User cập nhật số điện thoại → `isPhoneVerified` tự động reset về `false`, cần xác minh lại
+**Sử dụng Development Mode:**
 
-## 🔧 Development Mode
+- ✅ Đơn giản, không cần config
+- ✅ OTP hiển thị rõ ràng trong console/logs
+- ✅ Dễ demo và test
+- ✅ Hoàn toàn miễn phí
 
-Nếu không cấu hình Twilio credentials, hệ thống sẽ chạy ở **dev mode**:
+Chỉ chuyển sang Production Mode khi:
 
-- SMS không được gửi thật
-- OTP code được log ra console
-- Có thể test flow mà không cần Twilio account
+- Deploy lên server thật
+- Cần gửi SMS thật cho user
+- Có budget cho SMS
 
-## 📝 Lưu ý
+## 📁 Log Files
 
-- OTP có thời hạn 10 phút
-- Mỗi OTP chỉ sử dụng được 1 lần
-- Format số điện thoại: tự động thêm country code (+84 cho Việt Nam)
-- Nếu số điện thoại đã được xác minh, không thể gửi OTP lại cho số đó
+Development mode tạo log files tại:
 
-## 🎯 Hướng Dẫn Chi Tiết Trial Account
+```
+backend/logs/sms/sms-2024-01-15.log
+```
 
-Xem file `TWILIO_TRIAL_GUIDE.md` để biết cách:
+Mỗi ngày một file, dễ tra cứu OTP đã gửi.
 
-- Verify số điện thoại trong Twilio Dashboard
-- Test SMS với trial account
-- Xử lý lỗi thường gặp
-- Upgrade account khi cần
+## 🔧 Troubleshooting
 
-## 🔄 Thay đổi SMS Provider
+### Development Mode không log OTP
 
-Để sử dụng SMS provider khác (như AWS SNS, Vonage, etc.), chỉ cần:
+- Kiểm tra console output
+- Kiểm tra file `logs/sms/` có được tạo không
+- Kiểm tra quyền write của thư mục `logs/`
 
-1. Cập nhật `SmsService` trong `src/sms/sms.service.ts`
-2. Cập nhật biến môi trường trong `src/config/env.ts`
-3. Cập nhật logic gửi SMS trong method `sendOTP`
+### Production Mode không gửi SMS
+
+- Kiểm tra AWS credentials trong `.env`
+- Kiểm tra AWS SNS đã enable SMS chưa
+- Kiểm tra số điện thoại đã verify trong AWS SNS Sandbox (nếu dùng Sandbox)
+- Kiểm tra AWS region đúng chưa
+
+## 📚 Tài liệu tham khảo
+
+- AWS SNS SMS: https://docs.aws.amazon.com/sns/latest/dg/sms_publish-to-phone.html
+- AWS Free Tier: https://aws.amazon.com/free/

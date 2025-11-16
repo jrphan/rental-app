@@ -7,11 +7,13 @@ export const ENV = {
   // Mail configuration - Resend
   mailFrom: process.env.MAIL_FROM ?? 'noreply@rentalapp.com',
   resendApiKey: process.env.RESEND_API_KEY,
-  // SMS configuration - Twilio
-  twilio: {
-    accountSid: process.env.TWILIO_ACCOUNT_SID,
-    authToken: process.env.TWILIO_AUTH_TOKEN,
-    phoneNumber: process.env.TWILIO_PHONE_NUMBER, // Số điện thoại Twilio đã mua
+  // SMS configuration
+  sms: {
+    provider: process.env.SMS_PROVIDER || 'development', // 'development' | 'production'
+    // AWS SNS configuration (for production)
+    awsAccessKeyId: process.env.AWS_SMS_ACCESS_KEY_ID,
+    awsSecretAccessKey: process.env.AWS_SMS_SECRET_ACCESS_KEY,
+    awsRegion: process.env.AWS_SMS_REGION || 'ap-southeast-1',
   },
   // AWS S3 configuration
   aws: {
