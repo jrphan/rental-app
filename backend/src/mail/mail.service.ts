@@ -86,11 +86,26 @@ export class MailService {
     templateName: string,
     context: Record<string, any> = {},
   ): Promise<string> {
-    const templatesDir = join(__dirname, 'templates');
-    const candidateFiles = [
-      join(templatesDir, `${templateName}.hbs`),
-      join(templatesDir, `${templateName}.html`),
+    // Resolve templates directory - works in both dev and production
+    // In dev: __dirname points to src/mail
+    // In production: __dirname points to dist/mail (after build)
+    // Templates are copied to dist/mail/templates via nest-cli.json assets config
+
+    // Try multiple possible paths
+    const possibleDirs = [
+      join(__dirname, 'templates'), // Production: dist/mail/templates
+      join(__dirname, '../mail/templates'), // Fallback if in dist/src/mail
+      join(process.cwd(), 'src', 'mail', 'templates'), // Dev fallback
+      join(process.cwd(), 'dist', 'mail', 'templates'), // Production fallback
     ];
+
+    const candidateFiles: string[] = [];
+    for (const dir of possibleDirs) {
+      candidateFiles.push(
+        join(dir, `${templateName}.hbs`),
+        join(dir, `${templateName}.html`),
+      );
+    }
 
     let source = '';
     let lastError: unknown = null;

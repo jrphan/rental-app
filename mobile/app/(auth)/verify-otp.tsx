@@ -146,21 +146,30 @@ export default function VerifyOTPScreen() {
           Vui lòng nhập mã 6 số để xác thực tài khoản
         </Text>
 
-        <View className="relative flex-row justify-between mb-3">
-          {otpCode.map((digit, index) => (
-            <View
-              key={index}
-              className={`h-14 w-12 items-center justify-center rounded-2xl border-2 bg-white ${
-                index === activeIndex
-                  ? "border-primary-500 border-4"
-                  : digit
-                  ? "border-green-500"
-                  : "border-gray-300"
-              }`}
-            >
-              <Text className="text-2xl font-bold text-gray-900">{digit}</Text>
-            </View>
-          ))}
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => hiddenInputRef.current?.focus()}
+          className="relative mb-3"
+        >
+          <View className="flex-row justify-between" pointerEvents="box-none">
+            {otpCode.map((digit, index) => (
+              <View
+                key={index}
+                pointerEvents="none"
+                className={`h-14 w-12 items-center justify-center rounded-2xl border-2 bg-white ${
+                  index === activeIndex
+                    ? "border-primary-500 border-4"
+                    : digit
+                    ? "border-green-500"
+                    : "border-gray-300"
+                }`}
+              >
+                <Text className="text-2xl font-bold text-gray-900">
+                  {digit}
+                </Text>
+              </View>
+            ))}
+          </View>
 
           {/* TextInput ẩn overlay để nhập OTP từ keyboard */}
           <Controller
@@ -169,10 +178,11 @@ export default function VerifyOTPScreen() {
             render={({ field: { value, onChange } }) => (
               <TextInput
                 ref={hiddenInputRef}
-                value={value}
+                value={value || ""}
                 onChangeText={(text) => {
-                  handleOtpChange(text);
-                  onChange(text.replace(/\D/g, "").slice(0, 6));
+                  const digits = text.replace(/\D/g, "").slice(0, 6);
+                  handleOtpChange(digits);
+                  onChange(digits);
                 }}
                 keyboardType="number-pad"
                 textContentType="oneTimeCode"
@@ -187,16 +197,16 @@ export default function VerifyOTPScreen() {
                   right: 0,
                   bottom: 0,
                   opacity: 0,
-                  zIndex: 1,
+                  fontSize: 1,
+                  width: "100%",
+                  height: 56,
                 }}
-                onTouchStart={(e) => {
-                  // Ensure keyboard stays open
-                  hiddenInputRef.current?.focus();
-                }}
+                caretHidden
+                contextMenuHidden
               />
             )}
           />
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Verify Button */}
