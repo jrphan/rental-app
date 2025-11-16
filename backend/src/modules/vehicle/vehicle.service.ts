@@ -255,10 +255,16 @@ export class VehicleService {
 
   async listPublic(params: { cityId?: string; page?: number; limit?: number }) {
     const { cityId, page = 1, limit = 10 } = params;
-    const where = {
+    const where: Prisma.VehicleWhereInput = {
       status: VehicleStatus.VERIFIED,
       isActive: true,
-    } as unknown as Prisma.VehicleWhereInput;
+      // Chỉ lấy xe của owner đã được duyệt (APPROVED)
+      owner: {
+        ownerApplication: {
+          status: OwnerApplicationStatus.APPROVED,
+        },
+      },
+    };
     if (cityId) where.cityId = cityId;
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
