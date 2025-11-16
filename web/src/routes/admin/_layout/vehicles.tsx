@@ -13,6 +13,7 @@ import {
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
+import { PageHeader } from '@/components/admin/page-header'
 
 export const Route = createFileRoute('/admin/_layout/vehicles')({
   path: '/vehicles',
@@ -59,13 +60,11 @@ function AdminVehiclesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Quản lý Xe</h1>
-        <p className="text-muted-foreground mt-1">
-          Duyệt và quản lý các yêu cầu đăng ký xe
-        </p>
-      </div>
+    <>
+      <PageHeader
+        title="Quản lý Xe"
+        description="Duyệt và quản lý các yêu cầu đăng ký xe"
+      />
       <div className="bg-card rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">Xe chờ duyệt</h2>
@@ -235,7 +234,7 @@ function AdminVehiclesPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
 

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useStore } from '@tanstack/react-store'
 import { useMutation } from '@tanstack/react-query'
 import { authApi } from '@/lib/api.auth'
 import { authStore, authActions } from '@/store/auth'
@@ -26,8 +27,33 @@ export const Route = createFileRoute('/admin/login')({
 
 function LoginPage() {
   const navigate = useNavigate()
+  const authState = useStore(authStore)
   const [showPassword, setShowPassword] = useState(false)
   const form = useLoginForm()
+
+  // Redirect if already authenticated (handle case when auth state changes)
+  useEffect(() => {
+    if (!authState.isLoading && authState.isAuthenticated) {
+      navigate({ to: '/admin/dashboard', replace: true })
+    }
+  }, [authState.isAuthenticated, authState.isLoading, navigate])
+
+  // Show loading while checking auth state
+  if (authState.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+          <p className="mt-4 text-gray-600">Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't show login form if already authenticated (redirect will happen)
+  if (authState.isAuthenticated) {
+    return null
+  }
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
