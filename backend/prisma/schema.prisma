@@ -391,7 +391,6 @@ model Kyc {
   idNumber        String?     // Số CMND/CCCD
   idCardFrontUrl  String?     // URL mặt trước CMND/CCCD
   idCardBackUrl   String?     // URL mặt sau CMND/CCCD
-  passportUrl     String?     // URL passport
   driverLicenseUrl String?    // URL bằng lái xe
   selfieUrl       String?     // URL selfie với CMND/CCCD
   notes           String?     // Ghi chú từ user

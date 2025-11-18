@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -28,11 +28,6 @@ export default function VerifyPhoneScreen() {
 
   const [canResend, setCanResend] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
-  const hiddenInputRef = useRef<TextInput>(null);
-
-  const otpValue = form.watch("otpCode");
-  const otpCode = Array.from({ length: 6 }, (_, i) => otpValue[i] || "");
-
   // Auto send OTP when screen loads
   useEffect(() => {
     if (phone) {
@@ -40,15 +35,6 @@ export default function VerifyPhoneScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone]);
-
-  const handleOtpChange = (text: string) => {
-    const digits = text.replace(/\D/g, "").slice(0, 6);
-    form.setValue("otpCode", digits, { shouldValidate: true });
-  };
-
-  // Tìm index của ô hiện tại (ô trống đầu tiên hoặc ô cuối cùng nếu đã đầy)
-  const currentIndex = otpCode.findIndex((digit) => !digit);
-  const activeIndex = currentIndex === -1 ? 5 : currentIndex;
 
   // Đếm ngược timer
   useEffect(() => {
@@ -209,100 +195,55 @@ export default function VerifyPhoneScreen() {
           Vui lòng nhập mã 6 số để xác minh số điện thoại
         </Text>
 
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => hiddenInputRef.current?.focus()}
-          className="relative mb-3"
-        >
-          <View className="flex-row justify-between" pointerEvents="box-none">
-            {otpCode.map((digit, index) => (
-              <View
-                key={index}
-                pointerEvents="none"
-                className={`h-14 w-12 items-center justify-center rounded-2xl border-2 bg-white ${
-                  index === activeIndex
-                    ? "border-primary-500 border-4"
-                    : digit
-                    ? "border-green-500"
-                    : "border-gray-300"
-                }`}
-              >
-                <Text className="text-2xl font-bold text-gray-900">
-                  {digit}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* TextInput ẩn overlay để nhập OTP từ keyboard */}
-          <Controller
-            control={form.control}
-            name="otpCode"
-            render={({ field: { value, onChange } }) => (
-              <TextInput
-                ref={hiddenInputRef}
-                value={value || ""}
-                onChangeText={(text) => {
-                  const digits = text.replace(/\D/g, "").slice(0, 6);
-                  handleOtpChange(digits);
-                  onChange(digits);
-                }}
-                keyboardType="number-pad"
-                textContentType="oneTimeCode"
-                importantForAutofill="yes"
-                autoFocus
-                maxLength={6}
-                returnKeyType="done"
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  opacity: 0,
-                  fontSize: 1,
-                  width: "100%",
-                  height: 56,
-                }}
-                caretHidden
-                contextMenuHidden
-              />
-            )}
-          />
-        </TouchableOpacity>
+        <Controller
+          control={form.control}
+          name="otpCode"
+          render={({ field: { value, onChange, onBlur } }) => (
+            <TextInput
+              value={value || ""}
+              onChangeText={(text) => {
+                const digits = text.replace(/\D/g, "").slice(0, 6);
+                onChange(digits);
+              }}
+              onBlur={onBlur}
+              keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              importantForAutofill="yes"
+              autoFocus
+              maxLength={6}
+              returnKeyType="done"
+              placeholder="••••••"
+              placeholderTextColor="#9CA3AF"
+              className="rounded-2xl border-2 border-gray-200 bg-white px-4 py-4 text-center text-2xl font-bold tracking-[14px] text-gray-900"
+            />
+          )}
+        />
       </View>
 
+      {form.formState.errors.otpCode && (
+        <Text className="text-red-500 text-xs mb-3 text-center">
+          {form.formState.errors.otpCode.message}
+        </Text>
+      )}
+
       {/* Verify Button */}
-      <Controller
-        control={form.control}
-        name="otpCode"
-        render={({ fieldState: { error } }) => (
-          <>
-            {error && (
-              <Text className="text-red-500 text-xs mb-3 text-center">
-                {error.message}
-              </Text>
-            )}
-            <TouchableOpacity
-              onPress={form.handleSubmit(handleVerify)}
-              disabled={verifyMutation.isPending || !form.formState.isValid}
-              className={`mb-6 rounded-2xl py-4 ${
-                verifyMutation.isPending || !form.formState.isValid
-                  ? "bg-gray-300"
-                  : "bg-primary-600"
-              }`}
-            >
-              {verifyMutation.isPending ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text className="text-center text-lg font-bold text-white">
-                  Xác minh
-                </Text>
-              )}
-            </TouchableOpacity>
-          </>
+      <TouchableOpacity
+        onPress={form.handleSubmit(handleVerify)}
+        disabled={verifyMutation.isPending || !form.formState.isValid}
+        className={`mb-6 rounded-2xl py-4 ${
+          verifyMutation.isPending || !form.formState.isValid
+            ? "bg-gray-300"
+            : "bg-primary-600"
+        }`}
+      >
+        {verifyMutation.isPending ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text className="text-center text-lg font-bold text-white">
+            Xác minh
+          </Text>
         )}
-      />
+      </TouchableOpacity>
     </AuthLayout>
   );
 }

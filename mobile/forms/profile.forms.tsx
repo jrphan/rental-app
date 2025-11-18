@@ -10,7 +10,9 @@ import {
 /**
  * Hook cho form cập nhật profile
  */
-export function useUpdateProfileForm(defaultValues?: Partial<UpdateProfileInput>) {
+export function useUpdateProfileForm(
+  defaultValues?: Partial<UpdateProfileInput>
+) {
   const form = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
@@ -41,7 +43,6 @@ export function useKycSubmissionForm() {
       idNumber: "",
       idCardFrontUrl: "",
       idCardBackUrl: "",
-      passportUrl: "",
       driverLicenseUrl: "",
       selfieUrl: "",
       notes: "",
@@ -51,4 +52,3 @@ export function useKycSubmissionForm() {
 
   return form;
 }
-

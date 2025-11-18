@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useStore } from '@tanstack/react-store'
@@ -50,7 +50,6 @@ export const Route = createFileRoute('/admin/_layout/kyc')({
 })
 
 function KycPage() {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const authState = useStore(authStore)
   const [selectedStatus, setSelectedStatus] = useState<KycStatus | 'ALL'>('ALL')
@@ -198,158 +197,158 @@ function KycPage() {
       />
       {/* Filters */}
       <div className="bg-card rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">
-              Lọc theo trạng thái:
-            </label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value as KycStatus | 'ALL')
-                setPage(1)
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="ALL">Tất cả</option>
-              <option value="PENDING">Đang chờ</option>
-              <option value="APPROVED">Đã duyệt</option>
-              <option value="REJECTED">Đã từ chối</option>
-            </select>
-          </div>
+        <div className="flex items-center gap-4">
+          <label className="text-sm font-medium text-gray-700">
+            Lọc theo trạng thái:
+          </label>
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value as KycStatus | 'ALL')
+              setPage(1)
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            <option value="ALL">Tất cả</option>
+            <option value="PENDING">Đang chờ</option>
+            <option value="APPROVED">Đã duyệt</option>
+            <option value="REJECTED">Đã từ chối</option>
+          </select>
         </div>
+      </div>
 
-        {/* KYC List */}
-        {isLoading ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-            <p className="mt-4 text-gray-600">Đang tải...</p>
-          </div>
-        ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">
-              Lỗi: {error instanceof Error ? error.message : 'Có lỗi xảy ra'}
-            </p>
-          </div>
-        ) : !data || data.items.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Không có KYC submission nào</p>
-          </div>
-        ) : (
-          <>
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        User
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Số CMND/CCCD
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Trạng thái
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Ngày gửi
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Thao tác
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {data.items.map((kyc) => (
-                      <tr key={kyc.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {kyc.user.email}
-                              </div>
-                              {kyc.user.phone && (
-                                <div className="text-sm text-gray-500">
-                                  {kyc.user.phone}
-                                </div>
-                              )}
+      {/* KYC List */}
+      {isLoading ? (
+        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+          <p className="mt-4 text-gray-600">Đang tải...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800">
+            Lỗi: {error instanceof Error ? error.message : 'Có lỗi xảy ra'}
+          </p>
+        </div>
+      ) : !data || data.items.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">Không có KYC submission nào</p>
+        </div>
+      ) : (
+        <>
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Số CMND/CCCD
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Trạng thái
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ngày gửi
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Thao tác
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {data.items.map((kyc) => (
+                    <tr key={kyc.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {kyc.user.email}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {kyc.idNumber || '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(kyc.status)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(kyc.createdAt).toLocaleDateString('vi-VN')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setSelectedKyc(kyc)}
-                              className="text-orange-600 hover:text-orange-900"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            {kyc.status === 'PENDING' && (
-                              <>
-                                <button
-                                  onClick={() => handleApprove(kyc)}
-                                  className="text-green-600 hover:text-green-900"
-                                  title="Duyệt"
-                                >
-                                  <Check className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleReject(kyc)}
-                                  className="text-red-600 hover:text-red-900"
-                                  title="Từ chối"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </>
+                            {kyc.user.phone && (
+                              <div className="text-sm text-gray-500">
+                                {kyc.user.phone}
+                              </div>
                             )}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {kyc.idNumber || '-'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(kyc.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(kyc.createdAt).toLocaleDateString('vi-VN')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedKyc(kyc)}
+                            className="text-orange-600 hover:text-orange-900"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          {kyc.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(kyc)}
+                                className="text-green-600 hover:text-green-900"
+                                title="Duyệt"
+                              >
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleReject(kyc)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Từ chối"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Pagination */}
+          {data.total > limit && (
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Hiển thị {(page - 1) * limit + 1} -{' '}
+                {Math.min(page * limit, data.total)} trong tổng số {data.total}{' '}
+                KYC
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Trước
+                </button>
+                <button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page * limit >= data.total}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Sau
+                </button>
               </div>
             </div>
-
-            {/* Pagination */}
-            {data.total > limit && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  Hiển thị {(page - 1) * limit + 1} -{' '}
-                  {Math.min(page * limit, data.total)} trong tổng số{' '}
-                  {data.total} KYC
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Trước
-                  </button>
-                  <button
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={page * limit >= data.total}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Sau
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+          )}
+        </>
+      )}
 
       {/* KYC Detail Modal */}
       <Dialog
@@ -371,7 +370,7 @@ function KycPage() {
                 <h3 className="text-lg font-semibold mb-4">
                   Thông tin người dùng
                 </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">
@@ -450,19 +449,6 @@ function KycPage() {
                         <img
                           src={selectedKyc.selfieUrl}
                           alt="Selfie"
-                          className="max-w-full h-auto rounded-lg border"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedKyc.passportUrl && (
-                    <div>
-                      <Label>Passport:</Label>
-                      <div className="mt-2">
-                        <img
-                          src={selectedKyc.passportUrl}
-                          alt="Passport"
                           className="max-w-full h-auto rounded-lg border"
                         />
                       </div>
