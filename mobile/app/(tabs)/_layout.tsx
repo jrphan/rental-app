@@ -146,7 +146,7 @@ export default function TabLayout() {
                       fontWeight: "700",
                     }}
                   >
-                    {unreadCount > 99 ? "99+" : unreadCount}
+                    {unreadCount > 99 ? "99+" : String(unreadCount)}
                   </Text>
                 </View>
               )}
