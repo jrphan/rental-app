@@ -58,6 +58,14 @@ function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
+      // Nếu user không phải ADMIN -> show error và không login
+      if (data.user?.role !== 'ADMIN') {
+        form.setError('root', {
+          message: 'Tài khoản này không có quyền admin',
+        })
+        return
+      }
+
       // Save auth state
       authActions.login(data.user, {
         accessToken: data.accessToken,

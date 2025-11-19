@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Inject,
   forwardRef,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
@@ -15,44 +16,103 @@ import {
 import { NotificationService } from '@/modules/notification/notification.service';
 
 @Injectable()
-export class VehicleService {
+export class VehicleService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => NotificationService))
     private notificationService: NotificationService,
   ) {}
 
-  async create(ownerId: string, data: Prisma.VehicleCreateInput) {
-    // Extract vehicleTypeId if it exists (from client input)
-    // App chỉ cho thuê xe máy, tự động set vehicleType = "motorcycle"
-    type InputWithVehicleTypeId = Prisma.VehicleCreateInput & {
-      vehicleTypeId?: string;
-    };
-    const inputData = data as InputWithVehicleTypeId;
-    const { vehicleTypeId, ...restData } = inputData;
+  // Ensure default vehicle types exist when module starts
+  async onModuleInit() {
+    await this.ensureDefaultVehicleTypes();
+    await this.ensureDefaultCities();
+  }
 
-    // Build vehicleType relation - default to "motorcycle"
+  private async ensureDefaultVehicleTypes() {
+    const defaultTypes = [
+      { name: 'tay-ga', description: 'Tay ga', icon: '🏍️' },
+      { name: 'xe-so', description: 'Xe số', icon: '🏍️' },
+      { name: 'xe-dien', description: 'Xe điện', icon: '🔋' },
+      { name: 'tay-con', description: 'Tay côn', icon: '🏍️' },
+      { name: '50cc', description: '50 cc', icon: '🏍️' },
+    ];
+
+    for (const t of defaultTypes) {
+      const existing = await this.prisma.vehicleType.findUnique({
+        where: { name: t.name },
+      });
+      if (!existing) {
+        try {
+          await this.prisma.vehicleType.create({
+            data: {
+              name: t.name,
+              description: t.description,
+              icon: t.icon,
+              isActive: true,
+            },
+          });
+        } catch (e) {
+          // ignore unique race conditions
+        }
+      }
+    }
+  }
+
+  // Seed basic cities if missing
+  private async ensureDefaultCities() {
+    const defaultCities = [
+      { name: 'Hồ Chí Minh', province: 'Hồ Chí Minh' },
+      { name: 'Hà Nội', province: 'Hà Nội' },
+    ];
+    for (const c of defaultCities) {
+      const existing = await this.prisma.city
+        .findUnique({
+          where: {
+            name_province: { name: c.name, province: c.province },
+          },
+        })
+        .catch(() => null);
+      if (!existing) {
+        try {
+          await this.prisma.city.create({
+            data: { name: c.name, province: c.province, isActive: true },
+          });
+        } catch (e) {
+          // ignore race
+        }
+      }
+    }
+  }
+
+  async create(ownerId: string, data: Prisma.VehicleCreateInput) {
+    // Extract vehicleTypeId / cityId if they exist (client may send scalars)
+    type InputWithExtras = Prisma.VehicleCreateInput & {
+      vehicleTypeId?: string;
+      cityId?: string;
+    };
+    const inputData = data as InputWithExtras;
+    const { vehicleTypeId, cityId, ...restData } = inputData;
+
+    // Build vehicleType relation - default to first vehicle type if not provided
     let vehicleTypeRelation = data.vehicleType;
 
     if (!vehicleTypeRelation) {
-      // Tự động tìm và set loại xe máy
-      let motorcycleType = await this.prisma.vehicleType.findUnique({
-        where: { name: 'motorcycle' },
+      // Prefer 'tay-ga' as default, otherwise pick first active type
+      let defaultType = await this.prisma.vehicleType.findUnique({
+        where: { name: 'tay-ga' },
       });
 
-      // Nếu chưa có, tạo mới
-      if (!motorcycleType) {
-        motorcycleType = await this.prisma.vehicleType.create({
-          data: {
-            name: 'motorcycle',
-            description: 'Xe máy',
-            icon: '🏍️',
-            isActive: true,
-          },
+      if (!defaultType) {
+        defaultType = await this.prisma.vehicleType.findFirst({
+          where: { isActive: true },
+          orderBy: { createdAt: 'asc' },
         });
       }
 
-      vehicleTypeRelation = { connect: { id: motorcycleType.id } };
+      if (defaultType) {
+        vehicleTypeRelation = { connect: { id: defaultType.id } };
+      }
     } else if (vehicleTypeId) {
       // Nếu client gửi vehicleTypeId, vẫn xử lý (cho tương thích)
       let vehicleType = await this.prisma.vehicleType.findUnique({
@@ -88,7 +148,8 @@ export class VehicleService {
       }
     }
 
-    const createData: Prisma.VehicleCreateInput = {
+    // Build create payload and map cityId -> nested connect if provided
+    const createData: any = {
       ...(restData as Prisma.VehicleCreateInput),
       vehicleType: vehicleTypeRelation,
       owner: { connect: { id: ownerId } },
@@ -96,6 +157,9 @@ export class VehicleService {
       isActive: true,
       isAvailable: true,
     };
+    if (cityId) {
+      createData.city = { connect: { id: cityId } };
+    }
 
     try {
       return await this.prisma.vehicle.create({ data: createData });
@@ -176,7 +240,23 @@ export class VehicleService {
       }
     }
 
-    return this.prisma.vehicle.update({ where: { id: vehicleId }, data });
+    // If client provided cityId scalar, convert to nested connect for Prisma
+    const payload: any = { ...(data as any) };
+    if (payload.cityId) {
+      payload.city = { connect: { id: payload.cityId } };
+      delete payload.cityId;
+    }
+
+    // Also allow vehicleTypeId scalar on update
+    if (payload.vehicleTypeId) {
+      payload.vehicleType = { connect: { id: payload.vehicleTypeId } };
+      delete payload.vehicleTypeId;
+    }
+
+    return this.prisma.vehicle.update({
+      where: { id: vehicleId },
+      data: payload,
+    });
   }
 
   async submitForReview(ownerId: string, vehicleId: string) {
@@ -461,6 +541,7 @@ export class VehicleService {
     vehicleId: string,
     url: string,
     alt?: string,
+    // kind: 'PHOTO' | 'DOCUMENT' = 'PHOTO',
   ) {
     // Verify vehicle ownership
     const vehicle = await this.prisma.vehicle.findFirst({
@@ -474,6 +555,7 @@ export class VehicleService {
     });
     const isPrimary = existingImages === 0;
 
+    // tạo VehicleImage với field kind
     return this.prisma.vehicleImage.create({
       data: {
         vehicleId,

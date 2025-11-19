@@ -42,7 +42,7 @@ async function createAdmin() {
         role: UserRole.ADMIN,
         isActive: true,
         isVerified: true, // Admin không cần verify email
-        isPhoneVerified: false,
+        // isPhoneVerified: false,
       },
       select: {
         id: true,

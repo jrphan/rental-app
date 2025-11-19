@@ -5,6 +5,8 @@ import { z } from "zod";
  */
 export const vehicleSchema = z.object({
   brand: z.string().min(1, "Hãng không được để trống").max(50, "Hãng quá dài"),
+  location: z.string().min(1, "Địa chỉ không được để trống"),
+  cityId: z.string().min(1, "Thành phố không được để trống"),
   model: z
     .string()
     .min(1, "Dòng xe không được để trống")
@@ -66,7 +68,7 @@ export const vehicleSchema = z.object({
     ),
   imageUrls: z
     .array(z.string().url("URL hình ảnh không hợp lệ"))
-    .min(1, "Cần ít nhất 1 hình ảnh")
+    .min(2, "Cần ít nhất 2 hình ảnh theo yêu cầu")
     .max(10, "Tối đa 10 hình ảnh"),
 });
 

@@ -10,6 +10,7 @@ import { RentalModule } from '@/modules/rental/rental.module';
 import { FileModule } from '@/modules/file/file.module';
 import { NotificationModule } from '@/modules/notification/notification.module';
 import { MessageModule } from '@/modules/message/message.module';
+import { CityModule } from '@/modules/city/city.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { MessageModule } from '@/modules/message/message.module';
     RentalModule,
     NotificationModule,
     MessageModule,
+    CityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

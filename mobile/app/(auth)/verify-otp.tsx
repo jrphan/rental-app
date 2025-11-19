@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  Platform,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { authApi } from "@/lib/api.auth";
@@ -26,12 +27,12 @@ export default function VerifyOTPScreen() {
   const [resendTimer, setResendTimer] = useState(0);
   const hiddenInputRef = useRef<TextInput>(null);
 
-  const otpValue = form.watch("otpCode");
+  const otpValue = form.watch("otpCode") || "";
   const otpCode = Array.from({ length: 6 }, (_, i) => otpValue[i] || "");
 
   const handleOtpChange = (text: string) => {
     const digits = text.replace(/\D/g, "").slice(0, 6);
-    form.setValue("otpCode", digits, { shouldValidate: true });
+    form.setValue("otpCode", digits, { shouldValidate: true, shouldDirty: true });
   };
 
   // Tìm index của ô hiện tại (ô trống đầu tiên hoặc ô cuối cùng nếu đã đầy)
@@ -42,7 +43,7 @@ export default function VerifyOTPScreen() {
   useEffect(() => {
     if (resendTimer > 0) {
       const timer = setTimeout(() => {
-        setResendTimer(resendTimer - 1);
+        setResendTimer((t) => t - 1);
       }, 1000);
       return () => clearTimeout(timer);
     } else if (resendTimer === 0 && !canResend) {
@@ -62,7 +63,6 @@ export default function VerifyOTPScreen() {
         onPress: () => router.replace("/(tabs)"),
         duration: 2000,
       });
-      // Navigate after showing toast
       setTimeout(() => {
         router.replace("/(tabs)");
       }, 1000);
@@ -84,7 +84,7 @@ export default function VerifyOTPScreen() {
       });
       setCanResend(false);
       form.setValue("otpCode", "");
-      setResendTimer(60); // Bắt đầu đếm ngược 60 giây
+      setResendTimer(60);
     },
     onError: (error: any) => {
       const errorMessage =
@@ -101,6 +101,28 @@ export default function VerifyOTPScreen() {
     }
   };
 
+  // helper để focus và set caret ở cuối
+  const focusHiddenInput = () => {
+    if (!hiddenInputRef.current) return;
+    hiddenInputRef.current.focus();
+    // đặt selection caret về cuối (tùy platform)
+    try {
+      const len = (otpValue || "").length;
+      if (Platform.OS === "android") {
+        hiddenInputRef.current.setNativeProps({
+          selection: { start: len, end: len },
+        });
+      } else {
+        // iOS đôi khi cũng chấp nhận setNativeProps
+        hiddenInputRef.current.setNativeProps({
+          selection: { start: len, end: len },
+        });
+      }
+    } catch {
+      // ignore if setNativeProps fails
+    }
+  };
+
   return (
     <AuthLayout
       title="Xác thực Email"
@@ -110,9 +132,7 @@ export default function VerifyOTPScreen() {
       showBackButton={true}
       footer={
         <View className="items-center">
-          <Text className="mb-2 text-sm text-gray-600">
-            Không nhận được mã?
-          </Text>
+          <Text className="mb-2 text-sm text-gray-600">Không nhận được mã?</Text>
           <TouchableOpacity
             onPress={() => resendMutation.mutate()}
             disabled={resendMutation.isPending || !canResend}
@@ -146,16 +166,15 @@ export default function VerifyOTPScreen() {
           Vui lòng nhập mã 6 số để xác thực tài khoản
         </Text>
 
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => hiddenInputRef.current?.focus()}
-          className="relative mb-3"
-        >
-          <View className="flex-row justify-between" pointerEvents="box-none">
+        <View className="relative mb-3">
+          <View className="flex-row justify-between">
             {otpCode.map((digit, index) => (
-              <View
+              <TouchableOpacity
                 key={index}
-                pointerEvents="none"
+                activeOpacity={0.8}
+                onPress={() => {
+                  focusHiddenInput();
+                }}
                 className={`h-14 w-12 items-center justify-center rounded-2xl border-2 bg-white ${
                   index === activeIndex
                     ? "border-primary-500 border-4"
@@ -167,46 +186,57 @@ export default function VerifyOTPScreen() {
                 <Text className="text-2xl font-bold text-gray-900">
                   {digit}
                 </Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
 
-          {/* TextInput ẩn overlay để nhập OTP từ keyboard */}
+          {/* TextInput ẩn để nhận input (bằng cách focus programmatically từ TouchableOpacity trên) */}
           <Controller
             control={form.control}
             name="otpCode"
             render={({ field: { value, onChange } }) => (
               <TextInput
                 ref={hiddenInputRef}
-                value={value || ""}
+                value={value}
                 onChangeText={(text) => {
-                  const digits = text.replace(/\D/g, "").slice(0, 6);
-                  handleOtpChange(digits);
-                  onChange(digits);
+                  handleOtpChange(text);
+                  onChange(text.replace(/\D/g, "").slice(0, 6));
                 }}
                 keyboardType="number-pad"
                 textContentType="oneTimeCode"
+                // importantForAutofill có thể khác platform, giữ fallback
                 importantForAutofill="yes"
-                autoFocus
+                autoFocus={false} // không auto focus để tránh keyboard bật ngay khi mở màn hình nếu không cần
                 maxLength={6}
                 returnKeyType="done"
+                editable
+                caretHidden={false}
+                // style đặt overlay nhưng không cản trở màn hình (pointer events handled by TouchableOpacity)
                 style={{
                   position: "absolute",
                   top: 0,
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  opacity: 0,
-                  fontSize: 1,
-                  width: "100%",
-                  height: 56,
+                  opacity: 0.01, // 0 có thể khiến một số platform bỏ qua; để rất nhỏ nhưng vẫn "visible" cho focus
+                  zIndex: 10,
                 }}
-                caretHidden
-                contextMenuHidden
+                // Khi bấm trực tiếp vào vùng overlay (nếu người dùng bấm ngoài ô) vẫn focus được
+                onTouchStart={() => {
+                  focusHiddenInput();
+                }}
+                // optional: handle submit from keyboard
+                onSubmitEditing={() => {
+                  // nếu đủ 6 ký tự thì submit
+                  const val = (otpValue || "");
+                  if (val.length === 6) {
+                    verifyMutation.mutate(val);
+                  }
+                }}
               />
             )}
           />
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Verify Button */}
