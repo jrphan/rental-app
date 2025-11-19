@@ -1,7 +1,9 @@
 import { Tabs } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Platform } from "react-native";
+import { Platform, View, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
+import { notificationsApi } from "@/lib/api.notifications";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -9,6 +11,13 @@ export default function TabLayout() {
   // Primary color from tailwind config: hsl(14, 85%, 48%) -> #EA580C (primary-600)
   const primaryColor = "#EA580C";
   const inactiveColor = "#6B7280";
+
+  // Fetch unread notification count
+  const { data: unreadCount } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: () => notificationsApi.getUnreadCount(),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   // Calculate tab bar height based on safe area insets
   // Base height: 60px (icon + label + spacing)
@@ -107,11 +116,41 @@ export default function TabLayout() {
         options={{
           title: "TIN NHẮN",
           tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons
-              name={focused ? "chat-bubble" : "chat-bubble-outline"}
-              size={focused ? 28 : 26}
-              color={color}
-            />
+            <View style={{ position: "relative" }}>
+              <MaterialIcons
+                name={focused ? "chat-bubble" : "chat-bubble-outline"}
+                size={focused ? 28 : 26}
+                color={color}
+              />
+              {unreadCount && unreadCount > 0 && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -4,
+                    right: -8,
+                    backgroundColor: "#EA580C",
+                    borderRadius: 10,
+                    minWidth: 20,
+                    height: 20,
+                    paddingHorizontal: 6,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 2,
+                    borderColor: "#FFFFFF",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 10,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {unreadCount > 99 ? "99+" : String(unreadCount)}
+                  </Text>
+                </View>
+              )}
+            </View>
           ),
           headerShown: false,
         }}

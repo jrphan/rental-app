@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -25,20 +25,6 @@ export default function VerifyOTPScreen() {
 
   const [canResend, setCanResend] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
-  const hiddenInputRef = useRef<TextInput>(null);
-
-  const otpValue = form.watch("otpCode") || "";
-  const otpCode = Array.from({ length: 6 }, (_, i) => otpValue[i] || "");
-
-  const handleOtpChange = (text: string) => {
-    const digits = text.replace(/\D/g, "").slice(0, 6);
-    form.setValue("otpCode", digits, { shouldValidate: true, shouldDirty: true });
-  };
-
-  // Tìm index của ô hiện tại (ô trống đầu tiên hoặc ô cuối cùng nếu đã đầy)
-  const currentIndex = otpCode.findIndex((digit) => !digit);
-  const activeIndex = currentIndex === -1 ? 5 : currentIndex;
-
   // Đếm ngược timer
   useEffect(() => {
     if (resendTimer > 0) {
@@ -83,8 +69,8 @@ export default function VerifyOTPScreen() {
         title: "Thành công",
       });
       setCanResend(false);
-      form.setValue("otpCode", "");
-      setResendTimer(60);
+      form.setValue("otpCode", "", { shouldValidate: true });
+      setResendTimer(60); // Bắt đầu đếm ngược 60 giây
     },
     onError: (error: any) => {
       const errorMessage =
@@ -166,110 +152,55 @@ export default function VerifyOTPScreen() {
           Vui lòng nhập mã 6 số để xác thực tài khoản
         </Text>
 
-        <View className="relative mb-3">
-          <View className="flex-row justify-between">
-            {otpCode.map((digit, index) => (
-              <TouchableOpacity
-                key={index}
-                activeOpacity={0.8}
-                onPress={() => {
-                  focusHiddenInput();
-                }}
-                className={`h-14 w-12 items-center justify-center rounded-2xl border-2 bg-white ${
-                  index === activeIndex
-                    ? "border-primary-500 border-4"
-                    : digit
-                    ? "border-green-500"
-                    : "border-gray-300"
-                }`}
-              >
-                <Text className="text-2xl font-bold text-gray-900">
-                  {digit}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* TextInput ẩn để nhận input (bằng cách focus programmatically từ TouchableOpacity trên) */}
-          <Controller
-            control={form.control}
-            name="otpCode"
-            render={({ field: { value, onChange } }) => (
-              <TextInput
-                ref={hiddenInputRef}
-                value={value}
-                onChangeText={(text) => {
-                  handleOtpChange(text);
-                  onChange(text.replace(/\D/g, "").slice(0, 6));
-                }}
-                keyboardType="number-pad"
-                textContentType="oneTimeCode"
-                // importantForAutofill có thể khác platform, giữ fallback
-                importantForAutofill="yes"
-                autoFocus={false} // không auto focus để tránh keyboard bật ngay khi mở màn hình nếu không cần
-                maxLength={6}
-                returnKeyType="done"
-                editable
-                caretHidden={false}
-                // style đặt overlay nhưng không cản trở màn hình (pointer events handled by TouchableOpacity)
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  opacity: 0.01, // 0 có thể khiến một số platform bỏ qua; để rất nhỏ nhưng vẫn "visible" cho focus
-                  zIndex: 10,
-                }}
-                // Khi bấm trực tiếp vào vùng overlay (nếu người dùng bấm ngoài ô) vẫn focus được
-                onTouchStart={() => {
-                  focusHiddenInput();
-                }}
-                // optional: handle submit from keyboard
-                onSubmitEditing={() => {
-                  // nếu đủ 6 ký tự thì submit
-                  const val = (otpValue || "");
-                  if (val.length === 6) {
-                    verifyMutation.mutate(val);
-                  }
-                }}
-              />
-            )}
-          />
-        </View>
+        <Controller
+          control={form.control}
+          name="otpCode"
+          render={({ field: { value, onChange, onBlur } }) => (
+            <TextInput
+              value={value || ""}
+              onChangeText={(text) => {
+                const digits = text.replace(/\D/g, "").slice(0, 6);
+                onChange(digits);
+              }}
+              onBlur={onBlur}
+              keyboardType="number-pad"
+              textContentType="oneTimeCode"
+              importantForAutofill="yes"
+              autoFocus
+              maxLength={6}
+              returnKeyType="done"
+              placeholder="••••••"
+              placeholderTextColor="#9CA3AF"
+              className="rounded-2xl border-2 border-gray-200 bg-white px-4 py-4 text-center text-2xl font-bold tracking-[14px] text-gray-900"
+            />
+          )}
+        />
       </View>
 
+      {form.formState.errors.otpCode && (
+        <Text className="text-red-500 text-xs mb-3 text-center">
+          {form.formState.errors.otpCode.message}
+        </Text>
+      )}
+
       {/* Verify Button */}
-      <Controller
-        control={form.control}
-        name="otpCode"
-        render={({ fieldState: { error } }) => (
-          <>
-            {error && (
-              <Text className="text-red-500 text-xs mb-3 text-center">
-                {error.message}
-              </Text>
-            )}
-            <TouchableOpacity
-              onPress={form.handleSubmit(handleVerify)}
-              disabled={verifyMutation.isPending || !form.formState.isValid}
-              className={`mb-6 rounded-2xl py-4 ${
-                verifyMutation.isPending || !form.formState.isValid
-                  ? "bg-gray-300"
-                  : "bg-primary-600"
-              }`}
-            >
-              {verifyMutation.isPending ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text className="text-center text-lg font-bold text-white">
-                  Xác thực
-                </Text>
-              )}
-            </TouchableOpacity>
-          </>
+      <TouchableOpacity
+        onPress={form.handleSubmit(handleVerify)}
+        disabled={verifyMutation.isPending || !form.formState.isValid}
+        className={`mb-6 rounded-2xl py-4 ${
+          verifyMutation.isPending || !form.formState.isValid
+            ? "bg-gray-300"
+            : "bg-primary-600"
+        }`}
+      >
+        {verifyMutation.isPending ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text className="text-center text-lg font-bold text-white">
+            Xác thực
+          </Text>
         )}
-      />
+      </TouchableOpacity>
     </AuthLayout>
   );
 }

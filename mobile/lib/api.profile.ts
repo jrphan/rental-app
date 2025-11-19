@@ -46,7 +46,6 @@ export interface KycSubmissionInput {
   idNumber?: string;
   idCardFrontUrl?: string;
   idCardBackUrl?: string;
-  passportUrl?: string;
   driverLicenseUrl?: string;
   selfieUrl?: string;
   notes?: string;
@@ -84,7 +83,9 @@ export const profileApi = {
   /**
    * Gửi thông tin KYC để xác thực danh tính
    */
-  async submitKYC(data: KycSubmissionInput): Promise<{ message: string; kycId: string }> {
+  async submitKYC(
+    data: KycSubmissionInput
+  ): Promise<{ message: string; kycId: string }> {
     const response = await apiClient.post<{ message: string; kycId: string }>(
       "/auth/profile/kyc",
       data
@@ -104,7 +105,6 @@ export const profileApi = {
     idNumber?: string | null;
     idCardFrontUrl?: string | null;
     idCardBackUrl?: string | null;
-    passportUrl?: string | null;
     driverLicenseUrl?: string | null;
     selfieUrl?: string | null;
     notes?: string | null;
@@ -125,7 +125,6 @@ export const profileApi = {
       idNumber?: string | null;
       idCardFrontUrl?: string | null;
       idCardBackUrl?: string | null;
-      passportUrl?: string | null;
       driverLicenseUrl?: string | null;
       selfieUrl?: string | null;
       notes?: string | null;
@@ -141,7 +140,8 @@ export const profileApi = {
       } | null;
     } | null>("/auth/profile/kyc");
     if (response.success) {
-      return response.data ?? null;
+      const data = Array.isArray(response.data) ? null : response.data;
+      return data ?? null;
     }
     throw new Error(response.message || "Lấy thông tin KYC thất bại");
   },

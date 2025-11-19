@@ -4,6 +4,7 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios'
 import type { ApiResponse, ErrorResponse } from '@/types/api'
+import { authActions } from '@/store/auth'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -18,6 +19,46 @@ export const api = axios.create({
 
 // Export api for direct use (e.g., refresh token to avoid interceptor loop)
 export { api as apiDirect }
+
+const FORCE_LOGOUT_MESSAGES = [
+  'người dùng không tồn tại',
+  'invalid refresh token',
+  'refresh token đã hết hạn',
+  'invalid token type',
+]
+
+let isForceLoggingOut = false
+
+const matchesForceLogoutMessage = (message?: string) => {
+  if (!message) {
+    return false
+  }
+  const lower = message.toLowerCase()
+  return FORCE_LOGOUT_MESSAGES.some((item) => lower.includes(item))
+}
+
+const forceLogoutAndRedirect = (reason?: string) => {
+  if (isForceLoggingOut) {
+    return
+  }
+
+  isForceLoggingOut = true
+  if (reason) {
+    console.warn('[API] Force logout:', reason)
+  }
+
+  try {
+    authActions.logout()
+  } finally {
+    if (
+      typeof window !== 'undefined' &&
+      window.location.pathname !== '/admin/login'
+    ) {
+      window.location.href = '/admin/login'
+    }
+    isForceLoggingOut = false
+  }
+}
 
 // Request interceptor
 api.interceptors.request.use(
@@ -58,12 +99,17 @@ api.interceptors.response.use(
     }
     const status = error.response?.status || 500
     const responseData = error.response?.data as any
+    const requestUrl = originalRequest?.url || ''
+    const isRefreshRequest = requestUrl.includes('/auth/refresh')
+    const refreshToken =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('refreshToken')
+        : null
 
     // Handle 401 - Unauthorized
-    if (status === 401 && !originalRequest._retry) {
+    if (status === 401 && !originalRequest._retry && !isRefreshRequest) {
       originalRequest._retry = true
 
-      const refreshToken = localStorage.getItem('refreshToken')
       if (refreshToken) {
         try {
           // Try to refresh token
@@ -86,23 +132,10 @@ api.interceptors.response.use(
             return api(originalRequest)
           }
         } catch {
-          // Refresh failed, logout
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
-          localStorage.removeItem('user')
-          // Redirect to login
-          if (window.location.pathname !== '/admin/login') {
-            window.location.href = '/admin/login'
-          }
+          forceLogoutAndRedirect('refresh_token_failed')
         }
       } else {
-        // No refresh token, logout
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('user')
-        if (window.location.pathname !== '/admin/login') {
-          window.location.href = '/admin/login'
-        }
+        forceLogoutAndRedirect('missing_refresh_token')
       }
     }
 
@@ -124,6 +157,19 @@ api.interceptors.response.use(
         timestamp: new Date().toISOString(),
         path: originalRequest?.url || '',
       }
+    }
+
+    const serverMessage =
+      typeof responseData?.message === 'string'
+        ? responseData.message
+        : undefined
+    const shouldForceLogout =
+      status === 401 &&
+      !!refreshToken &&
+      (isRefreshRequest || matchesForceLogoutMessage(serverMessage))
+
+    if (shouldForceLogout) {
+      forceLogoutAndRedirect(serverMessage || 'unauthorized')
     }
 
     return Promise.reject(errorResponse)

@@ -182,6 +182,8 @@ export class AuthService {
       const otpCode = this.generateOTPCode();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
+      this.logger.log(`OTP code: ${otpCode}`);
+
       await this.prisma.otp.create({
         data: {
           userId: user.id,
@@ -909,7 +911,6 @@ export class AuthService {
     idNumber: string | null;
     idCardFrontUrl: string | null;
     idCardBackUrl: string | null;
-    passportUrl: string | null;
     driverLicenseUrl: string | null;
     selfieUrl: string | null;
     notes: string | null;
@@ -955,7 +956,6 @@ export class AuthService {
       idNumber: string | null;
       idCardFrontUrl: string | null;
       idCardBackUrl: string | null;
-      passportUrl: string | null;
       driverLicenseUrl: string | null;
       selfieUrl: string | null;
       notes: string | null;

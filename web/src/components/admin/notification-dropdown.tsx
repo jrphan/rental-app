@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { notificationsApi, type Notification, type NotificationType } from '@/lib/api.notifications'
+import { notificationsApi, type Notification } from '@/lib/api.notifications'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,46 +9,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Bell, CheckCircle2, Trash2, CheckCheck, MessageSquare } from 'lucide-react'
+import {
+  Bell,
+  CheckCircle2,
+  Trash2,
+  CheckCheck,
+  MessageSquare,
+} from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
-
-const getNotificationIcon = (type: NotificationType) => {
-  switch (type) {
-    case 'RENTAL_REQUEST':
-    case 'RENTAL_CONFIRMED':
-      return '🚗'
-    case 'PAYMENT_SUCCESS':
-    case 'PAYMENT_FAILED':
-      return '💳'
-    case 'REVIEW_RECEIVED':
-      return '⭐'
-    case 'MESSAGE_RECEIVED':
-      return '💬'
-    case 'SYSTEM_ANNOUNCEMENT':
-      return '📢'
-    case 'DISPUTE_CREATED':
-    case 'DISPUTE_RESOLVED':
-      return '⚖️'
-    default:
-      return '🔔'
-  }
-}
-
-const getNotificationColor = (type: NotificationType) => {
-  switch (type) {
-    case 'RENTAL_CONFIRMED':
-    case 'PAYMENT_SUCCESS':
-      return 'text-green-600 bg-green-50'
-    case 'PAYMENT_FAILED':
-    case 'RENTAL_CANCELLED':
-      return 'text-red-600 bg-red-50'
-    case 'MESSAGE_RECEIVED':
-      return 'text-blue-600 bg-blue-50'
-    default:
-      return 'text-orange-600 bg-orange-50'
-  }
-}
 
 export function NotificationDropdown() {
   const navigate = useNavigate()
@@ -92,6 +61,63 @@ export function NotificationDropdown() {
 
   const notifications = notificationsData?.data || []
   const hasUnread = notifications.some((n) => !n.isRead)
+
+  // Helper function to determine navigation route based on notification
+  const getNotificationRoute = (notification: Notification): string | null => {
+    const notificationData = notification.data as any
+
+    if (!notificationData) {
+      return null
+    }
+
+    // Vehicle submission notification
+    // Can be identified by notification.type === 'RENTAL_REQUEST' with data.type === 'VEHICLE_SUBMITTED'
+    // or directly by data.type === 'VEHICLE_SUBMITTED'
+    if (
+      notificationData.type === 'VEHICLE_SUBMITTED' &&
+      notificationData.vehicleId
+    ) {
+      return '/admin/vehicles'
+    }
+
+    // Also check notification.type for vehicle-related notifications
+    if (notification.type === 'RENTAL_REQUEST' && notificationData.vehicleId) {
+      return '/admin/vehicles'
+    }
+
+    // Owner application notification
+    // Identified by notification.type === 'SYSTEM_ANNOUNCEMENT' with data.type containing 'OWNER_APPLICATION'
+    if (
+      (notificationData.type === 'OWNER_APPLICATION_SUBMITTED' ||
+        notificationData.type === 'OWNER_APPLICATION_RESUBMITTED') &&
+      notificationData.userId
+    ) {
+      return '/admin/owners'
+    }
+
+    // KYC submission notification (if exists)
+    if (notificationData.type === 'KYC_SUBMITTED' && notificationData.userId) {
+      return '/admin/kyc'
+    }
+
+    return null
+  }
+
+  // Handle notification click
+  const handleNotificationClick = (notification: Notification) => {
+    const route = getNotificationRoute(notification)
+
+    // Mark as read if unread
+    if (!notification.isRead) {
+      markAsReadMutation.mutate(notification.id)
+    }
+
+    // Navigate to appropriate route if available
+    if (route) {
+      setOpen(false)
+      navigate({ to: route })
+    }
+  }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -149,25 +175,11 @@ export function NotificationDropdown() {
                     key={notification.id}
                     className={cn(
                       'p-4 hover:bg-muted/50 transition-colors cursor-pointer',
-                      isUnread && 'bg-orange-50/50'
+                      isUnread && 'bg-orange-50/50',
                     )}
-                    onClick={() => {
-                      if (isUnread) {
-                        markAsReadMutation.mutate(notification.id)
-                      }
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start gap-3">
-                      {/* Icon */}
-                      <div
-                        className={cn(
-                          'w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0',
-                          getNotificationColor(notification.type)
-                        )}
-                      >
-                        {getNotificationIcon(notification.type)}
-                      </div>
-
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
@@ -176,35 +188,38 @@ export function NotificationDropdown() {
                               <h4
                                 className={cn(
                                   'text-sm font-semibold truncate',
-                                  isUnread ? 'text-gray-900' : 'text-gray-700'
+                                  isUnread ? 'text-gray-900' : 'text-gray-700',
                                 )}
                               >
                                 {notification.title}
                               </h4>
                               {isUnread && (
-                                <span className="w-2 h-2 rounded-full bg-orange-600 flex-shrink-0"></span>
+                                <span className="w-2 h-2 rounded-full bg-orange-600 shrink-0"></span>
                               )}
                             </div>
                             <p
                               className={cn(
                                 'text-sm mb-1 line-clamp-2',
-                                isUnread ? 'text-gray-800' : 'text-gray-600'
+                                isUnread ? 'text-gray-800' : 'text-gray-600',
                               )}
                             >
                               {notification.message}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {new Date(notification.createdAt).toLocaleString('vi-VN', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              {new Date(notification.createdAt).toLocaleString(
+                                'vi-VN',
+                                {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                },
+                              )}
                             </p>
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             {isUnread && (
                               <Button
                                 variant="ghost"
@@ -259,4 +274,3 @@ export function NotificationDropdown() {
     </DropdownMenu>
   )
 }
-

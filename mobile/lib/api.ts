@@ -3,6 +3,7 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
+import { router } from "expo-router";
 import {
   ApiResponse,
   // PaginatedResponse,
@@ -12,13 +13,56 @@ import {
   logResponse,
   validateResponse,
 } from "@/types";
-import { getAuthCache } from "@/store/auth";
+import { getAuthCache, useAuthStore } from "@/store/auth";
 import { resolveApiUrl } from "./utils";
 
 // Ưu tiên dùng biến môi trường Expo: EXPO_PUBLIC_API_URL
 // Tự động resolve localhost thành IP network khi chạy trên thiết bị thật
 const rawBaseURL = process.env.EXPO_PUBLIC_API_URL || "";
 const baseURL = resolveApiUrl(rawBaseURL);
+
+const FORCE_LOGOUT_MESSAGES = [
+  "người dùng không tồn tại",
+  "invalid refresh token",
+  "refresh token đã hết hạn",
+  "invalid token type",
+];
+
+let isForceLoggingOut = false;
+
+const matchesForceLogoutMessage = (message?: string) => {
+  if (!message) {
+    return false;
+  }
+  const lower = message.toLowerCase();
+  return FORCE_LOGOUT_MESSAGES.some((msg) => lower.includes(msg));
+};
+
+const forceLogoutAndRedirect = async (reason?: string) => {
+  if (isForceLoggingOut) {
+    return;
+  }
+
+  isForceLoggingOut = true;
+
+  if (reason) {
+    console.warn(`[API] Force logout: ${reason}`);
+  }
+
+  try {
+    useAuthStore.getState().logout();
+  } finally {
+    setTimeout(() => {
+      try {
+        router.replace("/(auth)/login");
+      } catch (navError) {
+        console.warn("Failed to redirect to login", navError);
+      } finally {
+        isForceLoggingOut = false;
+      }
+    }, 0);
+  }
+};
 
 export const api = axios.create({
   baseURL,
@@ -78,12 +122,13 @@ api.interceptors.response.use(
     };
     const status = error.response?.status || 500;
     const responseData = error.response?.data as any;
+    const authData = getAuthCache();
+    const requestUrl = originalRequest?.url || "";
+    const isRefreshRequest = requestUrl.includes("/auth/refresh");
 
     // Nếu lỗi 401 và chưa retry, thử refresh token
-    if (status === 401 && !originalRequest._retry) {
+    if (status === 401 && !originalRequest._retry && !isRefreshRequest) {
       originalRequest._retry = true;
-
-      const authData = getAuthCache();
 
       if (authData?.refreshToken) {
         try {
@@ -98,19 +143,13 @@ api.interceptors.response.use(
           }
 
           // Update store
-          const { useAuthStore } = await import("@/store/auth");
           useAuthStore.getState().updateTokens(tokens);
 
           // Retry original request
           return api(originalRequest);
         } catch {
           // Refresh thất bại, logout
-          const { useAuthStore } = await import("@/store/auth");
-          useAuthStore.getState().logout();
-          // Redirect to login
-          if (typeof window !== "undefined") {
-            // This will be handled by navigation guards
-          }
+          await forceLogoutAndRedirect("refresh_token_failed");
         }
       }
     }
@@ -132,6 +171,19 @@ api.interceptors.response.use(
     }
 
     logResponse(errorResponse, "API Error");
+
+    const serverMessage =
+      typeof responseData?.message === "string"
+        ? responseData.message
+        : undefined;
+    const shouldForceLogout =
+      status === 401 &&
+      authData &&
+      (isRefreshRequest || matchesForceLogoutMessage(serverMessage));
+
+    if (shouldForceLogout) {
+      await forceLogoutAndRedirect(serverMessage || "unauthorized");
+    }
 
     // Reject với error response đã được format
     return Promise.reject(errorResponse);

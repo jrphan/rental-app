@@ -34,7 +34,6 @@ export default function KycScreen() {
         idNumber: existingKyc.idNumber || "",
         idCardFrontUrl: existingKyc.idCardFrontUrl || "",
         idCardBackUrl: existingKyc.idCardBackUrl || "",
-        passportUrl: existingKyc.passportUrl || "",
         driverLicenseUrl: existingKyc.driverLicenseUrl || "",
         selfieUrl: existingKyc.selfieUrl || "",
         notes: existingKyc.notes || "",
@@ -289,30 +288,6 @@ export default function KycScreen() {
               </View>
 
               <View className="mt-4">
-                <Text className="text-sm font-semibold text-gray-900 mb-2">
-                  Tài liệu bổ sung (Tùy chọn)
-                </Text>
-                <Controller
-                  control={form.control}
-                  name="passportUrl"
-                  render={({
-                    field: { onChange, onBlur, value },
-                    fieldState: { error },
-                  }) => (
-                    <Input
-                      label="Passport (URL)"
-                      placeholder="Nhập URL hình ảnh"
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      error={error?.message}
-                      editable={!mutation.isPending}
-                    />
-                  )}
-                />
-              </View>
-
-              <View className="mt-4">
                 <Controller
                   control={form.control}
                   name="driverLicenseUrl"
@@ -320,15 +295,28 @@ export default function KycScreen() {
                     field: { onChange, onBlur, value },
                     fieldState: { error },
                   }) => (
-                    <Input
-                      label="Bằng lái xe (URL)"
-                      placeholder="Nhập URL hình ảnh"
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      error={error?.message}
-                      editable={!mutation.isPending}
-                    />
+                    <View>
+                      <Input
+                        label="Bằng lái xe (URL)"
+                        placeholder="Nhập URL hình ảnh hoặc tải lên"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        error={error?.message}
+                        editable={!mutation.isPending}
+                      />
+                      <View className="mt-2">
+                        <GalleryButton
+                          onSelect={(urls) =>
+                            handleSelectFromGallery("driverLicenseUrl", urls)
+                          }
+                          folder="kyc"
+                          multiple={false}
+                          label="Chọn từ thư viện"
+                          variant="outline"
+                        />
+                      </View>
+                    </View>
                   )}
                 />
               </View>

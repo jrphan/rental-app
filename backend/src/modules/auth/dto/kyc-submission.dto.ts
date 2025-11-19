@@ -31,15 +31,6 @@ export class KycSubmissionDto {
   idCardBackUrl?: string;
 
   @ApiProperty({
-    description: 'URL hình ảnh passport',
-    example: 'https://example.com/passport.jpg',
-    required: false,
-  })
-  @IsOptional()
-  @IsUrl()
-  passportUrl?: string;
-
-  @ApiProperty({
     description: 'URL hình ảnh bằng lái xe',
     example: 'https://example.com/driver-license.jpg',
     required: false,

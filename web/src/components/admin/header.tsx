@@ -53,11 +53,6 @@ export function Header({ onSearch }: HeaderProps) {
         {/* Notifications */}
         <NotificationDropdown />
 
-        {/* Settings */}
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Settings className="h-4 w-4" />
-        </Button>
-
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -126,4 +121,3 @@ export function Header({ onSearch }: HeaderProps) {
     </header>
   )
 }
-

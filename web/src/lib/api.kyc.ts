@@ -8,7 +8,6 @@ export interface KycSubmission {
   idNumber: string | null
   idCardFrontUrl: string | null
   idCardBackUrl: string | null
-  passportUrl: string | null
   driverLicenseUrl: string | null
   selfieUrl: string | null
   notes: string | null

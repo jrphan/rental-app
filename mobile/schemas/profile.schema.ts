@@ -29,7 +29,6 @@ export const kycSubmissionSchema = z.object({
   idNumber: z.string().max(20, "Số CMND/CCCD quá dài").optional().or(z.literal("")),
   idCardFrontUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
   idCardBackUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
-  passportUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
   driverLicenseUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
   selfieUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
   notes: z.string().max(500, "Ghi chú quá dài").optional().or(z.literal("")),
