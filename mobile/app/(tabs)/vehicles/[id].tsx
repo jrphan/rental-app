@@ -122,7 +122,7 @@ export default function VehicleDetailScreen() {
     );
   }
 
-  const images = vehicle.images || [];
+  const images = vehicle.images?.filter((img) => !img.url.includes("type=doc")) || [];
   const hasMultipleImages = images.length > 1;
   const dailyRate = Number(vehicle.dailyRate) || 0;
   const depositAmount = Number(vehicle.depositAmount) || 0;
@@ -314,7 +314,7 @@ export default function VehicleDetailScreen() {
                 </View>
               )}
 
-              {vehicle.transmission && (
+              {/* {vehicle.transmission && (
                 <View className="flex-row items-center">
                   <MaterialIcons name="settings" size={20} color="#6B7280" />
                   <View className="ml-3 flex-1">
@@ -325,6 +325,28 @@ export default function VehicleDetailScreen() {
                         : vehicle.transmission === "AUTOMATIC"
                         ? "Tự động"
                         : "Bán tự động"}
+                    </Text>
+                  </View>
+                </View>
+              )} */}
+              {vehicle.vehicleTypeId && (
+                <View className="flex-row items-center">
+                  <MaterialIcons name="motorcycle" size={20} color="#6B7280" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-sm text-gray-500">Loại xe</Text>
+                    <Text className="text-base text-gray-900 font-medium">
+                      {vehicle.vehicleType?.description}
+                    </Text>
+                  </View>
+                </View>
+              )}
+              {vehicle.location && (
+                <View className="flex-row items-center">
+                  <MaterialIcons name="location-pin" size={20} color="#6B7280" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-sm text-gray-500">Địa chỉ</Text>
+                    <Text className="text-base text-gray-900 font-medium">
+                      {vehicle.location}
                     </Text>
                   </View>
                 </View>

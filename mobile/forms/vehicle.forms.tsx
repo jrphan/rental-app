@@ -19,8 +19,8 @@ export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
 			dailyRate: defaultValues?.dailyRate || "200000",
 			depositAmount: defaultValues?.depositAmount || "1000000",
 			imageUrls: defaultValues?.imageUrls || [],
-			registrationDocs: defaultValues?.registrationDocs || "", // <-- MỚI: URLs giấy tờ (sẽ được lưu vào VehicleImage.kind = DOCUMENT)
-			vehicleTypeId: defaultValues?.vehicleTypeId || "", // <-- MỚI: liên kết tới VehicleType
+			// registrationDocs: defaultValues?.registrationDocs || "", // <-- URLs giấy tờ (sẽ được lưu vào VehicleImage.kind = DOCUMENT)
+			vehicleTypeId: defaultValues?.vehicleTypeId || "", // <-- liên kết tới VehicleType
 			location: defaultValues?.location || "",
 			cityId: defaultValues?.cityId || "",
 		},

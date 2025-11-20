@@ -48,6 +48,9 @@ export interface VehicleItem {
 	isActive: boolean;
 	isAvailable: boolean;
 	createdAt: string;
+	location?: string | null;
+	vehicleTypeId: string;
+	cityId: string;
 }
 
 export interface Paginated<T> {

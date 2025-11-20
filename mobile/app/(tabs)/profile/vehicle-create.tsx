@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useVehicleForm } from "@/forms/vehicle.forms";
 import { VehicleInput } from "@/schemas/vehicle.schema";
+import { normalize } from "@/lib/utils";
 
 export default function VehicleCreateScreen() {
 	const router = useRouter();
@@ -65,14 +66,13 @@ export default function VehicleCreateScreen() {
 	};
 
 	// Add registration docs handling
-	const handleSelectRegistrationDocs = (urls: string[]) => {
-		form.setValue("registrationDocs", urls, { shouldValidate: true });
-	};
+	// const handleSelectRegistrationDocs = (urls: string[]) => {
+	// 	form.setValue("registrationDocs", urls, { shouldValidate: true });
+	// };
 
 	// Pre-fill form when vehicle data is loaded
 	useEffect(() => {
 		if (vehicleData) {
-			// phân tách ảnh thường và ảnh giấy tờ theo field kind
 			const imageUrls =
 				vehicleData.images && vehicleData.images.length > 0 ? vehicleData.images.map((img) => img.url) : [];
 
@@ -96,10 +96,9 @@ export default function VehicleCreateScreen() {
 				fuelType: (vehicleData.fuelType as VehicleInput["fuelType"]) || "PETROL",
 				transmission: (vehicleData.transmission as VehicleInput["transmission"]) || "MANUAL",
 				imageUrls,
-				registrationDocs, // <-- MỚI
-				vehicleTypeId: vehicleData.vehicleType?.id ?? "",
 				location: vehicleData.location ?? "",
-				cityId: vehicleData.City?.id ?? "",
+				cityId: vehicleData.cityId ?? "",
+				vehicleTypeId: vehicleData.vehicleTypeId ?? "",
 			});
 		}
 	}, [vehicleData, form]);
@@ -124,9 +123,9 @@ export default function VehicleCreateScreen() {
 				});
 
 				// Handle images: add new ones and remove deleted ones
-				// const currentUrls = new Set(data.imageUrls);
+				const currentUrls = new Set(data.imageUrls);
 				const existingUrls = new Set(Array.from(existingImageIds.keys()));
-				const currentUrls = new Set([...(data.imageUrls || []), ...(data.registrationDocs || [])]);
+				// const currentUrls = new Set([...(data.imageUrls || []), ...(data.registrationDocs || [])]);
 
 				// Remove images that are no longer in the list
 				const urlsToRemove = Array.from(existingUrls).filter((url) => !currentUrls.has(url));
@@ -229,6 +228,27 @@ export default function VehicleCreateScreen() {
 						currentImages.filter((_, i) => i !== index),
 						{ shouldValidate: true }
 					);
+				},
+			},
+		]);
+	};
+
+	const handleSelectDocs = (urls: string[]) => {
+		const prefixed = urls.map((u) => u + "?type=doc"); // thêm query flag
+		const current = form.getValues("imageUrls") || [];
+		// Gộp thêm ảnh giấy tờ vào imageUrls
+		form.setValue("imageUrls", [...current, ...prefixed], { shouldValidate: true });
+	};
+
+	const handleRemoveDoc = (urlToRemove: string) => {
+		Alert.alert("Xóa hình giấy tờ", "Bạn chắc chắn muốn xóa ảnh này?", [
+			{ text: "Hủy", style: "cancel" },
+			{
+				text: "Xóa",
+				style: "destructive",
+				onPress: () => {
+					const updated = form.getValues("imageUrls").filter((url: string) => url !== urlToRemove);
+					form.setValue("imageUrls", updated, { shouldValidate: true });
 				},
 			},
 		]);
@@ -396,7 +416,7 @@ export default function VehicleCreateScreen() {
 					/>
 
 					{/* Transmission */}
-					{/* <Controller
+					<Controller
 						control={form.control}
 						name="transmission"
 						render={({ field: { onChange, value }, fieldState: { error } }) => (
@@ -415,7 +435,7 @@ export default function VehicleCreateScreen() {
 								{error && <Text className="text-red-500 text-xs mt-1">{error.message}</Text>}
 							</View>
 						)}
-					/> */}
+					/>
 
 					{/* Daily Rate */}
 					<Controller
@@ -558,17 +578,16 @@ export default function VehicleCreateScreen() {
 											// marginBottom: 8,
 										}}
 									/>
-
 									<ScrollView style={{ maxHeight: 200 }}>
 										{cities.length > 0 ? (
 											cities
 												.filter((c: any) => {
-													const q = (form.watch("__tmp_city_search") || "").toLowerCase();
+													const q = normalize(form.watch("__tmp_city_search") || "");
 													if (!q) return true;
 													return (
-														(c.name || "").toLowerCase().includes(q) ||
-														(c.province || "").toLowerCase().includes(q) ||
-														(String(c.id) || "").toLowerCase().includes(q)
+														normalize(c.name || "").includes(q) ||
+														normalize(c.province || "").includes(q) ||
+														normalize(String(c.id) || "").includes(q)
 													);
 												})
 												.map((c: any) => {
@@ -615,9 +634,7 @@ export default function VehicleCreateScreen() {
 													);
 												})
 										) : (
-											<Text className="text-gray-500">
-												Không có danh sách thành phố
-											</Text>
+											<Text className="text-gray-500">Không có danh sách thành phố</Text>
 										)}
 									</ScrollView>
 								</View>
@@ -650,93 +667,112 @@ export default function VehicleCreateScreen() {
 							</View>
 						</View>
 					</Modal>
-
-					{/* Hình ảnh giấy tờ xe (registrationDocs) */}
-					{/* <Controller
-						control={form.control}
-						name="registrationDocs"
-						render={({ field: { value }, fieldState: { error } }) => (
-							<View className="mt-4">
-								<Text className="text-base font-semibold text-gray-900 mb-3">
-									Hình ảnh giấy tờ xe *
-								</Text>
-								<Text className="text-sm text-gray-600 mb-3">* Bắt buộc: ít nhất 1 ảnh cà vẹt xe</Text>
-								<GalleryButton
-									onSelect={handleSelectRegistrationDocs}
-									folder="vehicle-docs"
-									multiple={true}
-									maxSelections={5}
-									label="Chọn giấy tờ từ thư viện"
-									variant="outline"
-								/>
-								{value && value.length > 0 && (
-									<View className="mt-4">
-										<View className="flex-row flex-wrap gap-3">
-											{value.map((url: string, index: number) => (
-												<Image
-													key={index}
-													source={{ uri: url }}
-													style={{ width: 80, height: 80, borderRadius: 8, marginRight: 8 }}
-												/>
-											))}
-										</View>
-									</View>
-								)}
-								{error && <Text className="text-red-500 text-xs mt-1">{error.message}</Text>}
-							</View>
-						)}
-					/> */}
 				</View>
 
 				{/* Hình ảnh xe */}
 				<Controller
 					control={form.control}
 					name="imageUrls"
-					render={({ field: { value }, fieldState: { error } }) => (
-						<View className="mt-4">
-							<Text className="text-base font-semibold text-gray-900 mb-3">
-								Hình ảnh xe và giấy tờ xe {value.length > 0 && `(${value.length})`}
-							</Text>
-							<Text className="text-sm text-gray-600 mb-3">
-								* Chọn ít nhất 2 ảnh, bao gồm ảnh xe và giấy tờ xe (cà vẹt, đăng kiểm...)
-							</Text>
+					render={({ field: { value }, fieldState: { error } }) => {
+						const vehicleImages = value.filter((u: string) => !u.includes("type=doc"));
+						return (
+							<View className="mt-4">
+								<Text className="text-base font-semibold text-gray-900 mb-3">
+									Hình ảnh xe {vehicleImages.length > 0 && `(${vehicleImages.length})`}
+								</Text>
+								<Text className="text-sm text-gray-600 mb-3">* Chọn ít nhất 1 ảnh</Text>
 
-							{/* Gallery Button */}
-							<GalleryButton
-								onSelect={handleSelectImages}
-								folder="vehicles"
-								multiple={true}
-								maxSelections={10}
-								label="Chọn hình ảnh từ thư viện"
-								variant="outline"
-							/>
+								{/* Gallery Button */}
+								<GalleryButton
+									onSelect={handleSelectImages}
+									folder="vehicles"
+									multiple={true}
+									maxSelections={10}
+									label="Chọn hình ảnh từ thư viện"
+									variant="outline"
+								/>
 
-							{/* Hiển thị hình ảnh đã chọn */}
-							{value.length > 0 && (
+								{/* Hiển thị hình ảnh đã chọn */}
+								{vehicleImages.length > 0 && (
+									<View className="mt-4">
+										<View className="flex-row flex-wrap gap-3">
+											{vehicleImages.map((url, index) => (
+												<View key={index} className="relative">
+													<Image
+														source={{ uri: url }}
+														className="w-24 h-24 rounded-lg"
+														resizeMode="cover"
+													/>
+													<TouchableOpacity
+														onPress={() => handleRemoveDoc(url)}
+														className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+													>
+														<MaterialIcons name="close" size={16} color="#fff" />
+													</TouchableOpacity>
+												</View>
+											))}
+										</View>
+									</View>
+								)}
+
+								{error && <Text className="text-red-500 text-xs mt-1">{error.message}</Text>}
+							</View>
+						);
+					}}
+				/>
+
+				{/* Hình ảnh giấy tờ xe */}
+				<Controller
+					control={form.control}
+					name="imageUrls"
+					render={({ field: { value }, fieldState: { error } }) => {
+						const docImages = value.filter((u: string) => u.includes("type=doc"));
+						return (
+							<View className="mt-6">
+								<Text className="text-base font-semibold text-gray-900 mb-3">
+									Hình ảnh giấy tờ xe {docImages.length > 0 && `(${docImages.length})`}
+								</Text>
+								<Text className="text-sm text-gray-600 mb-3">
+									* Ảnh cà vẹt / giấy đăng ký xe (tối đa 5 tấm)
+								</Text>
+
+								{/* nút chọn ảnh giấy tờ */}
+								<GalleryButton
+									onSelect={handleSelectDocs}
+									folder="vehicle-docs"
+									multiple={true}
+									maxSelections={5}
+									label="Chọn ảnh giấy tờ"
+									variant="outline"
+								/>
+
+								{/* Hiển thị nhóm ảnh giấy tờ (lọc từ imageUrls) */}
 								<View className="mt-4">
 									<View className="flex-row flex-wrap gap-3">
-										{value.map((url, index) => (
-											<View key={index} className="relative">
-												<Image
-													source={{ uri: url }}
-													className="w-24 h-24 rounded-lg"
-													resizeMode="cover"
-												/>
-												<TouchableOpacity
-													onPress={() => handleRemoveImage(index)}
-													className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
-												>
-													<MaterialIcons name="close" size={16} color="#fff" />
-												</TouchableOpacity>
-											</View>
-										))}
+										{docImages
+											.filter((u) => u.includes("doc")) // ảnh có prefix "doc"
+											.map((url, index) => (
+												<View key={index} className="relative">
+													<Image
+														source={{ uri: url }}
+														className="w-24 h-24 rounded-lg"
+														resizeMode="cover"
+													/>
+													<TouchableOpacity
+														onPress={() => handleRemoveDoc(url)}
+														className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+													>
+														<MaterialIcons name="close" size={16} color="#fff" />
+													</TouchableOpacity>
+												</View>
+											))}
 									</View>
 								</View>
-							)}
 
-							{error && <Text className="text-red-500 text-xs mt-1">{error.message}</Text>}
-						</View>
-					)}
+								{error && <Text className="text-red-500 text-xs mt-1">{error.message}</Text>}
+							</View>
+						);
+					}}
 				/>
 
 				<TouchableOpacity

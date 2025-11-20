@@ -140,6 +140,10 @@ function AdminVehiclesPage() {
                   <p className="text-sm font-medium">{selectedVehicle.model}</p>
                 </div>
                 <div>
+                  <Label>Loại xe</Label>
+                  <p className="text-sm font-medium">{selectedVehicle.vehicleType?.description}</p>
+                </div>
+                <div>
                   <Label>Năm sản xuất</Label>
                   <p className="text-sm font-medium">{selectedVehicle.year}</p>
                 </div>
@@ -150,6 +154,14 @@ function AdminVehiclesPage() {
                 <div>
                   <Label>Biển số</Label>
                   <p className="text-sm font-medium">{selectedVehicle.licensePlate}</p>
+                </div>
+                <div>
+                  <Label>Địa chỉ</Label>
+                  <p className="text-sm font-medium">{selectedVehicle.location}</p>
+                </div>
+                <div>
+                  <Label>Thành phố</Label>
+                  <p className="text-sm font-medium">{selectedVehicle.city?.name}</p>
                 </div>
                 <div>
                   <Label>Giá ngày</Label>

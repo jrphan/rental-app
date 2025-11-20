@@ -31,6 +31,20 @@ export interface VehicleItem {
     phone?: string | null
   }
   images?: VehicleImage[]
+  location?: string | null
+  vehicleTypeId: string
+  vehicleType?: {
+    id: string
+    name: string
+    description?: string | null
+    icon?: string | null
+  }
+  cityId: string
+  city?: {
+    id: string
+    name: string
+    country: string
+  }
 }
 
 export interface Paginated<T> {

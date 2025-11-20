@@ -26,7 +26,6 @@ export class VehicleService implements OnModuleInit {
   // Ensure default vehicle types exist when module starts
   async onModuleInit() {
     await this.ensureDefaultVehicleTypes();
-    await this.ensureDefaultCities();
   }
 
   private async ensureDefaultVehicleTypes() {
@@ -54,32 +53,8 @@ export class VehicleService implements OnModuleInit {
           });
         } catch (e) {
           // ignore unique race conditions
-        }
-      }
-    }
-  }
-
-  // Seed basic cities if missing
-  private async ensureDefaultCities() {
-    const defaultCities = [
-      { name: 'Hồ Chí Minh', province: 'Hồ Chí Minh' },
-      { name: 'Hà Nội', province: 'Hà Nội' },
-    ];
-    for (const c of defaultCities) {
-      const existing = await this.prisma.city
-        .findUnique({
-          where: {
-            name_province: { name: c.name, province: c.province },
-          },
-        })
-        .catch(() => null);
-      if (!existing) {
-        try {
-          await this.prisma.city.create({
-            data: { name: c.name, province: c.province, isActive: true },
-          });
-        } catch (e) {
-          // ignore race
+          console.error('❌ Error seeding vehicle types:', e);
+          process.exit(1);
         }
       }
     }
@@ -97,36 +72,34 @@ export class VehicleService implements OnModuleInit {
     // Build vehicleType relation - default to first vehicle type if not provided
     let vehicleTypeRelation = data.vehicleType;
 
+    // If client provided vehicleTypeId scalar, prefer that (compatibility)
+    if (vehicleTypeId) {
+      let vehicleType = await this.prisma.vehicleType.findUnique({
+        where: { id: vehicleTypeId },
+      });
+      if (!vehicleType && typeof vehicleTypeId === 'string') {
+        vehicleType = await this.prisma.vehicleType.findUnique({
+          where: { name: vehicleTypeId },
+        });
+      }
+      if (vehicleType) {
+        vehicleTypeRelation = { connect: { id: vehicleType.id } };
+      }
+    }
+
+    // Fallback: if still not set, choose default ('tay-ga' or first active)
     if (!vehicleTypeRelation) {
-      // Prefer 'tay-ga' as default, otherwise pick first active type
       let defaultType = await this.prisma.vehicleType.findUnique({
         where: { name: 'tay-ga' },
       });
-
       if (!defaultType) {
         defaultType = await this.prisma.vehicleType.findFirst({
           where: { isActive: true },
           orderBy: { createdAt: 'asc' },
         });
       }
-
       if (defaultType) {
         vehicleTypeRelation = { connect: { id: defaultType.id } };
-      }
-    } else if (vehicleTypeId) {
-      // Nếu client gửi vehicleTypeId, vẫn xử lý (cho tương thích)
-      let vehicleType = await this.prisma.vehicleType.findUnique({
-        where: { id: vehicleTypeId },
-      });
-
-      if (!vehicleType && typeof vehicleTypeId === 'string') {
-        vehicleType = await this.prisma.vehicleType.findUnique({
-          where: { name: vehicleTypeId },
-        });
-      }
-
-      if (vehicleType) {
-        vehicleTypeRelation = { connect: { id: vehicleType.id } };
       }
     }
 
@@ -153,13 +126,14 @@ export class VehicleService implements OnModuleInit {
       ...(restData as Prisma.VehicleCreateInput),
       vehicleType: vehicleTypeRelation,
       owner: { connect: { id: ownerId } },
+      city: { connect: { id: cityId } },
       status: VehicleStatus.DRAFT,
       isActive: true,
       isAvailable: true,
     };
-    if (cityId) {
-      createData.city = { connect: { id: cityId } };
-    }
+    // if (cityId) {
+    //   createData.city = { connect: { id: cityId } };
+    // }
 
     try {
       return await this.prisma.vehicle.create({ data: createData });
@@ -380,6 +354,10 @@ export class VehicleService implements OnModuleInit {
         where,
         include: {
           owner: { select: { id: true, email: true, phone: true } },
+          city: {
+            select: { id: true, name: true, province: true, country: true },
+          },
+          vehicleType: { select: { id: true, name: true, description: true } },
           images: { orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }] },
         },
         orderBy: { createdAt: 'desc' },
