@@ -37,5 +37,11 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@miblanchard/react-native-slider": "^2.6.0",
+    "@ptomasroos/react-native-multi-slider": "^2.2.2",
+    "@react-native-community/slider": "^5.1.1",
+    "expo-location": "^19.0.7"
   }
 }

@@ -101,12 +101,30 @@ export const vehiclesApi = {
 		throw new Error(res.message || "Lấy danh sách xe thất bại");
 	},
 
-	async listPublic(params?: { cityId?: string; page?: number; limit?: number }) {
+	// Extended listPublic with filters: cityId, vehicleTypeIds, price range, sort
+	async listPublic(params?: {
+		cityId?: string;
+		page?: number;
+		limit?: number;
+		vehicleTypeIds?: string[]; // multiple types
+		minPrice?: number;
+		maxPrice?: number;
+		sort?: "price_asc" | "price_desc" | "distance" | "rating";
+	}) {
 		const s = new URLSearchParams();
 		if (params?.cityId) s.set("cityId", params.cityId);
-		if (params?.page) s.set("page", String(params.page));
-		if (params?.limit) s.set("limit", String(params.limit));
-		const res = await apiClient.get<Paginated<VehicleItem>>(`/vehicles${s.toString() ? `?${s.toString()}` : ""}`);
+		if (params?.page) s.set("page", String(params.page ?? 1));
+		if (params?.limit) s.set("limit", String(params.limit ?? 10));
+		if (params?.vehicleTypeIds && params.vehicleTypeIds.length > 0) {
+			// backend may accept repeated keys or comma list; use comma list
+			s.set("vehicleTypeIds", params.vehicleTypeIds.join(","));
+		}
+		if (params?.minPrice !== undefined) s.set("minPrice", String(params.minPrice));
+		if (params?.maxPrice !== undefined) s.set("maxPrice", String(params.maxPrice));
+		if (params?.sort) s.set("sort", params.sort);
+
+		const url = `/vehicles${s.toString() ? `?${s.toString()}` : ""}`;
+		const res = await apiClient.get<Paginated<VehicleItem>>(url);
 		if (res.success && res.data && !Array.isArray(res.data)) return res.data;
 		throw new Error(res.message || "Lấy danh sách xe thất bại");
 	},

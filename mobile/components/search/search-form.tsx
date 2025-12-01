@@ -1,16 +1,23 @@
-import { View, Text, TouchableOpacity, Platform, Modal } from "react-native";
+import { View, Text, TouchableOpacity, Platform, Modal, TextInput, ScrollView, Alert } from "react-native";
+import { Input } from "@/components/ui/input";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { useSearchForm } from "@/forms/search.forms";
+import { vehiclesApi } from "@/lib/api.vehicles";
+import { normalize } from "@/lib/utils";
+import type { GestureResponderEvent } from "react-native";
 
 interface SearchFormProps {
 	initialLocation?: string;
 	initialStartDate?: Date;
 	initialEndDate?: Date;
-	onSearch?: (params: { location: string; startDate: Date; endDate: Date }) => void;
+	// include optional cityId in callback
+	onSearch?: (params: { location: string; startDate: Date; endDate: Date; cityId?: string }) => void;
 }
 
 export function SearchForm({
@@ -29,6 +36,65 @@ export function SearchForm({
 	const [showStartDatePicker, setShowStartDatePicker] = useState(false);
 	const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 	const [showLocationPicker, setShowLocationPicker] = useState(false);
+	const [recentSearches, setRecentSearches] = useState<
+		{ label: string; cityId?: string; coords?: { lat: number; lng: number } }[]
+	>([]);
+	const [cities, setCities] = useState<any[]>([]);
+	const [selectedCityId, setSelectedCityId] = useState<string | undefined>(undefined);
+	const [suggestions, setSuggestions] = useState<any[]>([]);
+	const debounceRef = useRef<number | null>(null);
+
+	// load cities & recents
+	useEffect(() => {
+		(async () => {
+			try {
+				const c = await vehiclesApi.getCities();
+				setCities(c || []);
+			} catch (e) {
+				// ignore
+			}
+			try {
+				const s = await AsyncStorage.getItem("recent_locations");
+				if (s) setRecentSearches(JSON.parse(s));
+			} catch {}
+		})();
+	}, []);
+
+	// Autocomplete (Nominatim) - simple, no API key
+	const fetchSuggestions = async (q: string) => {
+		if (!q || q.trim().length < 2) {
+			setSuggestions([]);
+			return;
+		}
+		try {
+			const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(
+				q + ", Vietnam"
+			)}`;
+			const res = await fetch(url, { headers: { "User-Agent": "rent-app/1.0" } });
+			const json = await res.json();
+			setSuggestions(json || []);
+		} catch {
+			setSuggestions([]);
+		}
+	};
+
+	// debounce text change
+	const onLocationInputChange = (t: string) => {
+		form.setValue("location", t);
+		if (debounceRef.current) {
+			clearTimeout(debounceRef.current);
+		}
+		// @ts-ignore
+		debounceRef.current = setTimeout(() => fetchSuggestions(t), 300);
+	};
+
+	const saveRecent = async (entry: { label: string; cityId?: string; coords?: { lat: number; lng: number } }) => {
+		try {
+			const updated = [entry, ...recentSearches.filter((r) => r.label !== entry.label)].slice(0, 10);
+			setRecentSearches(updated);
+			await AsyncStorage.setItem("recent_locations", JSON.stringify(updated));
+		} catch {}
+	};
 
 	// Sync with props changes
 	useEffect(() => {
@@ -38,6 +104,9 @@ export function SearchForm({
 				startDate: initialStartDate || new Date(),
 				endDate: initialEndDate || new Date(Date.now() + 24 * 60 * 60 * 1000),
 			});
+			// set default city from initialLocation if it matches a city name
+			const matched = cities.find((c) => c.name === initialLocation);
+			if (matched) setSelectedCityId(matched.id);
 		}
 	}, [initialLocation, initialStartDate, initialEndDate, form]);
 
@@ -76,13 +145,60 @@ export function SearchForm({
 		}
 	};
 
+	const handleUseCurrentLocation = async () => {
+		try {
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== "granted") {
+				Alert.alert("Quyền vị trí bị từ chối", "Vui lòng cho phép quyền vị trí để dùng tính năng này.");
+				return;
+			}
+			const pos = await Location.getCurrentPositionAsync({});
+			const rev = await Location.reverseGeocodeAsync({
+				latitude: pos.coords.latitude,
+				longitude: pos.coords.longitude,
+			});
+			const label =
+				rev && rev.length > 0
+					? `${rev[0].name || ""} ${rev[0].street || ""} ${rev[0].city || rev[0].region || ""}`.trim()
+					: "Vị trí hiện tại";
+			form.setValue("location", label, { shouldValidate: true });
+			setSelectedCityId(
+				rev[0]?.city ? cities.find((c) => normalize(c.name) === normalize(rev[0].city))?.id : undefined
+			);
+			await saveRecent({
+				label,
+				coords: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+				cityId: undefined,
+			});
+			setShowLocationPicker(false);
+		} catch (e) {
+			Alert.alert("Lỗi", "Không thể lấy vị trí hiện tại");
+		}
+	};
+
+	const handleSelectSuggestion = (s: any) => {
+		const label = s.display_name || `${s.name || ""} ${s.address?.road || ""}`.trim();
+		form.setValue("location", label, { shouldValidate: true });
+		const cityName = s.address?.city || s.address?.town || s.address?.village || s.address?.state;
+		if (cityName) {
+			const matched = cities.find((c) => normalize(c.name) === normalize(cityName));
+			if (matched) setSelectedCityId(matched.id);
+		}
+		saveRecent({ label, cityId: selectedCityId, coords: { lat: Number(s.lat), lng: Number(s.lon) } });
+		setSuggestions([]);
+		setShowLocationPicker(false);
+	};
+
+	// Update handleSearch to pass cityId to onSearch
 	const handleSearch = (data: typeof form.formState.defaultValues) => {
 		if (data?.location && data?.startDate && data?.endDate) {
+			saveRecent({ label: data.location, cityId: selectedCityId });
 			if (onSearch) {
 				onSearch({
 					location: data.location,
 					startDate: data.startDate,
 					endDate: data.endDate,
+					cityId: selectedCityId,
 				});
 			} else {
 				router.push({
@@ -91,12 +207,14 @@ export function SearchForm({
 						location: data.location,
 						startDate: data.startDate.toISOString(),
 						endDate: data.endDate.toISOString(),
+						cityId: selectedCityId,
 					},
 				});
 			}
 		}
 	};
 
+	// Render: use Input.rightIcon (now supported) and fix recent rows so delete button always visible
 	return (
 		<View className="bg-white rounded-3xl p-5 mx-4 mb-4 shadow-xl border border-gray-100">
 			{/* Location Field */}
@@ -105,6 +223,7 @@ export function SearchForm({
 				name="location"
 				render={({ field: { value }, fieldState: { error } }) => (
 					<View>
+						{/* Click opens modal; show current label */}
 						<TouchableOpacity
 							className={`mb-4 rounded-2xl p-4 border ${
 								error ? "border-red-500 bg-red-50" : "bg-gray-50 border-gray-100"
@@ -122,7 +241,6 @@ export function SearchForm({
 							</View>
 							<Text className="text-lg font-bold text-gray-900 mt-1">{value}</Text>
 						</TouchableOpacity>
-						{error && <Text className="text-red-500 text-xs mb-2 ml-3">{error.message}</Text>}
 					</View>
 				)}
 			/>
@@ -209,9 +327,10 @@ export function SearchForm({
 				onRequestClose={() => setShowLocationPicker(false)}
 			>
 				<View className="flex-1 bg-black/60 items-center justify-end">
-					<View className="w-full bg-white rounded-t-3xl p-6 pb-8">
+					{/* make modal taller (near-full) */}
+					<View className="w-full bg-white rounded-t-3xl p-6 pb-8" style={{ minHeight: "86%" }}>
 						<View className="flex-row items-center justify-between mb-6">
-							<Text className="text-2xl font-bold text-gray-900">Chọn địa điểm</Text>
+							<Text className="text-xl font-bold text-gray-900">Chọn địa điểm</Text>
 							<TouchableOpacity
 								onPress={() => setShowLocationPicker(false)}
 								className="bg-gray-100 rounded-full p-2"
@@ -219,40 +338,134 @@ export function SearchForm({
 								<MaterialIcons name="close" size={20} color="#6B7280" />
 							</TouchableOpacity>
 						</View>
+						{/* Use existing Input component + clear icon */}
+						<Input
+							placeholder="Nhập địa điểm"
+							value={form.watch("location")}
+							onChangeText={onLocationInputChange}
+							className="mb-2"
+							viewClassName="rounded-xl border-gray-200"
+							rightIcon={
+								form.watch("location") ? (
+									<TouchableOpacity
+										onPress={() => {
+											form.setValue("location", "");
+											setSuggestions([]);
+										}}
+										accessibilityRole="button"
+									>
+										<MaterialIcons name="close" size={18} color="#6B7280" />
+									</TouchableOpacity>
+								) : undefined
+							}
+						/>
+
+						{/* Suggestions list from Nominatim */}
+						{suggestions.length > 0 && (
+							<ScrollView className="mb-3" style={{ maxHeight: 180 }}>
+								{suggestions.map((s, i) => (
+									<TouchableOpacity
+										key={i}
+										onPress={() => handleSelectSuggestion(s)}
+										className="py-3 border-b border-gray-100 flex-row items-start"
+									>
+										<MaterialIcons name="location-on" size={20} color="#EA580C" />
+										<Text className="ml-3 text-base flex-1">{s.display_name}</Text>
+									</TouchableOpacity>
+								))}
+							</ScrollView>
+						)}
+
+						{/* Quick: use current location */}
 						<TouchableOpacity
-							className="py-4 px-4 bg-gray-50 rounded-xl mb-3 border border-gray-200"
-							onPress={() => {
-								form.setValue("location", "TP. Hồ Chí Minh", {
-									shouldValidate: true,
-								});
-								setShowLocationPicker(false);
-							}}
+							className="py-3 px-4 bg-gray-50 rounded-xl mb-9 border border-gray-200 flex-row items-center"
+							onPress={handleUseCurrentLocation}
 							activeOpacity={0.7}
 						>
-							<View className="flex-row items-center">
-								<MaterialIcons name="location-city" size={24} color="#EA580C" />
-								<Text className="ml-3 text-lg font-semibold text-gray-900">TP. Hồ Chí Minh</Text>
-							</View>
+							<MaterialIcons name="my-location" size={20} color="#EA580C" />
+							<Text className="ml-3 text-lg font-semibold text-gray-900">Vị trí hiện tại</Text>
 						</TouchableOpacity>
-						<TouchableOpacity
-							className="py-4 px-4 bg-gray-50 rounded-xl mb-3 border border-gray-200"
-							onPress={() => {
-								form.setValue("location", "Hà Nội", { shouldValidate: true });
-								setShowLocationPicker(false);
-							}}
-							activeOpacity={0.7}
-						>
-							<View className="flex-row items-center">
-								<MaterialIcons name="location-city" size={24} color="#EA580C" />
-								<Text className="ml-3 text-lg font-semibold text-gray-900">Hà Nội</Text>
-							</View>
-						</TouchableOpacity>
-						<TouchableOpacity
-							className="py-4 px-4 items-center mt-4"
-							onPress={() => setShowLocationPicker(false)}
-						>
-							<Text className="text-lg text-primary-600 font-semibold">Hủy</Text>
-						</TouchableOpacity>
+
+						{/* List of cities (from API) */}
+						<Text className="text-md text-gray-500 mb-3">Chọn thành phố</Text>
+						<ScrollView style={{ maxHeight: 150 }} className="mb-3">
+							{cities.length > 0 ? (
+								cities.map((c: any) => {
+									const isSelected = selectedCityId === c.id;
+									return (
+										<TouchableOpacity
+											key={c.id}
+											onPress={() => {
+												form.setValue("location", `${c.name}`, { shouldValidate: true });
+												setSelectedCityId(c.id);
+												saveRecent({ label: c.name, cityId: c.id });
+												setShowLocationPicker(false);
+											}}
+											className={`py-3 px-4 rounded-xl mb-2 border ${
+												isSelected ? "border-orange-500" : "border-gray-200"
+											}`}
+											activeOpacity={0.7}
+										>
+											<View className="flex-row items-center">
+												<MaterialIcons name="location-city" size={24} color="#EA580C" />
+												<Text className="ml-3 text-lg font-semibold text-gray-900">
+													{c.name}
+												</Text>
+											</View>
+										</TouchableOpacity>
+									);
+								})
+							) : (
+								<Text className="text-gray-500">Không có danh sách thành phố</Text>
+							)}
+						</ScrollView>
+
+						{/* Recent searches (bigger, with icon) */}
+						{recentSearches.length > 0 && (
+							<>
+								<Text className="text-md text-gray-500 mb-3">Tìm kiếm gần đây</Text>
+								{recentSearches.map((r, idx) => (
+									<View key={idx} className="flex-row items-start justify-between mb-3">
+										<TouchableOpacity
+											onPress={() => {
+												form.setValue("location", r.label, { shouldValidate: true });
+												setSelectedCityId(r.cityId);
+												setShowLocationPicker(false);
+											}}
+											className="flex-1 flex-row items-start"
+										>
+											<MaterialIcons name="place" size={20} color="#EA580C" />
+											<Text
+												className="ml-3 text-base flex-1"
+												numberOfLines={2}
+												ellipsizeMode="tail"
+												style={{ flexShrink: 1 }}
+											>
+												{r.label}
+											</Text>
+										</TouchableOpacity>
+
+										<TouchableOpacity
+											onPress={async () => {
+												const updated = recentSearches.filter((_, i) => i !== idx);
+												setRecentSearches(updated);
+												await AsyncStorage.setItem("recent_locations", JSON.stringify(updated));
+											}}
+											className="ml-4"
+											accessibilityRole="button"
+										>
+											<Text className="text-red-500">Xóa</Text>
+										</TouchableOpacity>
+									</View>
+								))}
+							</>
+						)}
+
+						{/* <View className="flex-row justify-end mt-12">
+							<TouchableOpacity onPress={() => setShowLocationPicker(false)} style={{ marginRight: 12 }}>
+								<Text style={{ color: "#6B7280" }}>Hủy</Text>
+							</TouchableOpacity>
+						</View> */}
 					</View>
 				</View>
 			</Modal>
