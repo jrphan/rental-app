@@ -1,502 +1,477 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  Text,
-  View,
-  FlatList,
-  TouchableOpacity,
-  RefreshControl,
-  Modal,
-  ScrollView,
-  Dimensions, // <--- THÊM Dimensions
-  Platform, // <--- THÊM Platform để fix style nếu cần
-} from "react-native";
+import { Text, View, FlatList, TouchableOpacity, RefreshControl, Modal, ScrollView, TextInput } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vehiclesApi } from "@/lib/api.vehicles";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { SearchForm } from "@/components/search/search-form";
 
-//  SỬA ĐỔI 1: Import chuẩn, bỏ đoạn try-catch require cũ đi
-import MultiSlider from "@ptomasroos/react-native-multi-slider";
-
-// Tính toán chiều rộng cho Slider (Màn hình - 40px padding của Modal)
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const SLIDER_WIDTH = SCREEN_WIDTH - 40 - 40; // Trừ padding modal (20*2) và padding trong (nếu có)
-
 export default function SearchScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams<{
-    location?: string;
-    startDate?: string;
-    endDate?: string;
-    cityId?: string;
-  }>();
+	const router = useRouter();
+	const params = useLocalSearchParams<{
+		location?: string;
+		startDate?: string;
+		endDate?: string;
+		cityId?: string;
+	}>();
 
-  // ... (Giữ nguyên các phần state filter, cityId, vehicleTypes...)
-  const [filter, setFilter] = useState<{
-    sort?: "price_asc" | "price_desc" | "distance" | "rating";
-    vehicleTypeIds?: string[];
-    minPrice?: number;
-    maxPrice?: number;
-  }>({});
-  const [cityId, setCityId] = useState<string | undefined>(
-    (params as any).cityId
-  );
+	// Move filter & city state and vehicleTypes hook above data useQuery
+	const [filter, setFilter] = useState<{
+		sort?: "price_asc" | "price_desc" | "distance" | "rating";
+		vehicleTypeIds?: string[];
+		minPrice?: number;
+		maxPrice?: number;
+	}>({});
 
-  const { data: vehicleTypes } = useQuery({
-    queryKey: ["vehicle-types"],
-    queryFn: () => vehiclesApi.getTypes(),
-    staleTime: 1000 * 60 * 5,
-  });
+	// modal-local filter (temp) used inside Filter Modal
+	const [modalFilter, setModalFilter] = useState<typeof filter>(filter);
+	const [sortModalVisible, setSortModalVisible] = useState(false);
 
-  const [page] = useState(1);
-  const [refreshing, setRefreshing] = useState(false);
-  const [location, setLocation] = useState(
-    params.location || "TP. Hồ Chí Minh"
-  );
-  const [startDate, setStartDate] = useState(
-    params.startDate ? new Date(params.startDate) : new Date()
-  );
-  const [endDate, setEndDate] = useState(
-    params.endDate
-      ? new Date(params.endDate)
-      : new Date(Date.now() + 24 * 60 * 60 * 1000)
-  );
-  const [showFilter, setShowFilter] = useState(false);
+	const [cityId, setCityId] = useState<string | undefined>((params as any).cityId);
 
-  // ... (Giữ nguyên useQuery data, hasFilterChanged, onRefresh, handleSearch...)
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: [
-      "vehicles-search",
-      {
-        page,
-        location,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        cityId,
-        filter,
-      },
-    ],
-    queryFn: () =>
-      vehiclesApi.listPublic({
-        page,
-        limit: 20,
-        cityId,
-        vehicleTypeIds: filter.vehicleTypeIds,
-        minPrice: filter.minPrice,
-        maxPrice: filter.maxPrice,
-        sort: filter.sort,
-      }),
-    enabled: true,
-  });
+	const { data: vehicleTypes } = useQuery({
+		queryKey: ["vehicle-types"],
+		queryFn: () => vehiclesApi.getTypes(),
+		staleTime: 1000 * 60 * 5,
+	});
 
-  const hasFilterChanged = !!(
-    filter.sort ||
-    (filter.vehicleTypeIds && filter.vehicleTypeIds.length) ||
-    filter.minPrice ||
-    filter.maxPrice
-  );
+	const [page] = useState(1);
+	const [refreshing, setRefreshing] = useState(false);
+	const [location, setLocation] = useState(params.location || "TP. Hồ Chí Minh");
+	const [startDate, setStartDate] = useState(params.startDate ? new Date(params.startDate) : new Date());
+	const [endDate, setEndDate] = useState(
+		params.endDate ? new Date(params.endDate) : new Date(Date.now() + 24 * 60 * 60 * 1000)
+	);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  };
+	// Query uses actual applied `filter` (not modalFilter)
+	const { data, isLoading, refetch } = useQuery({
+		queryKey: [
+			"vehicles-search",
+			{ page, location, startDate: startDate.toISOString(), endDate: endDate.toISOString(), cityId, filter },
+		],
+		queryFn: () =>
+			vehiclesApi.listPublic({
+				page,
+				limit: 20,
+				cityId,
+				vehicleTypeIds: filter.vehicleTypeIds,
+				minPrice: filter.minPrice,
+				maxPrice: filter.maxPrice,
+				sort: filter.sort,
+			}),
+		enabled: true,
+	});
 
-  const handleSearch = (searchParams: {
-    location: string;
-    startDate: Date;
-    endDate: Date;
-    cityId?: string;
-  }) => {
-    setLocation(searchParams.location);
-    setStartDate(searchParams.startDate);
-    setEndDate(searchParams.endDate);
-    if (searchParams.cityId) setCityId(searchParams.cityId);
-  };
+	const [showFilter, setShowFilter] = useState(false);
 
-  const applyFilter = (newFilter: typeof filter) => {
-    setFilter(newFilter);
-    setShowFilter(false);
-    refetch();
-  };
+	const hasFilterChanged = !!(
+		filter.sort ||
+		(filter.vehicleTypeIds && filter.vehicleTypeIds.length) ||
+		filter.minPrice ||
+		filter.maxPrice
+	);
 
-  // State tạm thời để kéo thả mượt mà hơn (tránh re-render toàn bộ list khi đang kéo)
-  const [multiSliderValue, setMultiSliderValue] = useState([
-    filter.minPrice ?? 0,
-    filter.maxPrice ?? 2000000,
-  ]);
+	const onRefresh = async () => {
+		setRefreshing(true);
+		await refetch();
+		setRefreshing(false);
+	};
 
-  return (
-    <SafeAreaView
-      className="flex-1 bg-gray-50"
-      edges={["top", "left", "right"]}
-    >
-      <View className="flex-1">
-        {/* ... (Giữ nguyên phần Header và List xe) ... */}
-        {/* Header */}
-        <View className="bg-white px-6 py-4 border-b border-gray-200">
-          <View className="flex-row items-center">
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="p-2 -ml-2"
-            >
-              <MaterialIcons name="arrow-back" size={24} color="#111827" />
-            </TouchableOpacity>
-            <View className="flex-1 items-center">
-              <Text className="text-xl font-bold text-gray-900">
-                Tìm kiếm xe
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setShowFilter(true)}
-              className="p-2"
-            >
-              <MaterialIcons
-                name="filter-list"
-                size={24}
-                color={hasFilterChanged ? "#EF4444" : "#111827"}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
+	// Updated handleSearch signature to accept optional cityId
+	const handleSearch = (searchParams: { location: string; startDate: Date; endDate: Date; cityId?: string }) => {
+		setLocation(searchParams.location);
+		setStartDate(searchParams.startDate);
+		setEndDate(searchParams.endDate);
+		if (searchParams.cityId) setCityId(searchParams.cityId);
+	};
 
-        {/* Vehicle List with Search Form */}
-        {isLoading && !data ? (
-          <View className="flex-1 items-center justify-center">
-            <Text className="text-gray-600">Đang tải kết quả...</Text>
-          </View>
-        ) : !data?.items || data.items.length === 0 ? (
-          <View className="flex-1 items-center justify-center px-6">
-            <MaterialIcons name="search-off" size={64} color="#9CA3AF" />
-            <Text className="mt-4 text-lg font-semibold text-gray-900">
-              Không tìm thấy xe
-            </Text>
-            <Text className="mt-2 text-center text-gray-600">
-              Không có xe nào phù hợp với tiêu chí tìm kiếm của bạn
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={data.items}
-            keyExtractor={(item) => item.id}
-            ListHeaderComponent={
-              <>
-                <View className="pt-4">
-                  <SearchForm
-                    initialLocation={location}
-                    initialStartDate={startDate}
-                    initialEndDate={endDate}
-                    onSearch={handleSearch}
-                  />
-                </View>
-                {/* Results Header */}
-                <View className="px-6 py-3 bg-white border-b border-gray-200">
-                  <Text className="text-base font-semibold text-gray-900">
-                    {data?.total
-                      ? `${data.total} xe được tìm thấy`
-                      : "Đang tìm kiếm..."}
-                  </Text>
-                </View>
-              </>
-            }
-            renderItem={({ item }) => (
-              <View className="px-6">
-                <VehicleCard vehicle={item} />
-              </View>
-            )}
-            contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
+	// apply modalFilter to active filter and refetch
+	const applyFilter = (newFilter: typeof filter) => {
+		setFilter(newFilter);
+		// close any open sort modal as well
+		setSortModalVisible(false);
+		setShowFilter(false);
+		// small delay to allow modal close animation then refetch
+		setTimeout(() => refetch(), 150);
+	};
 
-      {/* Filter Modal */}
-      <Modal
-        visible={showFilter}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowFilter(false)}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setShowFilter(false)}
-          style={{
-            flex: 1,
-            justifyContent: "flex-end",
-            backgroundColor: "rgba(0,0,0,0.45)",
-          }}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: "#fff",
-              padding: 20,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              minHeight: "80%", // Chiều cao modal
-            }}
-          >
-            {/* Header with close icon */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 10,
-              }}
-            >
-              <Text style={{ fontSize: 22, fontWeight: "700" }}>Bộ lọc</Text>
-              <TouchableOpacity
-                onPress={() => setShowFilter(false)}
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: "#F3F4F6",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <MaterialIcons name="close" size={20} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
+	// open Filter modal, initialize modalFilter from current applied filter
+	const openFilterModal = () => {
+		setModalFilter(filter || {});
+		setShowFilter(true);
+	};
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Sort Section */}
-              <Text
-                style={{ marginBottom: 8, fontWeight: "600", fontSize: 16 }}
-              >
-                Sắp xếp
-              </Text>
-              {[
-                { key: "price_asc", label: "Giá tăng dần" },
-                { key: "price_desc", label: "Giá giảm dần" },
-                { key: "distance", label: "Khoảng cách" },
-                { key: "rating", label: "Đánh giá" },
-              ].map((s) => {
-                const selected = filter.sort === s.key;
-                return (
-                  <TouchableOpacity
-                    key={s.key}
-                    onPress={() =>
-                      setFilter((f) => ({ ...f, sort: s.key as any }))
-                    }
-                    style={{
-                      paddingVertical: 12,
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: selected ? "#EA580C" : "#111",
-                        fontSize: 16,
-                      }}
-                    >
-                      {s.label}
-                    </Text>
-                    <View
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        borderWidth: 1,
-                        borderColor: selected ? "#EA580C" : "#D1D5DB",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {selected && (
-                        <View
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: 5,
-                            backgroundColor: "#EA580C",
-                          }}
-                        />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
+	// Query will automatically refetch when queryKey changes
 
-              {/* Vehicle types */}
-              <Text
-                style={{
-                  marginTop: 18,
-                  marginBottom: 8,
-                  fontWeight: "600",
-                  fontSize: 16,
-                }}
-              >
-                Loại xe
-              </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {vehicleTypes?.map((t: any) => {
-                  const selected = filter.vehicleTypeIds?.includes(t.id);
-                  return (
-                    <TouchableOpacity
-                      key={t.id}
-                      onPress={() => {
-                        setFilter((cur) => {
-                          const ids = cur.vehicleTypeIds || [];
-                          return {
-                            ...cur,
-                            vehicleTypeIds: ids.includes(t.id)
-                              ? ids.filter((x) => x !== t.id)
-                              : [...ids, t.id],
-                          };
-                        });
-                      }}
-                      style={{
-                        paddingVertical: 8,
-                        paddingHorizontal: 12,
-                        borderRadius: 20,
-                        borderWidth: 1,
-                        borderColor: selected ? "#EA580C" : "#DDD",
-                        backgroundColor: selected ? "#FFF7ED" : "#FFF", // Thêm màu nền nhạt
-                        margin: 4,
-                      }}
-                    >
-                      <Text style={{ color: selected ? "#EA580C" : "#000" }}>
-                        {t.description || t.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+	return (
+		<SafeAreaView className="flex-1 bg-gray-50" edges={["top", "left", "right"]}>
+			<View className="flex-1">
+				{/* Header */}
+				<View className="bg-white px-6 py-4 border-b border-gray-200">
+					<View className="flex-row items-center">
+						<TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+							<MaterialIcons name="arrow-back" size={24} color="#111827" />
+						</TouchableOpacity>
+						<View className="flex-1 items-center">
+							<Text className="text-xl font-bold text-gray-900">Tìm kiếm xe</Text>
+						</View>
+						{/* -						<TouchableOpacity onPress={() => setShowFilter(true)} className="p-2"> */}
+						<TouchableOpacity onPress={openFilterModal} className="p-2">
+							<MaterialIcons
+								name="filter-list"
+								size={24}
+								color={hasFilterChanged ? "#EF4444" : "#111827"}
+							/>
+						</TouchableOpacity>
+					</View>
+				</View>
 
-              {/* Price range with MultiSlider */}
-              <Text
-                style={{
-                  marginTop: 18,
-                  marginBottom: 8,
-                  fontWeight: "600",
-                  fontSize: 16,
-                }}
-              >
-                Khoảng giá (VND) mỗi ngày
-              </Text>
-              <View
-                style={{ paddingHorizontal: 10, alignItems: "center" }}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#EA580C",
-                    marginBottom: 10,
-                    fontWeight: "500",
-                  }}
-                >
-                  {multiSliderValue[0].toLocaleString("vi-VN")} đ -{" "}
-                  {multiSliderValue[1].toLocaleString("vi-VN")} đ
-                </Text>
+				{/* Vehicle List with Search Form */}
+				{isLoading && !data ? (
+					<View className="flex-1 items-center justify-center">
+						<Text className="text-gray-600">Đang tải kết quả...</Text>
+					</View>
+				) : !data?.items || data.items.length === 0 ? (
+					<View className="flex-1 items-center justify-center px-6">
+						<MaterialIcons name="search-off" size={64} color="#9CA3AF" />
+						<Text className="mt-4 text-lg font-semibold text-gray-900">Không tìm thấy xe</Text>
+						<Text className="mt-2 text-center text-gray-600">
+							Không có xe nào phù hợp với tiêu chí tìm kiếm của bạn
+						</Text>
+					</View>
+				) : (
+					<FlatList
+						data={data.items}
+						keyExtractor={(item) => item.id}
+						ListHeaderComponent={
+							<>
+								<View className="pt-4">
+									<SearchForm
+										initialLocation={location}
+										initialStartDate={startDate}
+										initialEndDate={endDate}
+										onSearch={handleSearch}
+									/>
+								</View>
+								{/* Results Header */}
+								<View className="px-6 py-3 bg-white border-b border-gray-200">
+									<Text className="text-base font-semibold text-gray-900">
+										{data?.total ? `${data.total} xe được tìm thấy` : "Đang tìm kiếm..."}
+									</Text>
+								</View>
+							</>
+						}
+						renderItem={({ item }) => (
+							<View className="px-6">
+								<VehicleCard vehicle={item} />
+							</View>
+						)}
+						contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}
+						refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+						showsVerticalScrollIndicator={false}
+					/>
+				)}
+			</View>
 
-                {/* 👇 SỬA ĐỔI 2: Component MultiSlider Chính thức */}
-                <MultiSlider
-                  values={[
-                    filter.minPrice ?? 0,
-                    filter.maxPrice ?? 2000000,
-                  ]}
-                  sliderLength={SLIDER_WIDTH} // Chiều rộng slider
-                  onValuesChange={(values) => setMultiSliderValue(values)} // Cập nhật UI khi đang kéo
-                  onValuesChangeFinish={(values) =>
-                    setFilter((f) => ({
-                      ...f,
-                      minPrice: values[0],
-                      maxPrice: values[1],
-                    }))
-                  } // Chỉ update filter khi thả tay ra (tối ưu performace)
-                  min={0}
-                  max={2000000}
-                  step={50000}
-                  allowOverlap={false} // Không cho 2 nút chồng lên nhau
-                  snapped
-                  // Custom Style cho giống design system của app
-                  selectedStyle={{
-                    backgroundColor: "#EA580C", // Màu cam cho đoạn giữa
-                  }}
-                  unselectedStyle={{
-                    backgroundColor: "#E5E7EB", // Màu xám cho đoạn chưa chọn
-                  }}
-                  containerStyle={{
-                    height: 40,
-                  }}
-                  trackStyle={{
-                    height: 4,
-                    borderRadius: 2,
-                  }}
-                  markerStyle={{
-                    backgroundColor: "#FFFFFF",
-                    height: 24,
-                    width: 24,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: "#EA580C",
-                    shadowColor: "#000",
-                    shadowOffset: {
-                      width: 0,
-                      height: 2,
-                    },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 3.84,
-                    elevation: 5,
-                  }}
-                />
-              </View>
-            </ScrollView>
+			{/* Filter Modal - bigger, more spacing, larger text */}
+			<Modal visible={showFilter} transparent animationType="slide" onRequestClose={() => setShowFilter(false)}>
+				<TouchableOpacity
+					activeOpacity={1}
+					onPress={() => setShowFilter(false)}
+					style={{
+						flex: 1,
+						justifyContent: "flex-end",
+						backgroundColor: "rgba(0,0,0,0.45)",
+					}}
+				>
+					<TouchableOpacity
+						activeOpacity={1}
+						onPress={(e) => e.stopPropagation()}
+						style={{
+							backgroundColor: "#fff",
+							padding: 20,
+							borderTopLeftRadius: 20,
+							borderTopRightRadius: 20,
+							minHeight: "92%", // slight increase so content scrolls and actions sit above system bar
+							position: "relative",
+						}}
+					>
+						{/* Header with close icon */}
+						<View
+							style={{
+								flexDirection: "row",
+								alignItems: "center",
+								justifyContent: "space-between",
+								marginBottom: 10,
+							}}
+						>
+							<Text style={{ fontSize: 20, fontWeight: "700" }}>Bộ lọc</Text>
+							<TouchableOpacity
+								onPress={() => setShowFilter(false)}
+								style={{
+									width: 36,
+									height: 36,
+									borderRadius: 18,
+									backgroundColor: "#F3F4F6",
+									alignItems: "center",
+									justifyContent: "center",
+								}}
+							>
+								<MaterialIcons name="close" size={20} color="#6B7280" />
+							</TouchableOpacity>
+						</View>
 
-            {/* Footer Buttons */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginTop: 18,
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  setFilter({});
-                  setMultiSliderValue([0, 2000000]); // Reset cả slider visual
-                }}
-                style={{ padding: 12 }}
-              >
-                <Text style={{ color: "#6B7280", fontSize: 16 }}>
-                  Đặt lại
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => applyFilter(filter)}
-                style={{
-                  backgroundColor: "#EA580C",
-                  paddingVertical: 12,
-                  paddingHorizontal: 32,
-                  borderRadius: 12,
-                }}
-              >
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 16,
-                    fontWeight: "600",
-                  }}
-                >
-                  Áp dụng
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-    </SafeAreaView>
-  );
+						<ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+							{/* Vehicle types (use description) */}
+							<Text style={{ marginTop: 30, marginBottom: 10, fontWeight: "600", fontSize: 16 }}>
+								Loại xe
+							</Text>
+							<View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+								{vehicleTypes?.map((t: any) => {
+									const selected = (modalFilter.vehicleTypeIds || []).includes(t.id);
+									return (
+										<TouchableOpacity
+											key={t.id}
+											onPress={() => {
+												setModalFilter((cur) => {
+													const ids = cur.vehicleTypeIds || [];
+													return {
+														...cur,
+														vehicleTypeIds: ids.includes(t.id)
+															? ids.filter((x) => x !== t.id)
+															: [...ids, t.id],
+													};
+												});
+											}}
+											style={{
+												paddingVertical: 8,
+												paddingHorizontal: 12,
+												borderRadius: 20,
+												borderWidth: 1,
+												borderColor: selected ? "#EA580C" : "#DDD",
+												margin: 4,
+											}}
+										>
+											<Text style={{ color: selected ? "#EA580C" : "#000" }}>
+												{t.description || t.name}
+											</Text>
+										</TouchableOpacity>
+									);
+								})}
+							</View>
+
+							{/* Price range: numeric inputs (no slider) */}
+							<Text style={{ marginTop: 30, marginBottom: 10, fontWeight: "600", fontSize: 16 }}>
+								Khoảng giá (VND) mỗi ngày
+							</Text>
+							<View style={{ flexDirection: "row", gap: 12, alignItems: "center", marginBottom: 6 }}>
+								<View style={{ flex: 1 }}>
+									<Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 6 }}>Min (₫)</Text>
+									<TextInput
+										placeholder="0"
+										placeholderTextColor="#9CA3AF"
+										keyboardType="numeric"
+										value={modalFilter.minPrice ? String(modalFilter.minPrice) : ""}
+										onChangeText={(t) =>
+											setModalFilter((m) => ({
+												...m,
+												minPrice: t ? Number(t.replace(/[^0-9]/g, "")) : undefined,
+											}))
+										}
+										style={{
+											borderWidth: 1,
+											borderColor: "#E5E7EB",
+											padding: 10,
+											borderRadius: 8,
+											backgroundColor: "#fff",
+											color: "#111827",
+										}}
+									/>
+								</View>
+								<View style={{ flex: 1 }}>
+									<Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 6 }}>Max (₫)</Text>
+									<TextInput
+										placeholder="2000000"
+										placeholderTextColor="#9CA3AF"
+										keyboardType="numeric"
+										value={modalFilter.maxPrice ? String(modalFilter.maxPrice) : ""}
+										onChangeText={(t) =>
+											setModalFilter((m) => ({
+												...m,
+												maxPrice: t ? Number(t.replace(/[^0-9]/g, "")) : undefined,
+											}))
+										}
+										style={{
+											borderWidth: 1,
+											borderColor: "#E5E7EB",
+											padding: 10,
+											borderRadius: 8,
+											backgroundColor: "#fff",
+											color: "#111827",
+										}}
+									/>
+								</View>
+							</View>
+
+							{/* Sort input (opens small modal) - placed at the end */}
+							<Text style={{ marginTop: 30, marginBottom: 10, fontWeight: "600", fontSize: 16 }}>
+								Sắp xếp
+							</Text>
+							<View>
+								<TouchableOpacity
+									onPress={() => setSortModalVisible(true)}
+									style={{
+										borderWidth: 1,
+										borderColor: "#E5E7EB",
+										padding: 12,
+										borderRadius: 8,
+										flexDirection: "row",
+										alignItems: "center",
+										justifyContent: "space-between",
+										backgroundColor: "#fff",
+									}}
+								>
+									<Text style={{ color: modalFilter.sort ? "#111" : "#9CA3AF" }}>
+										{modalFilter.sort === "price_asc"
+											? "Giá tăng dần"
+											: modalFilter.sort === "price_desc"
+											? "Giá giảm dần"
+											: modalFilter.sort === "distance"
+											? "Khoảng cách"
+											: modalFilter.sort === "rating"
+											? "Đánh giá"
+											: "Chọn cách sắp xếp"}
+									</Text>
+									<View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+										{modalFilter.sort ? (
+											<TouchableOpacity
+												onPress={() => setModalFilter((m) => ({ ...m, sort: undefined }))}
+												style={{ padding: 6 }}
+											>
+												<MaterialIcons name="close" size={18} color="#6B7280" />
+											</TouchableOpacity>
+										) : null}
+										<MaterialIcons name="chevron-right" size={20} color="#9CA3AF" />
+									</View>
+								</TouchableOpacity>
+							</View>
+						</ScrollView>
+
+						{/* Action bar: fixed-ish above bottom */}
+						<View
+							style={{
+								position: "absolute",
+								left: 0,
+								right: 0,
+								bottom: 50,
+								flexDirection: "row",
+								justifyContent: "space-between",
+								alignItems: "center",
+								borderTopWidth: 1,
+								borderTopColor: "#ccccccff",
+								padding: 20,
+							}}
+						>
+							<TouchableOpacity
+								onPress={() => {
+									// reset modalFilter (no immediate apply)
+									setModalFilter({});
+								}}
+								style={{ padding: 12, textDecorationLine: "underline" }}
+							>
+								<Text style={{ fontSize: 16, textDecorationLine: "underline" }}>Đặt lại</Text>
+							</TouchableOpacity>
+
+							<TouchableOpacity
+								onPress={() => {
+									// ensure any sort modal closed
+									setSortModalVisible(false);
+									// apply
+									applyFilter(modalFilter);
+								}}
+								style={{
+									backgroundColor: "#EA580C",
+									paddingVertical: 12,
+									paddingHorizontal: 32,
+									borderRadius: 8,
+								}}
+							>
+								<Text style={{ color: "#fff", fontSize: 16 }}>Tìm xe</Text>
+							</TouchableOpacity>
+						</View>
+					</TouchableOpacity>
+				</TouchableOpacity>
+				{/* Sort options modal */}
+				<Modal
+					visible={sortModalVisible}
+					transparent
+					animationType="slide"
+					onRequestClose={() => setSortModalVisible(false)}
+				>
+					<TouchableOpacity
+						activeOpacity={1}
+						onPress={() => setSortModalVisible(false)}
+						style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.45)" }}
+					>
+						<TouchableOpacity
+							activeOpacity={1}
+							onPress={(e) => e.stopPropagation()}
+							style={{
+								backgroundColor: "#fff",
+								borderTopLeftRadius: 12,
+								borderTopRightRadius: 12,
+								padding: 20,
+								minHeight: "33%",
+							}}
+						>
+							<View
+								style={{
+									flexDirection: "row",
+									justifyContent: "space-between",
+									alignItems: "center",
+									marginBottom: 12,
+								}}
+							>
+								<Text style={{ fontSize: 18, fontWeight: "700" }}>Sắp xếp theo</Text>
+								<TouchableOpacity onPress={() => setSortModalVisible(false)} style={{ padding: 6 }}>
+									<MaterialIcons name="close" size={20} color="#6B7280" />
+								</TouchableOpacity>
+							</View>
+							{[
+								{ key: "price_asc", label: "Giá tăng dần" },
+								{ key: "price_desc", label: "Giá giảm dần" },
+								{ key: "distance", label: "Khoảng cách" },
+								{ key: "rating", label: "Đánh giá" },
+							].map((s) => {
+								const selected = modalFilter.sort === s.key;
+								return (
+									<TouchableOpacity
+										key={s.key}
+										onPress={() => {
+											setModalFilter((m) => ({ ...m, sort: s.key as any }));
+											setSortModalVisible(false);
+										}}
+										style={{
+											paddingVertical: 12,
+											paddingHorizontal: 6,
+											flexDirection: "row",
+											alignItems: "center",
+											justifyContent: "space-between",
+										}}
+									>
+										<Text style={{ color: selected ? "#EA580C" : "#111", fontSize: 16 }}>
+											{s.label}
+										</Text>
+										{selected ? <MaterialIcons name="check" size={20} color="#EA580C" /> : null}
+									</TouchableOpacity>
+								);
+							})}
+						</TouchableOpacity>
+					</TouchableOpacity>
+				</Modal>
+			</Modal>
+		</SafeAreaView>
+	);
 }
