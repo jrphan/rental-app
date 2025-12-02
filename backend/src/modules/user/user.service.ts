@@ -7,12 +7,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import {
-  User,
-  UserRole,
-  Prisma,
-  OwnerApplicationStatus,
-} from '@prisma/client';
+import { User, UserRole, Prisma, OwnerApplicationStatus } from '@prisma/client';
 import { CreateUserDto, UpdateUserDto, QueryUserDto } from '@/common/dto/User';
 import {
   createPaginatedResponse,
