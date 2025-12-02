@@ -11,9 +11,6 @@ import { ResponseInterceptor } from '@/common/interceptors/response.interceptor'
 import { ENV } from '@/config/env';
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
 
-const PORT = ENV.port;
-const GLOBAL_PREFIX = ENV.globalPrefix;
-
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
@@ -23,7 +20,7 @@ async function bootstrap() {
     });
 
     //setup global prefix
-    app.setGlobalPrefix(GLOBAL_PREFIX);
+    app.setGlobalPrefix(ENV.globalPrefix);
 
     //setup cors
     app.enableCors({
@@ -69,14 +66,14 @@ async function bootstrap() {
       .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup(`${GLOBAL_PREFIX}/docs`, app, document);
+    SwaggerModule.setup(`${ENV.globalPrefix}/docs`, app, document);
 
-    await app.listen(PORT);
+    await app.listen(ENV.port);
     logger.log(
-      `Server is running on port http://localhost:${PORT}/${GLOBAL_PREFIX}`,
+      `Server is running on port http://localhost:${ENV.port}/${ENV.globalPrefix}`,
     );
     logger.log(
-      `Swagger documentation available at http://localhost:${PORT}/${GLOBAL_PREFIX}/docs`,
+      `Swagger documentation available at http://localhost:${ENV.port}/${ENV.globalPrefix}/docs`,
     );
   } catch (error) {
     logger.error(

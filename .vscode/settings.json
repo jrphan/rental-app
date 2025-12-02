@@ -18,5 +18,6 @@
   "editor.cursorSmoothCaretAnimation": "on",
   "terminal.integrated.smoothScrolling": true,
   "editor.cursorBlinking": "smooth",
-  "terminal.integrated.scrollback": 10000
+  "terminal.integrated.scrollback": 10000,
+  "prisma.pinToPrisma6": true
 }

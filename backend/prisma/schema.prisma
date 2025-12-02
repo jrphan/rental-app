@@ -32,10 +32,10 @@ model User {
   // Relations
   profile          UserProfile?
   vehicles         Vehicle[]
-  rentals          Rental[]       @relation("RenterRentals")
-  ownedRentals     Rental[]       @relation("OwnerRentals")
-  reviews          Review[]
-  receivedReviews  Review[]       @relation("ReceivedReviews")
+  rentals          Rental[]       @relation("RenterRentals") // Danh sách đơn thuê của Renter
+  ownedRentals     Rental[]       @relation("OwnerRentals") // Danh sách đơn thuê của Owner
+  reviews          Review[]       // Danh sách reviews của Renter
+  receivedReviews  Review[]       @relation("ReceivedReviews") // Danh sách reviews của Owner
   notifications    Notification[]
   messages         Message[]      @relation("SenderMessages")
   receivedMessages Message[]      @relation("ReceiverMessages")
@@ -306,10 +306,10 @@ model Review {
   updatedAt  DateTime @updatedAt
 
   // Relations
-  rental   Rental  @relation(fields: [rentalId], references: [id])
-  reviewer User    @relation(fields: [reviewerId], references: [id])
-  reviewee User    @relation("ReceivedReviews", fields: [revieweeId], references: [id])
-  vehicle  Vehicle @relation(fields: [vehicleId], references: [id])
+  rental   Rental  @relation(fields: [rentalId], references: [id]) // Đơn thuê được review
+  reviewer User    @relation(fields: [reviewerId], references: [id]) // Người review
+  reviewee User    @relation("ReceivedReviews", fields: [revieweeId], references: [id]) // Người bị review
+  vehicle  Vehicle @relation(fields: [vehicleId], references: [id]) // Xe được review
 
   @@unique([rentalId, reviewerId])
   @@index([reviewerId])
