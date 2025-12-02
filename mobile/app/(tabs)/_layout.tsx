@@ -122,7 +122,7 @@ export default function TabLayout() {
                 size={focused ? 28 : 26}
                 color={color}
               />
-              {unreadCount && unreadCount > 0 && (
+              {typeof unreadCount === "number" && unreadCount > 0 && (
                 <View
                   style={{
                     position: "absolute",

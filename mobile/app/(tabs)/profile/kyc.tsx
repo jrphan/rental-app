@@ -3,6 +3,7 @@ import { View, ScrollView, ActivityIndicator, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
+import { ImageInput } from "@/components/ui/image-input";
 import { Button } from "@/components/ui/button";
 import { useKycSubmissionForm } from "@/forms/profile.forms";
 import { profileApi } from "@/lib/api.profile";
@@ -10,7 +11,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/lib/toast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { GalleryButton } from "@/components/gallery/gallery-button";
 import { useAuthStore } from "@/store/auth";
 
 export default function KycScreen() {
@@ -72,12 +72,6 @@ export default function KycScreen() {
     }
 
     mutation.mutate(cleanedData);
-  };
-
-  const handleSelectFromGallery = (fieldName: string, urls: string[]) => {
-    if (urls.length > 0) {
-      form.setValue(fieldName as any, urls[0]); // Set first URL if single select
-    }
   };
 
   return (
@@ -183,38 +177,22 @@ export default function KycScreen() {
               />
 
               <View className="mt-4">
-                <Text className="text-sm font-semibold text-gray-900 mb-2">
-                  Hình ảnh CMND/CCCD
-                </Text>
                 <Controller
                   control={form.control}
                   name="idCardFrontUrl"
                   render={({
-                    field: { onChange, onBlur, value },
+                    field: { value, onChange },
                     fieldState: { error },
                   }) => (
-                    <View>
-                      <Input
-                        label="Mặt trước CMND/CCCD (URL)"
-                        placeholder="Nhập URL hình ảnh hoặc tải lên"
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        error={error?.message}
-                        editable={!mutation.isPending}
-                      />
-                      <View className="mt-2">
-                        <GalleryButton
-                          onSelect={(urls) =>
-                            handleSelectFromGallery("idCardFrontUrl", urls)
-                          }
-                          folder="kyc"
-                          multiple={false}
-                          label="Chọn từ thư viện"
-                          variant="outline"
-                        />
-                      </View>
-                    </View>
+                    <ImageInput
+                      label="Mặt trước CMND/CCCD"
+                      value={value}
+                      onChange={onChange}
+                      error={error?.message}
+                      folder="kyc"
+                      multiple={false}
+                      editable={!mutation.isPending}
+                    />
                   )}
                 />
               </View>
@@ -224,31 +202,18 @@ export default function KycScreen() {
                   control={form.control}
                   name="idCardBackUrl"
                   render={({
-                    field: { onChange, onBlur, value },
+                    field: { value, onChange },
                     fieldState: { error },
                   }) => (
-                    <View>
-                      <Input
-                        label="Mặt sau CMND/CCCD (URL)"
-                        placeholder="Nhập URL hình ảnh hoặc tải lên"
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        error={error?.message}
-                        editable={!mutation.isPending}
-                      />
-                      <View className="mt-2">
-                        <GalleryButton
-                          onSelect={(urls) =>
-                            handleSelectFromGallery("idCardBackUrl", urls)
-                          }
-                          folder="kyc"
-                          multiple={false}
-                          label="Chọn từ thư viện"
-                          variant="outline"
-                        />
-                      </View>
-                    </View>
+                    <ImageInput
+                      label="Mặt sau CMND/CCCD"
+                      value={value}
+                      onChange={onChange}
+                      error={error?.message}
+                      folder="kyc"
+                      multiple={false}
+                      editable={!mutation.isPending}
+                    />
                   )}
                 />
               </View>
@@ -258,31 +223,18 @@ export default function KycScreen() {
                   control={form.control}
                   name="selfieUrl"
                   render={({
-                    field: { onChange, onBlur, value },
+                    field: { value, onChange },
                     fieldState: { error },
                   }) => (
-                    <View>
-                      <Input
-                        label="Ảnh selfie với CMND/CCCD (URL)"
-                        placeholder="Nhập URL hình ảnh hoặc tải lên"
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        error={error?.message}
-                        editable={!mutation.isPending}
-                      />
-                      <View className="mt-2">
-                        <GalleryButton
-                          onSelect={(urls) =>
-                            handleSelectFromGallery("selfieUrl", urls)
-                          }
-                          folder="kyc"
-                          multiple={false}
-                          label="Chọn từ thư viện"
-                          variant="outline"
-                        />
-                      </View>
-                    </View>
+                    <ImageInput
+                      label="Ảnh selfie với CMND/CCCD"
+                      value={value}
+                      onChange={onChange}
+                      error={error?.message}
+                      folder="kyc"
+                      multiple={false}
+                      editable={!mutation.isPending}
+                    />
                   )}
                 />
               </View>
@@ -292,31 +244,18 @@ export default function KycScreen() {
                   control={form.control}
                   name="driverLicenseUrl"
                   render={({
-                    field: { onChange, onBlur, value },
+                    field: { value, onChange },
                     fieldState: { error },
                   }) => (
-                    <View>
-                      <Input
-                        label="Bằng lái xe (URL)"
-                        placeholder="Nhập URL hình ảnh hoặc tải lên"
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        error={error?.message}
-                        editable={!mutation.isPending}
-                      />
-                      <View className="mt-2">
-                        <GalleryButton
-                          onSelect={(urls) =>
-                            handleSelectFromGallery("driverLicenseUrl", urls)
-                          }
-                          folder="kyc"
-                          multiple={false}
-                          label="Chọn từ thư viện"
-                          variant="outline"
-                        />
-                      </View>
-                    </View>
+                    <ImageInput
+                      label="Ảnh bằng lái xe"
+                      value={value}
+                      onChange={onChange}
+                      error={error?.message}
+                      folder="kyc"
+                      multiple={true}
+                      editable={!mutation.isPending}
+                    />
                   )}
                 />
               </View>
