@@ -1,15 +1,18 @@
-import { config } from 'dotenv';
 import { resolve } from 'path';
-// Load environment variables before anything else
-// When running from dist/, __dirname is dist/src, so we need to go up 2 levels to reach backend root
-config({ path: resolve(__dirname, '../../.env') });
+import { config as loadEnvConfig } from 'dotenv';
+
+/**
+ * Load environment variables before importing the rest of the application.
+ * When running from dist/, __dirname is dist/src, so we need to go up 2 levels to reach backend root.
+ */
+loadEnvConfig({ path: resolve(__dirname, '../../.env') });
+import { ENV } from '@/config/env';
 import { NestFactory } from '@nestjs/core';
+import { AppModule } from '@/modules/app/app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from '@/modules/app/app.module';
-import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
-import { ENV } from '@/config/env';
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
+import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -19,17 +22,17 @@ async function bootstrap() {
       logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
 
-    //setup global prefix
+    // Setup global prefix
     app.setGlobalPrefix(ENV.globalPrefix);
 
-    //setup cors
+    // Setup CORS
     app.enableCors({
       origin: '*',
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     });
 
-    //setup validation pipe
+    // Setup global validation pipe
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -38,14 +41,14 @@ async function bootstrap() {
       }),
     );
 
-    //setup global response interceptor
+    // Setup global response interceptor
     app.useGlobalInterceptors(new ResponseInterceptor());
 
-    //setup global exception filter for consistent error structure
+    // Setup global exception filter for consistent error structure
     app.useGlobalFilters(new HttpExceptionFilter());
 
-    //setup swagger
-    const config = new DocumentBuilder()
+    // Setup Swagger documentation
+    const swaggerConfig = new DocumentBuilder()
       .setTitle('Rental App API')
       .setDescription('API documentation for Rental App')
       .setVersion('1.0')
@@ -65,7 +68,7 @@ async function bootstrap() {
       )
       .build();
 
-    const document = SwaggerModule.createDocument(app, config);
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup(`${ENV.globalPrefix}/docs`, app, document);
 
     await app.listen(ENV.port);
@@ -75,14 +78,11 @@ async function bootstrap() {
     logger.log(
       `Swagger documentation available at http://localhost:${ENV.port}/${ENV.globalPrefix}/docs`,
     );
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(
       'Failed to start application:',
       error instanceof Error ? error.message : 'Unknown error',
       error instanceof Error ? error.stack : undefined,
-    );
-    logger.log(
-      'Application will continue to run but some features may not work properly',
     );
     process.exit(1);
   }
