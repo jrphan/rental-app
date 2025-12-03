@@ -116,7 +116,7 @@ export default function ProfileScreen() {
                 size="lg"
               >
                 <Text className="text-center text-base font-semibold text-gray-900">
-                  Đăng ký
+                  Đăng ký ngay
                 </Text>
               </Button>
             </View>
@@ -238,8 +238,8 @@ export default function ProfileScreen() {
                   {user?.role === "RENTER"
                     ? "Người thuê"
                     : user?.role === "OWNER"
-                    ? "Chủ xe"
-                    : "User"}
+                      ? "Chủ xe"
+                      : "User"}
                 </Text>
               </View>
               {profile?.dateOfBirth && (
@@ -257,8 +257,8 @@ export default function ProfileScreen() {
                     {profile.gender === "MALE"
                       ? "Nam"
                       : profile.gender === "FEMALE"
-                      ? "Nữ"
-                      : "Khác"}
+                        ? "Nữ"
+                        : "Khác"}
                   </Text>
                 </View>
               )}
@@ -298,16 +298,16 @@ export default function ProfileScreen() {
                               myOwnerApplication.status === "PENDING"
                                 ? "bg-yellow-500"
                                 : myOwnerApplication.status === "APPROVED"
-                                ? "bg-green-500"
-                                : "bg-red-500"
+                                  ? "bg-green-500"
+                                  : "bg-red-500"
                             }`}
                           />
                           <Text className="text-sm font-semibold text-gray-900">
                             {myOwnerApplication.status === "PENDING"
                               ? "Đang chờ duyệt"
                               : myOwnerApplication.status === "APPROVED"
-                              ? "Đã được duyệt"
-                              : "Bị từ chối"}
+                                ? "Đã được duyệt"
+                                : "Bị từ chối"}
                           </Text>
                         </View>
                         {myOwnerApplication.status === "REJECTED" && (
@@ -509,16 +509,16 @@ export default function ProfileScreen() {
                             myKyc.status === "APPROVED"
                               ? "bg-green-500"
                               : myKyc.status === "REJECTED"
-                              ? "bg-red-500"
-                              : "bg-yellow-500"
+                                ? "bg-red-500"
+                                : "bg-yellow-500"
                           }`}
                         />
                         <Text className="text-sm font-semibold text-gray-900">
                           {myKyc.status === "APPROVED"
                             ? "Đã được duyệt"
                             : myKyc.status === "REJECTED"
-                            ? "Bị từ chối"
-                            : "Đang chờ duyệt"}
+                              ? "Bị từ chối"
+                              : "Đang chờ duyệt"}
                         </Text>
                       </View>
                     </View>

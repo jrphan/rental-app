@@ -5,7 +5,7 @@
   "scripts": {
     "start": "expo start --clear --tunnel",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
+    "android": "bash ./scripts/expo-wrapper.sh start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
