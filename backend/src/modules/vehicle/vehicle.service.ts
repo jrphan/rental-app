@@ -307,35 +307,77 @@ export class VehicleService implements OnModuleInit {
     });
   }
 
-  async listPublic(params: { cityId?: string; page?: number; limit?: number }) {
-    const { cityId, page = 1, limit = 10 } = params;
+  async listPublic(params: {
+    cityId?: string;
+    page?: number;
+    limit?: number;
+    vehicleTypeIds?: string[];
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: string;
+  }) {
+    const {
+      cityId,
+      page = 1,
+      limit = 10,
+      vehicleTypeIds,
+      minPrice,
+      maxPrice,
+      sort,
+    } = params;
+
     const where: Prisma.VehicleWhereInput = {
       status: VehicleStatus.VERIFIED,
       isActive: true,
-      // Chỉ lấy xe của owner đã được duyệt (APPROVED)
       owner: {
         ownerApplication: {
           status: OwnerApplicationStatus.APPROVED,
         },
       },
     };
+
     if (cityId) where.cityId = cityId;
+
+    if (vehicleTypeIds && vehicleTypeIds.length > 0) {
+      where.vehicleTypeId = { in: vehicleTypeIds } as any;
+    }
+
+    // dailyRate filtering (assumes schema field `dailyRate` numeric)
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.AND = where.AND ?? [];
+      const priceWhere: any = {};
+      if (minPrice !== undefined) priceWhere.gte = minPrice;
+      if (maxPrice !== undefined) priceWhere.lte = maxPrice;
+      // Prisma numeric field example: dailyRate
+      // add condition as { dailyRate: { gte: minPrice, lte: maxPrice } }
+      (where.AND as Prisma.VehicleWhereInput[]).push({
+        dailyRate: priceWhere,
+      } as any);
+    }
+
     const skip = (page - 1) * limit;
+
+    // map sort param
+    let orderBy: any = { createdAt: 'desc' };
+    if (sort === 'price_asc') orderBy = { dailyRate: 'asc' };
+    else if (sort === 'price_desc') orderBy = { dailyRate: 'desc' };
+    // distance / rating require extra data - left as future improvement
+
     const [items, total] = await Promise.all([
       this.prisma.vehicle.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           images: {
             orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }],
-            // Trả về tất cả ảnh để hiển thị carousel
           },
         },
       }),
       this.prisma.vehicle.count({ where }),
     ]);
+
     return { items, page, limit, total, totalPages: Math.ceil(total / limit) };
   }
 

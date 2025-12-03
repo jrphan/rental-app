@@ -379,15 +379,13 @@ export default function SearchScreen() {
 									// reset modalFilter (no immediate apply)
 									setModalFilter({});
 								}}
-								style={{ padding: 12, textDecorationLine: "underline" }}
+								style={{ padding: 12 }}
 							>
 								<Text style={{ fontSize: 16, textDecorationLine: "underline" }}>Đặt lại</Text>
 							</TouchableOpacity>
 
 							<TouchableOpacity
 								onPress={() => {
-									// ensure any sort modal closed
-									setSortModalVisible(false);
 									// apply
 									applyFilter(modalFilter);
 								}}

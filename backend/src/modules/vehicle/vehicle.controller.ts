@@ -54,18 +54,53 @@ export class VehicleController {
   @Get()
   @ApiOperation({ summary: 'Danh sách xe công khai (đã VERIFY)' })
   @ApiQuery({ name: 'cityId', required: false })
+  @ApiQuery({
+    name: 'vehicleTypeIds',
+    required: false,
+    description: 'Danh sách vehicleType id, phân tách bằng dấu phẩy',
+  })
+  @ApiQuery({
+    name: 'minPrice',
+    required: false,
+    description: 'Giá tối thiểu (dailyRate)',
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    description: 'Giá tối đa (dailyRate)',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description: 'Các giá trị: price_asc, price_desc, distance, rating',
+  })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async listPublic(
     @Query('cityId') cityId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('vehicleTypeIds') vehicleTypeIds?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('sort') sort?: string,
   ) {
-    return this.vehicleService.listPublic({
+    const params: any = {
       cityId,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 10,
-    });
+    };
+    if (vehicleTypeIds) {
+      params.vehicleTypeIds = vehicleTypeIds
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+    if (minPrice) params.minPrice = parseInt(minPrice, 10);
+    if (maxPrice) params.maxPrice = parseInt(maxPrice, 10);
+    if (sort) params.sort = sort;
+
+    return this.vehicleService.listPublic(params);
   }
 
   @Get('types')
