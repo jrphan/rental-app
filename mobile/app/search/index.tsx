@@ -371,7 +371,7 @@ export default function SearchScreen() {
 								alignItems: "center",
 								borderTopWidth: 1,
 								borderTopColor: "#ccccccff",
-								padding: 20,
+								padding: 25,
 							}}
 						>
 							<TouchableOpacity
@@ -396,7 +396,7 @@ export default function SearchScreen() {
 									borderRadius: 8,
 								}}
 							>
-								<Text style={{ color: "#fff", fontSize: 16 }}>Tìm xe</Text>
+								<Text style={{ color: "#fff", fontSize: 16 }}>Áp dụng</Text>
 							</TouchableOpacity>
 						</View>
 					</TouchableOpacity>
