@@ -1,11 +1,9 @@
 import { PrismaService } from '@/prisma/prisma.service';
 import {
+  Logger,
   Injectable,
   NotFoundException,
-  Logger,
   BadRequestException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { User, UserRole, Prisma, OwnerApplicationStatus } from '@prisma/client';
 import { CreateUserDto, UpdateUserDto, QueryUserDto } from '@/common/dto/User';
@@ -14,6 +12,7 @@ import {
   // createResponse,
 } from '@/common/utils/response.util';
 import { NotificationService } from '@/modules/notification/notification.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
@@ -21,15 +20,35 @@ export class UserService {
 
   constructor(
     private prisma: PrismaService,
-    @Inject(forwardRef(() => NotificationService))
     private notificationService: NotificationService,
   ) {}
 
   async createUser(
     createUserDto: CreateUserDto,
   ): Promise<Omit<User, 'password'>> {
-    this.logger.log(`Tạo user mới: ${createUserDto.email}`);
+    this.logger.log(
+      `Creating new user: ${createUserDto.email} - ${createUserDto.phone}`,
+    );
 
+    // Check if email or phone already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: {
+        email: createUserDto.email,
+        phone: createUserDto.phone,
+      },
+    });
+    if (existingUser) {
+      throw new BadRequestException('User đã tồn tại');
+    }
+
+    // Hash password using bcrypt-generated salt
+    const saltRounds = 10;
+    createUserDto.password = await bcrypt.hash(
+      createUserDto.password,
+      saltRounds,
+    );
+
+    // Create user
     const user = await this.prisma.user.create({
       data: {
         ...createUserDto,
@@ -40,8 +59,8 @@ export class UserService {
     });
 
     // Loại bỏ password khỏi response
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...userWithoutPassword } = user;
-    console.log(password);
     this.logger.log(`Tạo user thành công: ${createUserDto.email}`);
 
     return userWithoutPassword as Omit<User, 'password'>;

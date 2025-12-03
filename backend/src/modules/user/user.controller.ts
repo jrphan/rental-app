@@ -20,7 +20,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { UserService } from '@/modules/user/user.service';
-import { User } from '@prisma/client';
+import { OwnerApplicationStatus, User } from '@prisma/client';
 import { CreateUserDto, UpdateUserDto, QueryUserDto } from '@/common/dto/User';
 import {
   ApiResponseDto,
@@ -92,7 +92,7 @@ export class UserController {
     @Query('limit') limit?: string,
   ) {
     return this.userService.listOwnerApplications(
-      status as any,
+      status as OwnerApplicationStatus,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 10,
     );

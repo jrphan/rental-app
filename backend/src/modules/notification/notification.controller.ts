@@ -82,4 +82,3 @@ export class NotificationController {
     return { message: 'Đã xóa thông báo thành công' };
   }
 }
-
