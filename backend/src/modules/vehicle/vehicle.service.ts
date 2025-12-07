@@ -126,14 +126,14 @@ export class VehicleService implements OnModuleInit {
       ...(restData as Prisma.VehicleCreateInput),
       vehicleType: vehicleTypeRelation,
       owner: { connect: { id: ownerId } },
-      city: { connect: { id: cityId } },
+      // city: { connect: { id: cityId } },
       status: VehicleStatus.DRAFT,
       isActive: true,
       isAvailable: true,
     };
-    // if (cityId) {
-    //   createData.city = { connect: { id: cityId } };
-    // }
+    if (cityId) {
+      createData.city = { connect: { id: cityId } };
+    }
 
     try {
       return await this.prisma.vehicle.create({ data: createData });

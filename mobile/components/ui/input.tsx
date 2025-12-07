@@ -5,6 +5,7 @@ interface InputProps extends TextInputProps {
 	label?: string;
 	error?: string;
 	containerClassName?: string;
+	viewClassName?: string;
 	className?: string; // accept className (some callers use it)
 	rightIcon?: React.ReactNode;
 }

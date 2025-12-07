@@ -1,7 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, TouchableOpacity, ScrollView, Image, Alert, Modal } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { vehiclesApi } from "@/lib/api.vehicles";
@@ -10,10 +10,11 @@ import { useRequirePhoneVerification } from "@/lib/auth";
 import { GalleryButton } from "@/components/gallery/gallery-button";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import CitySelector from "@/components/location/city-selector";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useVehicleForm } from "@/forms/vehicle.forms";
 import { VehicleInput } from "@/schemas/vehicle.schema";
-import { LocationPicker } from "@/components/location/location-picker";
+import { normalize } from "@/lib/utils";
 
 export default function VehicleCreateScreen() {
 	const router = useRouter();
@@ -59,6 +60,16 @@ export default function VehicleCreateScreen() {
 
 	// Location modal state & helpers
 	const [showLocationModal, setShowLocationModal] = useState(false);
+	const handleLocationSave = (addr: string, cityId?: string) => {
+		form.setValue("location", addr, { shouldValidate: true });
+		if (cityId) form.setValue("cityId", cityId, { shouldValidate: true });
+		setShowLocationModal(false);
+	};
+
+	// Add registration docs handling
+	// const handleSelectRegistrationDocs = (urls: string[]) => {
+	// 	form.setValue("registrationDocs", urls, { shouldValidate: true });
+	// };
 
 	// Pre-fill form when vehicle data is loaded
 	useEffect(() => {
@@ -95,7 +106,6 @@ export default function VehicleCreateScreen() {
 
 	const createMutation = useMutation({
 		mutationFn: async (data: VehicleInput) => {
-			// console.log("[vehicle-create] mutationFn called", { data });
 			if (isEditMode && vehicleId) {
 				// Update existing vehicle
 				const vehicle = await vehiclesApi.update(vehicleId, {
@@ -111,9 +121,6 @@ export default function VehicleCreateScreen() {
 					vehicleTypeId: data.vehicleTypeId,
 					location: data.location,
 					cityId: data.cityId,
-					// forward lat/lng if present in form to backend
-					latitude: (data as any).latitude ?? undefined,
-					longitude: (data as any).longitude ?? undefined,
 				});
 
 				// Handle images: add new ones and remove deleted ones
@@ -163,8 +170,6 @@ export default function VehicleCreateScreen() {
 					vehicleTypeId: data.vehicleTypeId,
 					location: data.location,
 					cityId: data.cityId,
-					latitude: (data as any).latitude ?? undefined,
-					longitude: (data as any).longitude ?? undefined,
 				});
 
 				// Thêm hình ảnh nếu có
@@ -211,6 +216,24 @@ export default function VehicleCreateScreen() {
 		form.setValue("imageUrls", urls, { shouldValidate: true });
 	};
 
+	const handleRemoveImage = (index: number) => {
+		Alert.alert("Xóa hình ảnh", "Bạn có chắc muốn xóa hình ảnh này?", [
+			{ text: "Hủy", style: "cancel" },
+			{
+				text: "Xóa",
+				style: "destructive",
+				onPress: () => {
+					const currentImages = form.getValues("imageUrls");
+					form.setValue(
+						"imageUrls",
+						currentImages.filter((_, i) => i !== index),
+						{ shouldValidate: true }
+					);
+				},
+			},
+		]);
+	};
+
 	const handleSelectDocs = (urls: string[]) => {
 		const prefixed = urls.map((u) => u + "?type=doc"); // thêm query flag
 		const current = form.getValues("imageUrls") || [];
@@ -218,8 +241,8 @@ export default function VehicleCreateScreen() {
 		form.setValue("imageUrls", [...current, ...prefixed], { shouldValidate: true });
 	};
 
-	const handleRemoveImage = (urlToRemove: string) => {
-		Alert.alert("Xóa hình ảnh", "Bạn chắc chắn muốn xóa ảnh này?", [
+	const handleRemoveDoc = (urlToRemove: string) => {
+		Alert.alert("Xóa hình giấy tờ", "Bạn chắc chắn muốn xóa ảnh này?", [
 			{ text: "Hủy", style: "cancel" },
 			{
 				text: "Xóa",
@@ -232,7 +255,6 @@ export default function VehicleCreateScreen() {
 		]);
 	};
 
-	// debug wrapper for submit to ensure we see if handler runs
 	const onSubmit = (data: VehicleInput) => {
 		createMutation.mutate(data);
 	};
@@ -395,7 +417,7 @@ export default function VehicleCreateScreen() {
 					/>
 
 					{/* Transmission */}
-					{/* <Controller
+					<Controller
 						control={form.control}
 						name="transmission"
 						render={({ field: { onChange, value }, fieldState: { error } }) => (
@@ -414,7 +436,7 @@ export default function VehicleCreateScreen() {
 								{error && <Text className="text-red-500 text-xs mt-1">{error.message}</Text>}
 							</View>
 						)}
-					/> */}
+					/>
 
 					{/* Daily Rate */}
 					<Controller
@@ -495,50 +517,106 @@ export default function VehicleCreateScreen() {
 					<Controller
 						control={form.control}
 						name="location"
-						render={({ field: { value }, fieldState: { error } }) => (
+						render={({ field: { value } }) => (
 							<View className="mt-4">
 								<Text className="text-sm font-medium text-gray-700 mb-2">Địa chỉ thuê xe *</Text>
 								<TouchableOpacity
 									onPress={() => setShowLocationModal(true)}
-									style={{
-										borderWidth: 1,
-										borderColor: error ? "#F87171" : "#E5E7EB",
-										borderRadius: 8,
-										paddingHorizontal: 16,
-										paddingVertical: 12,
-										backgroundColor: "#fff",
-									}}
+									className={`border rounded-lg px-4 py-3 ${value ? "bg-white" : "bg-white"}`}
 								>
-									<Text style={{ color: value ? "#111827" : "#9CA3AF" }}>
+									<Text className={`${value ? "text-gray-900" : "text-gray-400"}`}>
 										{value || "Chọn địa chỉ thuê xe"}
 									</Text>
 								</TouchableOpacity>
-								{error && <Text className="text-red-500 text-xs mt-1">{error.message}</Text>}
 							</View>
 						)}
 					/>
 
 					{/* Modal chọn địa chỉ */}
-					<View>
-						{/* Địa chỉ thuê xe (modal trigger) kept as-is */}
-						{/* Modal được xử lý bởi LocationPicker component */}
-						<LocationPicker
-							visible={showLocationModal}
-							onClose={() => setShowLocationModal(false)}
-							cities={cities}
-							onPick={({ display, lat, lng, cityId }) => {
-								form.setValue("location", display || "", { shouldValidate: true });
-								if (cityId) form.setValue("cityId", cityId, { shouldValidate: true });
-								try {
-									if (lat !== undefined)
-										form.setValue("latitude", Number(lat), { shouldValidate: false });
-									if (lng !== undefined)
-										form.setValue("longitude", Number(lng), { shouldValidate: false });
-								} catch {}
-								setShowLocationModal(false);
-							}}
-						/>
-					</View>
+					<Modal
+						visible={showLocationModal}
+						transparent
+						animationType="slide"
+						onRequestClose={() => setShowLocationModal(false)}
+					>
+						<View className="bg-black/50" style={{ flex: 1, justifyContent: "flex-end" }}>
+							<View
+								style={{
+									backgroundColor: "#fff",
+									borderTopLeftRadius: 12,
+									borderTopRightRadius: 12,
+									padding: 20,
+									minHeight: "88%",
+								}}
+							>
+								<Text style={{ fontSize: 14, fontWeight: "500", marginBottom: 8 }}>Nhập địa chỉ *</Text>
+								<Input
+									placeholder="Nhập địa chỉ (ví dụ: 123 Đường A, Quận B)"
+									onChangeText={(t) => form.setValue("__tmp_location_input", t)}
+									defaultValue={form.getValues("__tmp_location_input") || ""}
+									style={{
+										borderWidth: 1,
+										borderColor: "#E5E7EB",
+										borderRadius: 8,
+										padding: 10,
+										marginBottom: 12,
+									}}
+								/>
+								<Text style={{ fontSize: 14, fontWeight: "500", marginBottom: 8 }}>
+									Chọn thành phố *
+								</Text>
+								{/* City selector (extracted to reusable component) */}
+								<View>
+									{/* Replace inline city list with reusable component */}
+									{}
+									{/* @ts-ignore */}
+									<CitySelector
+										cities={cities}
+										selectedCityId={(() => {
+											const tmpCity = form.watch("__tmp_city");
+											try {
+												return tmpCity ? JSON.parse(tmpCity).id : undefined;
+											} catch {
+												return undefined;
+											}
+										})()}
+										onSelect={(c: any) =>
+											form.setValue(
+												"__tmp_city",
+												JSON.stringify({ id: c.id, name: c.name, province: c.province })
+											)
+										}
+									/>
+								</View>
+								<View
+									style={{ flexDirection: "row", justifyContent: "flex-end", marginTop: 18, gap: 16 }}
+								>
+									<TouchableOpacity
+										onPress={() => setShowLocationModal(false)}
+										style={{ marginRight: 16 }}
+									>
+										<Text style={{ color: "#6B7280" }}>Hủy</Text>
+									</TouchableOpacity>
+									<TouchableOpacity
+										onPress={() => {
+											const addr = form.getValues("__tmp_location_input") || "";
+											const tmpCity = form.getValues("__tmp_city");
+											const parsed = tmpCity ? JSON.parse(tmpCity) : undefined;
+											if (!addr || !parsed) {
+												toast.showError("Vui lòng nhập địa chỉ và chọn thành phố", {
+													title: "Thiếu",
+												});
+												return;
+											}
+											handleLocationSave(addr + ", " + parsed.name, parsed.id);
+										}}
+									>
+										<Text style={{ color: "#EA580C", fontWeight: "600" }}>Lưu</Text>
+									</TouchableOpacity>
+								</View>
+							</View>
+						</View>
+					</Modal>
 				</View>
 
 				{/* Hình ảnh xe */}
@@ -576,7 +654,7 @@ export default function VehicleCreateScreen() {
 														resizeMode="cover"
 													/>
 													<TouchableOpacity
-														onPress={() => handleRemoveImage(url)}
+														onPress={() => handleRemoveDoc(url)}
 														className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
 													>
 														<MaterialIcons name="close" size={16} color="#fff" />
@@ -631,7 +709,7 @@ export default function VehicleCreateScreen() {
 														resizeMode="cover"
 													/>
 													<TouchableOpacity
-														onPress={() => handleRemoveImage(url)}
+														onPress={() => handleRemoveDoc(url)}
 														className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
 													>
 														<MaterialIcons name="close" size={16} color="#fff" />

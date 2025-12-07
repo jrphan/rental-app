@@ -39,6 +39,7 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "expo-location": "^19.0.7"
+    "expo-location": "^19.0.7",
+    "react-native-google-places-autocomplete": "^2.6.1"
   }
 }
