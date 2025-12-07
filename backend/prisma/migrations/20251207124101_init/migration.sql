@@ -23,10 +23,28 @@ CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAIL
 CREATE TYPE "PaymentGateway" AS ENUM ('VNPAY', 'MOMO', 'ZALOPAY', 'STRIPE', 'PAYPAL');
 
 -- CreateEnum
-CREATE TYPE "NotificationType" AS ENUM ('RENTAL_REQUEST', 'RENTAL_CONFIRMED', 'RENTAL_CANCELLED', 'PAYMENT_SUCCESS', 'PAYMENT_FAILED', 'REVIEW_RECEIVED', 'MESSAGE_RECEIVED', 'SYSTEM_ANNOUNCEMENT');
+CREATE TYPE "NotificationType" AS ENUM ('RENTAL_REQUEST', 'RENTAL_CONFIRMED', 'RENTAL_CANCELLED', 'PAYMENT_SUCCESS', 'PAYMENT_FAILED', 'REVIEW_RECEIVED', 'MESSAGE_RECEIVED', 'SYSTEM_ANNOUNCEMENT', 'DISPUTE_CREATED', 'DISPUTE_RESOLVED');
 
 -- CreateEnum
 CREATE TYPE "MessageType" AS ENUM ('TEXT', 'IMAGE', 'LOCATION', 'SYSTEM');
+
+-- CreateEnum
+CREATE TYPE "OwnerApplicationStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "VehicleStatus" AS ENUM ('DRAFT', 'SUBMITTED', 'VERIFIED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "OtpType" AS ENUM ('EMAIL_VERIFICATION', 'PASSWORD_RESET', 'PHONE_VERIFICATION');
+
+-- CreateEnum
+CREATE TYPE "PaymentType" AS ENUM ('CHARGE', 'REFUND', 'TRANSFER', 'PAYOUT');
+
+-- CreateEnum
+CREATE TYPE "DisputeStatus" AS ENUM ('PENDING', 'UNDER_REVIEW', 'RESOLVED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "KycStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -36,11 +54,28 @@ CREATE TABLE "users" (
     "password" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
+    "isPhoneVerified" BOOLEAN NOT NULL DEFAULT false,
     "role" "UserRole" NOT NULL DEFAULT 'RENTER',
+    "stripeAccountId" TEXT,
+    "stripeAccountStatus" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "otps" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "code" VARCHAR(6) NOT NULL,
+    "type" "OtpType" NOT NULL DEFAULT 'EMAIL_VERIFICATION',
+    "phone" TEXT,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "isUsed" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "otps_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -95,6 +130,7 @@ CREATE TABLE "vehicles" (
     "depositAmount" DECIMAL(10,2) NOT NULL,
     "isAvailable" BOOLEAN NOT NULL DEFAULT true,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "status" "VehicleStatus" NOT NULL DEFAULT 'DRAFT',
     "location" TEXT,
     "latitude" DOUBLE PRECISION,
     "longitude" DOUBLE PRECISION,
@@ -141,6 +177,10 @@ CREATE TABLE "rentals" (
     "pickupLongitude" DOUBLE PRECISION,
     "returnLatitude" DOUBLE PRECISION,
     "returnLongitude" DOUBLE PRECISION,
+    "renterCheckInAt" TIMESTAMP(3),
+    "ownerCheckInAt" TIMESTAMP(3),
+    "renterCheckOutAt" TIMESTAMP(3),
+    "ownerCheckOutAt" TIMESTAMP(3),
     "notes" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -156,6 +196,7 @@ CREATE TABLE "payments" (
     "amount" DECIMAL(10,2) NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'VND',
     "paymentMethod" "PaymentMethod" NOT NULL,
+    "type" "PaymentType",
     "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "transactionId" TEXT,
     "gateway" "PaymentGateway",
@@ -223,11 +264,79 @@ CREATE TABLE "messages" (
     CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "owner_applications" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "status" "OwnerApplicationStatus" NOT NULL DEFAULT 'PENDING',
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "owner_applications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "kycs" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "idNumber" TEXT,
+    "idCardFrontUrl" TEXT,
+    "idCardBackUrl" TEXT,
+    "driverLicenseUrl" TEXT,
+    "selfieUrl" TEXT,
+    "notes" TEXT,
+    "status" "KycStatus" NOT NULL DEFAULT 'PENDING',
+    "reviewedBy" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "reviewNotes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "kycs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "disputes" (
+    "id" TEXT NOT NULL,
+    "rentalId" TEXT NOT NULL,
+    "renterId" TEXT NOT NULL,
+    "ownerId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "DisputeStatus" NOT NULL DEFAULT 'PENDING',
+    "penaltyAmount" DECIMAL(10,2),
+    "resolvedBy" TEXT,
+    "resolvedAt" TIMESTAMP(3),
+    "resolutionNotes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "disputes_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "stripe_webhook_events" (
+    "id" TEXT NOT NULL,
+    "eventId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "processed" BOOLEAN NOT NULL DEFAULT false,
+    "data" JSONB,
+    "error" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processedAt" TIMESTAMP(3),
+
+    CONSTRAINT "stripe_webhook_events_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_phone_key" ON "users"("phone");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_stripeAccountId_key" ON "users"("stripeAccountId");
 
 -- CreateIndex
 CREATE INDEX "users_email_idx" ON "users"("email");
@@ -239,10 +348,34 @@ CREATE INDEX "users_phone_idx" ON "users"("phone");
 CREATE INDEX "users_isActive_idx" ON "users"("isActive");
 
 -- CreateIndex
+CREATE INDEX "users_isPhoneVerified_idx" ON "users"("isPhoneVerified");
+
+-- CreateIndex
 CREATE INDEX "users_role_idx" ON "users"("role");
 
 -- CreateIndex
+CREATE INDEX "users_stripeAccountId_idx" ON "users"("stripeAccountId");
+
+-- CreateIndex
 CREATE INDEX "users_createdAt_idx" ON "users"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "otps_userId_idx" ON "otps"("userId");
+
+-- CreateIndex
+CREATE INDEX "otps_code_idx" ON "otps"("code");
+
+-- CreateIndex
+CREATE INDEX "otps_type_idx" ON "otps"("type");
+
+-- CreateIndex
+CREATE INDEX "otps_phone_idx" ON "otps"("phone");
+
+-- CreateIndex
+CREATE INDEX "otps_isUsed_idx" ON "otps"("isUsed");
+
+-- CreateIndex
+CREATE INDEX "otps_expiresAt_idx" ON "otps"("expiresAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_profiles_userId_key" ON "user_profiles"("userId");
@@ -276,6 +409,9 @@ CREATE INDEX "vehicles_isAvailable_idx" ON "vehicles"("isAvailable");
 
 -- CreateIndex
 CREATE INDEX "vehicles_isActive_idx" ON "vehicles"("isActive");
+
+-- CreateIndex
+CREATE INDEX "vehicles_status_idx" ON "vehicles"("status");
 
 -- CreateIndex
 CREATE INDEX "vehicles_cityId_idx" ON "vehicles"("cityId");
@@ -330,6 +466,9 @@ CREATE INDEX "payments_userId_idx" ON "payments"("userId");
 
 -- CreateIndex
 CREATE INDEX "payments_status_idx" ON "payments"("status");
+
+-- CreateIndex
+CREATE INDEX "payments_type_idx" ON "payments"("type");
 
 -- CreateIndex
 CREATE INDEX "payments_paymentMethod_idx" ON "payments"("paymentMethod");
@@ -400,6 +539,66 @@ CREATE INDEX "messages_isRead_idx" ON "messages"("isRead");
 -- CreateIndex
 CREATE INDEX "messages_createdAt_idx" ON "messages"("createdAt");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "owner_applications_userId_key" ON "owner_applications"("userId");
+
+-- CreateIndex
+CREATE INDEX "owner_applications_status_idx" ON "owner_applications"("status");
+
+-- CreateIndex
+CREATE INDEX "owner_applications_createdAt_idx" ON "owner_applications"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "kycs_userId_key" ON "kycs"("userId");
+
+-- CreateIndex
+CREATE INDEX "kycs_userId_idx" ON "kycs"("userId");
+
+-- CreateIndex
+CREATE INDEX "kycs_status_idx" ON "kycs"("status");
+
+-- CreateIndex
+CREATE INDEX "kycs_reviewedBy_idx" ON "kycs"("reviewedBy");
+
+-- CreateIndex
+CREATE INDEX "kycs_createdAt_idx" ON "kycs"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "disputes_rentalId_idx" ON "disputes"("rentalId");
+
+-- CreateIndex
+CREATE INDEX "disputes_renterId_idx" ON "disputes"("renterId");
+
+-- CreateIndex
+CREATE INDEX "disputes_ownerId_idx" ON "disputes"("ownerId");
+
+-- CreateIndex
+CREATE INDEX "disputes_status_idx" ON "disputes"("status");
+
+-- CreateIndex
+CREATE INDEX "disputes_resolvedBy_idx" ON "disputes"("resolvedBy");
+
+-- CreateIndex
+CREATE INDEX "disputes_createdAt_idx" ON "disputes"("createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "stripe_webhook_events_eventId_key" ON "stripe_webhook_events"("eventId");
+
+-- CreateIndex
+CREATE INDEX "stripe_webhook_events_eventId_idx" ON "stripe_webhook_events"("eventId");
+
+-- CreateIndex
+CREATE INDEX "stripe_webhook_events_type_idx" ON "stripe_webhook_events"("type");
+
+-- CreateIndex
+CREATE INDEX "stripe_webhook_events_processed_idx" ON "stripe_webhook_events"("processed");
+
+-- CreateIndex
+CREATE INDEX "stripe_webhook_events_createdAt_idx" ON "stripe_webhook_events"("createdAt");
+
+-- AddForeignKey
+ALTER TABLE "otps" ADD CONSTRAINT "otps_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
 -- AddForeignKey
 ALTER TABLE "user_profiles" ADD CONSTRAINT "user_profiles_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -453,3 +652,21 @@ ALTER TABLE "messages" ADD CONSTRAINT "messages_senderId_fkey" FOREIGN KEY ("sen
 
 -- AddForeignKey
 ALTER TABLE "messages" ADD CONSTRAINT "messages_receiverId_fkey" FOREIGN KEY ("receiverId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "owner_applications" ADD CONSTRAINT "owner_applications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "kycs" ADD CONSTRAINT "kycs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "kycs" ADD CONSTRAINT "kycs_reviewedBy_fkey" FOREIGN KEY ("reviewedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "disputes" ADD CONSTRAINT "disputes_rentalId_fkey" FOREIGN KEY ("rentalId") REFERENCES "rentals"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "disputes" ADD CONSTRAINT "disputes_renterId_fkey" FOREIGN KEY ("renterId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "disputes" ADD CONSTRAINT "disputes_resolvedBy_fkey" FOREIGN KEY ("resolvedBy") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
