@@ -14,6 +14,7 @@ interface VehicleCardProps {
 			isPrimary: boolean;
 		}[];
 	};
+	distanceKm?: number | undefined; // optional
 	onPress?: () => void;
 	showActionButton?: boolean;
 	actionButtonLabel?: string;
@@ -23,6 +24,7 @@ interface VehicleCardProps {
 
 export function VehicleCard({
 	vehicle,
+	distanceKm,
 	onPress,
 	showActionButton = false,
 	actionButtonLabel = "Đặt xe",
@@ -127,6 +129,12 @@ export function VehicleCard({
 						<Text className="text-sm text-gray-600 mt-1">
 							Năm {vehicle.year} • {vehicle.color}
 						</Text>
+						{typeof distanceKm === "number" && !isNaN(distanceKm) && (
+							<View className="flex-row items-center ml-1 mt-1">
+								<MaterialIcons name="circle" size={8} color="#6B7280" />
+								<Text className="ml-2 text-sm text-gray-700">~{distanceKm.toFixed(1)} km</Text>
+							</View>
+						)}
 					</View>
 					{vehicle.status === "VERIFIED" && (
 						<View className="flex-row items-center bg-green-50 px-2 py-1 rounded-full">
@@ -178,8 +186,8 @@ export function VehicleCard({
 							</Text>
 						</View>
 					)}
-					{vehicle.transmission && (
-						<View className="flex-row items-center">
+					{vehicle.location && (
+						<View className="flex-row items-center mb-1">
 							<MaterialIcons name="location-pin" size={16} color="#6B7280" />
 							<Text className="ml-2 text-sm text-gray-700">Địa chỉ: {vehicle.location}</Text>
 						</View>

@@ -12,7 +12,7 @@ export class CityService implements OnModuleInit {
   // Seed basic cities if missing
   private async ensureDefaultCities() {
     const defaultCities = [
-      { name: 'TP. Hồ Chí Minh', province: 'Hồ Chí Minh' },
+      { name: 'Thành phố Hồ Chí Minh', province: 'Hồ Chí Minh' },
       { name: 'Hà Nội', province: 'Hà Nội' },
     ];
     for (const c of defaultCities) {

@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, Modal } from "react-native";
+import { View, Text, TouchableOpacity, Modal, Alert } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Location from "expo-location";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { useToast } from "@/lib/toast";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchGoogleReverseGeocode } from "@/lib/geocode";
 
 export type PickedPlace = {
@@ -18,19 +19,54 @@ export function LocationPicker({
 	onClose,
 	onPick,
 	cities = [],
+	showRecents = false,
 }: {
 	visible: boolean;
 	onClose: () => void;
 	onPick: (p: PickedPlace) => void;
 	cities?: any[];
+	showRecents?: boolean; // optional prop to show recent searches
 }) {
 	const toast = useToast();
 	const placesRef = useRef<any>(null);
 	const [inputText, setInputText] = useState("");
+	const [recentSearches, setRecentSearches] = useState<
+		{ label: string; cityId?: string; coords?: { lat: number; lng: number } }[]
+	>([]);
 
-	// Ensure internal GP input cleared whenever modal opens/closes
+	// load recents if enabled
 	useEffect(() => {
-		// small delay to ensure ref exists on open
+		if (!showRecents) return;
+		(async () => {
+			try {
+				const s = await AsyncStorage.getItem("recent_locations");
+				if (s) setRecentSearches(JSON.parse(s));
+			} catch {}
+		})();
+	}, [visible, showRecents]);
+
+	const saveRecent = async (entry: { label: string; cityId?: string; coords?: { lat: number; lng: number } }) => {
+		try {
+			if (!showRecents) return;
+			const updated = [entry, ...recentSearches.filter((r) => r.label !== entry.label)].slice(0, 10);
+			setRecentSearches(updated);
+			await AsyncStorage.setItem("recent_locations", JSON.stringify(updated));
+		} catch {}
+	};
+
+	const handleDeleteRecent = async (index: number) => {
+		try {
+			const updated = recentSearches.filter((_, i) => i !== index);
+			setRecentSearches(updated);
+			console.log("recent location: ", recentSearches);
+			await AsyncStorage.setItem("recent_locations", JSON.stringify(updated));
+		} catch (err) {
+			// ignore
+		}
+	};
+
+	// ensure clearing behavior (controlled input + ref)
+	useEffect(() => {
 		if (visible) {
 			setTimeout(() => {
 				setInputText("");
@@ -39,7 +75,6 @@ export function LocationPicker({
 				} catch {}
 			}, 0);
 		} else {
-			// on close clear both states so renderRightButton won't show
 			setInputText("");
 			try {
 				placesRef.current?.setAddressText("");
@@ -102,6 +137,7 @@ export function LocationPicker({
 								if (matched) cityId = matched.id;
 							}
 							onPick({ display, lat: Number(lat), lng: Number(lng), cityId });
+							saveRecent({ label: display, cityId, coords: { lat: Number(lat), lng: Number(lng) } });
 
 							// clear internal input and local state to remove 'x' icon
 							setInputText("");
@@ -227,6 +263,7 @@ export function LocationPicker({
 									}
 								}
 								onPick({ display, lat: pos.coords.latitude, lng: pos.coords.longitude, cityId });
+								saveRecent({ label: display, cityId, coords: { lat: pos.coords.latitude, lng: pos.coords.longitude } });
 								onClose();
 							} catch (e) {
 								toast.showError("Không thể lấy vị trí hiện tại");
@@ -236,6 +273,87 @@ export function LocationPicker({
 						<MaterialIcons name="my-location" size={20} color="#EA580C" />
 						<Text style={{ marginLeft: 12, fontWeight: "600", fontSize: 16 }}>Vị trí hiện tại</Text>
 					</TouchableOpacity>
+
+					{showRecents && recentSearches.length > 0 && (
+						<View style={{ marginTop: 20 }}>
+							<View
+								style={{
+									flexDirection: "row",
+									justifyContent: "space-between",
+									alignItems: "center",
+									marginBottom: 8,
+								}}
+							>
+								<Text style={{ color: "#6B7280", fontWeight: "600" }}>Tìm kiếm gần đây</Text>
+								<TouchableOpacity
+									onPress={() => {
+										Alert.alert(
+											"Xóa tất cả",
+											"Bạn có chắc muốn xóa toàn bộ mục tìm kiếm gần đây?",
+											[
+												{ text: "Hủy", style: "cancel" },
+												{
+													text: "Xóa",
+													style: "destructive",
+													onPress: async () => {
+														try {
+															await AsyncStorage.removeItem("recent_locations");
+															setRecentSearches([]);
+														} catch (err) {
+															// ignore
+														}
+													},
+												},
+											]
+										);
+									}}
+									style={{ paddingHorizontal: 8, paddingVertical: 6 }}
+								>
+									<Text style={{ color: "#EF4444", fontSize: 13 }}>Xóa tất cả</Text>
+								</TouchableOpacity>
+							</View>
+
+							{recentSearches.map((r, idx) => (
+								<View
+									key={idx}
+									style={{
+										flexDirection: "row",
+										alignItems: "center",
+										justifyContent: "space-between",
+										paddingVertical: 6,
+									}}
+								>
+									<TouchableOpacity
+										onPress={() => {
+											onPick({
+												display: r.label,
+												lat: r.coords?.lat,
+												lng: r.coords?.lng,
+												cityId: r.cityId,
+											});
+											onClose();
+										}}
+										style={{ flex: 1 }}
+									>
+										<View
+											style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10 }}
+										>
+											<MaterialIcons name="place" size={20} color="#EA580C" />
+											<Text style={{ marginHorizontal: 12 }}>{r.label}</Text>
+										</View>
+									</TouchableOpacity>
+									<TouchableOpacity
+										onPress={() => handleDeleteRecent(idx)}
+										style={{ paddingHorizontal: 8, paddingVertical: 6 }}
+									>
+										<View style={{ borderRadius: 16, padding: 6, backgroundColor: "#F3F4F6" }}>
+											<MaterialIcons name="close" size={14} color="#6B7280" />
+										</View>
+									</TouchableOpacity>
+								</View>
+							))}
+						</View>
+					)}
 				</View>
 			</View>
 		</Modal>

@@ -61,9 +61,16 @@ export default function CitySelector({
 									backgroundColor: isSelected ? "#FEF3C7" : "transparent",
 									borderRadius: 6,
 								}}
+								className={`py-3 px-4 rounded-xl mb-2 border ${
+									isSelected ? "border-orange-500" : "border-gray-200"
+								}`}
+								activeOpacity={0.7}
 							>
-								<Text>{c.name}</Text>
-								{isSelected && <MaterialIcons name="check" size={20} color="#EA580C" />}
+								<View className="flex-row items-center">
+									<MaterialIcons name="location-city" size={24} color="#EA580C" />
+									<Text className="ml-3 text-lg font-semibold text-gray-900">{c.name}</Text>
+									{isSelected && <MaterialIcons name="check" size={20} color="#EA580C" />}
+								</View>
 							</TouchableOpacity>
 						);
 					})
