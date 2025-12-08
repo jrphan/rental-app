@@ -52,7 +52,6 @@ async function bootstrap() {
       .setTitle('Rental App API')
       .setDescription('API documentation for Rental App')
       .setVersion('1.0')
-      .addTag('users', 'User management endpoints')
       .addTag('auth', 'Authentication endpoints')
       .addTag('app', 'Application endpoints')
       .addBearerAuth(

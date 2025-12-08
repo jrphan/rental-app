@@ -34,14 +34,12 @@ export class RegisterDto {
   @ApiProperty({
     description: 'Số điện thoại',
     example: '0123456789',
-    required: false,
   })
-  @IsOptional()
   @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
   @Matches(/^[0-9]{10,11}$/, {
     message: 'Số điện thoại không hợp lệ',
   })
-  phone?: string;
+  phone: string;
 
   @ApiProperty({
     description: 'Vai trò người dùng',

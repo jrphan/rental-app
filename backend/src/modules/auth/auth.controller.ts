@@ -18,7 +18,7 @@ import {
   ApiBearerAuth,
   ApiSecurity,
 } from '@nestjs/swagger';
-import { AuthService, AuthResponse, RegisterResponse } from './auth.service';
+import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -33,6 +33,7 @@ import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { GetUser } from './decorators/get-user.decorator';
 import { User, UserRole, KycStatus } from '@prisma/client';
+import { AuthResponse, RegisterResponse } from '@/types/auth.types';
 
 @ApiTags('auth')
 @Controller('auth')

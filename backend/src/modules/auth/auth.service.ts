@@ -20,27 +20,11 @@ import { SendPhoneOtpDto } from './dto/send-phone-otp.dto';
 import { VerifyPhoneOtpDto } from './dto/verify-phone-otp.dto';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole, Prisma, OtpType, KycStatus } from '@prisma/client';
-
-interface RefreshTokenPayload {
-  sub: string;
-  email: string;
-  role: string;
-  type?: string;
-  iat?: number;
-  exp?: number;
-}
-
-export interface AuthResponse {
-  user: Omit<User, 'password'>;
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface RegisterResponse {
-  userId: string;
-  email: string;
-  message: string;
-}
+import {
+  RegisterResponse,
+  AuthResponse,
+  RefreshTokenPayload,
+} from '@/types/auth.types';
 
 @Injectable()
 export class AuthService {
@@ -52,6 +36,34 @@ export class AuthService {
     private mailService: MailService,
     private smsService: SmsService,
   ) {}
+
+  // Generate 6-digit OTP code
+  private generateOTPCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private generateToken(user: Pick<User, 'id' | 'email' | 'role'>): string {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    return this.jwtService.sign(payload, { expiresIn: '7d' });
+  }
+
+  private generateRefreshToken(
+    user: Pick<User, 'id' | 'email' | 'role'>,
+  ): string {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      type: 'refresh',
+    };
+
+    return this.jwtService.sign(payload, { expiresIn: '30d' });
+  }
 
   async register(registerDto: RegisterDto): Promise<RegisterResponse> {
     const { email, password, phone, role } = registerDto;
@@ -265,29 +277,6 @@ export class AuthService {
     return user;
   }
 
-  private generateToken(user: Pick<User, 'id' | 'email' | 'role'>): string {
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
-
-    return this.jwtService.sign(payload, { expiresIn: '7d' });
-  }
-
-  private generateRefreshToken(
-    user: Pick<User, 'id' | 'email' | 'role'>,
-  ): string {
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      type: 'refresh',
-    };
-
-    return this.jwtService.sign(payload, { expiresIn: '30d' });
-  }
-
   async refreshToken(refreshTokenString: string): Promise<{
     accessToken: string;
     refreshToken: string;
@@ -364,11 +353,6 @@ export class AuthService {
       where: { id: userId },
       data: { password: hashedPassword },
     });
-  }
-
-  // Generate 6-digit OTP code
-  private generateOTPCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
   // Verify OTP and complete registration

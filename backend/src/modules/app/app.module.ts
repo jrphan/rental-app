@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { MailModule } from '@/mail/mail.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { AppService } from '@/modules/app/app.service';
-import { UserModule } from '@/modules/user/user.module';
 import { FileModule } from '@/modules/file/file.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { AppController } from '@/modules/app/app.controller';
@@ -14,7 +13,6 @@ import { NotificationModule } from '@/modules/notification/notification.module';
 @Module({
   imports: [
     PrismaModule,
-    UserModule,
     AuthModule,
     MailModule,
     FileModule,

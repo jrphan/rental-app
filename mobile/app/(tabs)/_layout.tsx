@@ -106,12 +106,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="vehicles/[id]"
-        options={{
-          href: null, // Ẩn khỏi tab bar
-        }}
-      />
-      <Tabs.Screen
         name="messages"
         options={{
           title: "TIN NHẮN",
