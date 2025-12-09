@@ -9,7 +9,8 @@ interface RoutesType {
   REGISTER: RelativePathString;
   FORGOT_PASSWORD: RelativePathString;
   VERIFY_OTP: ([userId, email]: [string, string]) => RelativePathString;
-};
+  RESET_PASSWORD: RelativePathString;
+}
 
 const ROUTES = {
   //Tabs routes
@@ -26,6 +27,7 @@ const ROUTES = {
     `/(auth)/verify-otp?userId=${encodeURIComponent(
       userId
     )}&email=${encodeURIComponent(email)}` as RelativePathString,
+  RESET_PASSWORD: "/(auth)/reset-password" as RelativePathString,
 } satisfies RoutesType;
 
 export default ROUTES;

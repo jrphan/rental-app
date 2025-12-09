@@ -62,7 +62,7 @@ export default function LoginForm() {
 
       <TouchableOpacity
         onPress={() => router.push(ROUTES.FORGOT_PASSWORD)}
-        className="mb-4 self-end"
+        className="mb-4 flex-row items-center justify-end"
       >
         <Text className="text-base text-primary-600 font-medium">
           Quên mật khẩu?

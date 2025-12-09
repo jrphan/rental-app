@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/constants/colors";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 interface AuthLayoutProps {
   title: string;
@@ -79,7 +80,11 @@ export function AuthLayout({
           {/* Header Section */}
           <View className="mb-8 items-center">
             <View className="mb-4 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg">
-              <IconSymbol name={iconName} size={40} color="white" />
+              <MaterialCommunityIcons
+                name="motorbike"
+                size={40}
+                color={"white"}
+              />
             </View>
             <Text className="mb-2 text-3xl font-extrabold text-gray-900">
               {title}

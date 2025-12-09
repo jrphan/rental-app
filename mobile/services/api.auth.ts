@@ -1,5 +1,9 @@
 import { apiClient } from "@/lib/api";
-import { LoginInput, RegisterInput } from "@/schemas/auth.schema";
+import {
+  ForgotPasswordInput,
+  LoginInput,
+  RegisterInput,
+} from "@/schemas/auth.schema";
 
 /**
  * Auth API response types
@@ -131,10 +135,12 @@ export const authApi = {
   /**
    * Quên mật khẩu - gửi OTP
    */
-  async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
+  async forgotPassword(
+    data: ForgotPasswordInput
+  ): Promise<ForgotPasswordResponse> {
     const response = await apiClient.post<ForgotPasswordResponse>(
       "/auth/forgot-password",
-      { email }
+      data
     );
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data;

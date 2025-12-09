@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated, Easing } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 interface SplashScreenProps {
   onFinish?: () => void;
@@ -210,7 +210,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
   });
 
   return (
-    <View className="flex-1 items-center justify-center bg-primary-600">
+    <View className="flex-1 items-center justify-center bg-primary-500">
       {/* Animated background circles */}
       <Animated.View
         className="absolute w-96 h-96 rounded-full border-4 border-white/20"
@@ -249,7 +249,7 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
             transform: [{ scale: pulseAnim }],
           }}
         >
-          <MaterialIcons name="two-wheeler" size={96} color="#FFFFFF" />
+          <MaterialCommunityIcons name="motorbike" size={96} color="#FFFFFF" />
         </Animated.View>
 
         {/* App Name */}
