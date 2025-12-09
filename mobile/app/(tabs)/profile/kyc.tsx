@@ -5,7 +5,7 @@ import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { ImageInput } from "@/components/ui/image-input";
 import { Button } from "@/components/ui/button";
-import { useKycSubmissionForm } from "@/forms/profile.forms";
+import { useKycSubmissionForm } from "@/hooks/forms/profile.forms";
 import { profileApi } from "@/services/api.profile";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/useToast";

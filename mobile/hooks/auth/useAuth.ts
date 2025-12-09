@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "expo-router";
-import { useToast } from "./useToast";
+import { useToast } from "../useToast";
+import ROUTES from "@/constants/routes";
 
 /**
  * Hook để check authentication và redirect nếu chưa đăng nhập
@@ -48,12 +49,12 @@ export function useRequireAuth(options?: {
       toast.showInfo(message, {
         title: "Cần đăng nhập",
         onPress: () => {
-          router.push("/(auth)/login");
+          router.push(ROUTES.LOGIN);
         },
       });
       // Redirect to login after showing toast
       setTimeout(() => {
-        router.push("/(auth)/login");
+        router.push(ROUTES.LOGIN);
       }, 500);
       return false;
     }

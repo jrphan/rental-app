@@ -1,9 +1,6 @@
 import { z } from "zod";
+import { USER_ROLES } from "@/constants/constants";
 
-/**
- * Schema cho đăng ký tài khoản
- * Tương ứng với RegisterDto trong backend
- */
 export const registerSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
   password: z
@@ -17,21 +14,14 @@ export const registerSchema = z.object({
     .string()
     .min(1, "Vui lòng nhập số điện thoại")
     .regex(/^[0-9]{10,11}$/, "Số điện thoại không hợp lệ"),
-  role: z.enum(["RENTER", "OWNER"]).optional().default("RENTER"),
+  role: z.enum([USER_ROLES.RENTER, USER_ROLES.OWNER]),
 });
 
-/**
- * Schema cho đăng nhập
- * Tương ứng với LoginDto trong backend
- */
 export const loginSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
   password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
 });
 
-/**
- * Schema cho đổi mật khẩu
- */
 export const changePasswordSchema = z
   .object({
     oldPassword: z.string().min(1, "Vui lòng nhập mật khẩu cũ"),
@@ -49,16 +39,10 @@ export const changePasswordSchema = z
     path: ["confirmPassword"],
   });
 
-/**
- * Schema cho quên mật khẩu
- */
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
 });
 
-/**
- * Schema cho đặt lại mật khẩu
- */
 export const resetPasswordSchema = z
   .object({
     otpCode: z.string().length(6, "Mã OTP phải có 6 chữ số"),
@@ -76,9 +60,6 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
-/**
- * Type inference từ schemas
- */
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

@@ -10,7 +10,7 @@ import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { ProfileFieldEditor } from "@/components/profile/profile-field-editor";
-import { useUpdateProfileForm } from "@/forms/profile.forms";
+import { useUpdateProfileForm } from "@/hooks/forms/profile.forms";
 import { profileApi } from "@/services/api.profile";
 import { useAuthStore } from "@/store/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";

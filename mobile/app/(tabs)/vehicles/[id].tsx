@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { vehiclesApi, rentalsApi } from "@/services/api.vehicles";
 import { useToast } from "@/hooks/useToast";
-import { useRequirePhoneVerification } from "@/hooks/useAuth";
+import { useRequirePhoneVerification } from "@/hooks/auth/useAuth";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState, useRef, useEffect } from "react";
 

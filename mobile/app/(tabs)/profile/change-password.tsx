@@ -2,7 +2,7 @@ import { View, ScrollView, ActivityIndicator, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { useChangePasswordForm } from "@/forms/auth.forms";
+import { useChangePasswordForm } from "@/hooks/forms/auth.forms";
 import { authApi } from "@/services/api.auth";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/useToast";

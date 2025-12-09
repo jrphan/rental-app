@@ -19,6 +19,7 @@ import {
   forceLogoutState,
   matchesForceLogoutMessage,
 } from "@/lib/force-logout";
+import ROUTES from "@/constants/routes";
 
 const baseURL = process.env.EXPO_PUBLIC_API_URL || "";
 
@@ -38,7 +39,7 @@ const forceLogoutAndRedirect = async (reason?: string) => {
   } finally {
     setTimeout(() => {
       try {
-        router.replace("/(auth)/login");
+        router.replace(ROUTES.LOGIN);
       } catch (navError) {
         console.warn("Failed to redirect to login", navError);
       } finally {

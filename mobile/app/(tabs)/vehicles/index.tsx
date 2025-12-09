@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { vehiclesApi } from "@/services/api.vehicles";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import { useState } from "react";
-import { useRequirePhoneVerification } from "@/hooks/useAuth";
+import { useRequirePhoneVerification } from "@/hooks/auth/useAuth";
 
 export default function VehiclesScreen() {
   const { requirePhoneVerification } = useRequirePhoneVerification({

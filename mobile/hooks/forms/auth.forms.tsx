@@ -10,29 +10,25 @@ import {
   ChangePasswordInput,
   ForgotPasswordInput,
   ResetPasswordInput,
+  RegisterInput,
 } from "@/schemas/auth.schema";
+import { USER_ROLES } from "@/constants/constants";
 
-/**
- * Hook cho form đăng ký
- */
 export function useRegisterForm() {
-  const form = useForm({
+  const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       email: "",
       password: "",
       phone: "",
-      role: "RENTER" as const,
+      role: USER_ROLES.RENTER,
     },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   return form;
 }
 
-/**
- * Hook cho form đăng nhập
- */
 export function useLoginForm() {
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -40,15 +36,12 @@ export function useLoginForm() {
       email: "",
       password: "",
     },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   return form;
 }
 
-/**
- * Hook cho form đổi mật khẩu
- */
 export function useChangePasswordForm() {
   const form = useForm<ChangePasswordInput>({
     resolver: zodResolver(changePasswordSchema),
@@ -57,30 +50,24 @@ export function useChangePasswordForm() {
       newPassword: "",
       confirmPassword: "",
     },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   return form;
 }
 
-/**
- * Hook cho form quên mật khẩu
- */
 export function useForgotPasswordForm() {
   const form = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       email: "",
     },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   return form;
 }
 
-/**
- * Hook cho form đặt lại mật khẩu
- */
 export function useResetPasswordForm() {
   const form = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
@@ -89,7 +76,7 @@ export function useResetPasswordForm() {
       newPassword: "",
       confirmPassword: "",
     },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   return form;

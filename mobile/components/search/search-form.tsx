@@ -4,7 +4,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
-import { useSearchForm } from "@/forms/search.forms";
+import { useSearchForm } from "@/hooks/forms/search.forms";
 import { COLORS } from "@/constants/colors";
 
 interface SearchFormProps {

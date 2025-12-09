@@ -14,11 +14,11 @@ import { Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { vehiclesApi } from "@/services/api.vehicles";
 import { useToast } from "@/hooks/useToast";
-import { useRequirePhoneVerification } from "@/hooks/useAuth";
+import { useRequirePhoneVerification } from "@/hooks/auth/useAuth";
 import { GalleryButton } from "@/components/gallery/gallery-button";
 import { Select } from "@/components/ui/select";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useVehicleForm } from "@/forms/vehicle.forms";
+import { useVehicleForm } from "@/hooks/forms/vehicle.forms";
 import { VehicleInput } from "@/schemas/vehicle.schema";
 
 export default function VehicleCreateScreen() {

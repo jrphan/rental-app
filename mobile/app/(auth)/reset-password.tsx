@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useResetPasswordForm } from "@/forms/auth.forms";
+import { useResetPasswordForm } from "@/hooks/forms/auth.forms";
 import { authApi } from "@/services/api.auth";
 import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";

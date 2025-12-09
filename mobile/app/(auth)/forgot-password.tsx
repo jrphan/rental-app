@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useForgotPasswordForm } from "@/forms/auth.forms";
+import { useForgotPasswordForm } from "@/hooks/forms/auth.forms";
 import { authApi } from "@/services/api.auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";

@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { useToast } from "@/hooks/useToast";
 import { Controller } from "react-hook-form";
-import { useOtpForm } from "@/forms/otp.forms";
+import { useOtpForm } from "@/hooks/forms/otp.forms";
 
 export default function VerifyPhoneScreen() {
   const router = useRouter();
