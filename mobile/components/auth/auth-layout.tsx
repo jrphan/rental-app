@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { COLORS } from "@/constants/colors";
 
 interface AuthLayoutProps {
   title: string;
@@ -59,7 +60,11 @@ export function AuthLayout({
               onPress={handleBackPress}
               className="h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-lg"
             >
-              <MaterialIcons name="arrow-back" size={24} color="#EA580C" />
+              <MaterialIcons
+                name="arrow-back"
+                size={24}
+                color={COLORS.primary}
+              />
             </TouchableOpacity>
           </View>
         )}

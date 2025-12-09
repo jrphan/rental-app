@@ -1,4 +1,4 @@
-import { apiClient } from "./api";
+import { apiClient } from "@/lib/api";
 
 /**
  * Profile types
@@ -166,19 +166,19 @@ export const profileApi = {
   /**
    * Lấy trạng thái yêu cầu làm chủ xe của tôi
    */
-  async getMyOwnerApplication(): Promise<{
-    id: string;
-    status: string;
-    notes?: string;
-  } | null> {
-    const response = await apiClient.get<{
-      id: string;
-      status: string;
-      notes?: string;
-    } | null>("/users/owner-application/me");
-    if (response.success) {
-      return (response.data as any) ?? null;
-    }
-    throw new Error(response.message || "Lấy trạng thái yêu cầu thất bại");
-  },
+  // async getMyOwnerApplication(): Promise<{
+  //   id: string;
+  //   status: string;
+  //   notes?: string;
+  // } | null> {
+  //   const response = await apiClient.get<{
+  //     id: string;
+  //     status: string;
+  //     notes?: string;
+  //   } | null>("/users/owner-application/me");
+  //   if (response.success) {
+  //     return (response.data as any) ?? null;
+  //   }
+  //   throw new Error(response.message || "Lấy trạng thái yêu cầu thất bại");
+  // },
 };

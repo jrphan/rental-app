@@ -6,22 +6,21 @@ import {
   ActivityIndicator,
   StatusBar,
 } from "react-native";
+import { COLORS } from "@/constants/colors";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { profileApi } from "@/lib/api.profile";
-import { useToast } from "@/lib/toast";
+import { profileApi } from "@/services/api.profile";
+import { useToast } from "@/hooks/useToast";
 import { queryKeys } from "@/lib/queryClient";
 
 export default function ProfileScreen() {
   const { logout, user, isAuthenticated } = useAuthStore();
   const router = useRouter();
   const toast = useToast();
-
-  console.log("user in profile screen", user);
 
   const handleLogout = () => {
     logout();
@@ -37,11 +36,11 @@ export default function ProfileScreen() {
 
   const queryClient = useQueryClient();
 
-  const { data: myOwnerApplication, isLoading: isLoadingOwnerApp } = useQuery({
-    queryKey: ["owner-application", user?.id],
-    queryFn: () => profileApi.getMyOwnerApplication(),
-    enabled: !!user?.id && isAuthenticated,
-  });
+  // const { data: myOwnerApplication, isLoading: isLoadingOwnerApp } = useQuery({
+  //   queryKey: ["owner-application", user?.id],
+  //   queryFn: () => profileApi.getMyOwnerApplication(),
+  //   enabled: !!user?.id && isAuthenticated,
+  // });
 
   const { data: myKyc, isLoading: isLoadingKyc } = useQuery({
     queryKey: ["kyc", user?.id],
@@ -52,6 +51,7 @@ export default function ProfileScreen() {
   // Check if any critical data is still loading
   const isLoading = isLoadingProfile;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const submitOwnerApplicationMutation = useMutation({
     mutationFn: (notes?: string) => profileApi.submitOwnerApplication(notes),
     onSuccess: () => {
@@ -86,7 +86,7 @@ export default function ProfileScreen() {
                 <MaterialIcons
                   name="person-outline"
                   size={40}
-                  color="#EA580C"
+                  color={COLORS.primary}
                 />
               </View>
               <Text className="text-2xl font-bold text-gray-900">
@@ -141,7 +141,7 @@ export default function ProfileScreen() {
           edges={["top", "left", "right"]}
         >
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#EA580C" />
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text className="mt-4 text-base text-gray-600">
               Đang tải thông tin...
             </Text>
@@ -168,9 +168,17 @@ export default function ProfileScreen() {
             <View className="items-center pt-8 pb-6">
               <View className="w-24 h-24 bg-primary-100 rounded-full items-center justify-center mb-4">
                 {profile?.avatar ? (
-                  <MaterialIcons name="person" size={48} color="#EA580C" />
+                  <MaterialIcons
+                    name="person"
+                    size={48}
+                    color={COLORS.primary}
+                  />
                 ) : (
-                  <MaterialIcons name="person" size={48} color="#EA580C" />
+                  <MaterialIcons
+                    name="person"
+                    size={48}
+                    color={COLORS.primary}
+                  />
                 )}
               </View>
               <Text className="text-2xl font-bold text-gray-900">
@@ -271,14 +279,14 @@ export default function ProfileScreen() {
               </Text>
 
               {/* Owner Application Section - Show for RENTER or if no application yet */}
-              {(user?.role === "RENTER" || !myOwnerApplication) && (
+              {/* {(user?.role === "RENTER" || !myOwnerApplication) && (
                 <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-200">
                   <View className="flex-row items-center justify-between mb-2">
                     <View className="flex-row items-center">
                       <MaterialIcons
                         name="directions-car"
                         size={24}
-                        color="#EA580C"
+                        color={COLORS.primary}
                       />
                       <Text className="ml-3 text-base font-medium text-gray-900">
                         Đăng ký làm chủ xe
@@ -287,7 +295,7 @@ export default function ProfileScreen() {
                   </View>
                   {isLoadingOwnerApp ? (
                     <View className="py-2">
-                      <ActivityIndicator size="small" color="#EA580C" />
+                      <ActivityIndicator size="small" color={COLORS.primary} />
                     </View>
                   ) : myOwnerApplication ? (
                     <View>
@@ -391,7 +399,7 @@ export default function ProfileScreen() {
                     </View>
                   )}
                 </View>
-              )}
+              )} */}
 
               {user?.phone && !user?.isPhoneVerified && (
                 <TouchableOpacity
@@ -422,7 +430,7 @@ export default function ProfileScreen() {
                 className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
               >
                 <View className="flex-row items-center">
-                  <MaterialIcons name="edit" size={24} color="#EA580C" />
+                  <MaterialIcons name="edit" size={24} color={COLORS.primary} />
                   <Text className="ml-3 text-base font-medium text-gray-900">
                     Chỉnh sửa hồ sơ
                   </Text>
@@ -439,7 +447,7 @@ export default function ProfileScreen() {
                   <MaterialIcons
                     name="directions-bike"
                     size={24}
-                    color="#EA580C"
+                    color={COLORS.primary}
                   />
                   <Text className="ml-3 text-base font-medium text-gray-900">
                     Xe của tôi
@@ -454,7 +462,11 @@ export default function ProfileScreen() {
               className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
             >
               <View className="flex-row items-center">
-                <MaterialIcons name="add-circle" size={24} color="#EA580C" />
+                <MaterialIcons
+                  name="add-circle"
+                  size={24}
+                  color={COLORS.primary}
+                />
                 <Text className="ml-3 text-base font-medium text-gray-900">
                   Đăng xe mới
                 </Text>
@@ -467,7 +479,7 @@ export default function ProfileScreen() {
                 className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
               >
                 <View className="flex-row items-center">
-                  <MaterialIcons name="lock" size={24} color="#EA580C" />
+                  <MaterialIcons name="lock" size={24} color={COLORS.primary} />
                   <Text className="ml-3 text-base font-medium text-gray-900">
                     Đổi mật khẩu
                   </Text>
@@ -484,7 +496,7 @@ export default function ProfileScreen() {
                     <MaterialIcons
                       name="verified-user"
                       size={24}
-                      color="#EA580C"
+                      color={COLORS.primary}
                     />
                     <Text className="ml-3 text-base font-medium text-gray-900">
                       Xác thực danh tính (KYC)
@@ -498,7 +510,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
                 {isLoadingKyc ? (
                   <View className="mt-3 pt-3 border-t border-gray-200">
-                    <ActivityIndicator size="small" color="#EA580C" />
+                    <ActivityIndicator size="small" color={COLORS.primary} />
                   </View>
                 ) : myKyc ? (
                   <View className="mt-3 pt-3 border-t border-gray-200">

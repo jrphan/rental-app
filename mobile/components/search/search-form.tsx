@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Controller } from "react-hook-form";
 import { useSearchForm } from "@/forms/search.forms";
+import { COLORS } from "@/constants/colors";
 
 interface SearchFormProps {
   initialLocation?: string;
@@ -120,7 +121,11 @@ export function SearchForm({
             >
               <View className="flex-row items-center mb-2">
                 <View className="bg-primary-100 rounded-full p-2">
-                  <MaterialIcons name="location-on" size={20} color="#EA580C" />
+                  <MaterialIcons
+                    name="location-on"
+                    size={20}
+                    color={COLORS.primary}
+                  />
                 </View>
                 <Text className="ml-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Địa điểm
@@ -143,7 +148,11 @@ export function SearchForm({
       <View className="mb-5">
         <View className="flex-row items-center mb-3">
           <View className="bg-primary-100 rounded-full p-2">
-            <MaterialIcons name="calendar-today" size={20} color="#EA580C" />
+            <MaterialIcons
+              name="calendar-today"
+              size={20}
+              color={COLORS.primary}
+            />
           </View>
           <Text className="ml-3 text-xs font-medium text-gray-500 uppercase tracking-wide">
             Thời gian thuê
@@ -178,7 +187,11 @@ export function SearchForm({
             )}
           />
           <View className="bg-primary-100 rounded-full p-1.5">
-            <MaterialIcons name="arrow-forward" size={16} color="#EA580C" />
+            <MaterialIcons
+              name="arrow-forward"
+              size={16}
+              color={COLORS.primary}
+            />
           </View>
           <Controller
             control={form.control}
@@ -216,7 +229,7 @@ export function SearchForm({
         onPress={form.handleSubmit(handleSearch)}
         activeOpacity={0.8}
         style={{
-          shadowColor: "#EA580C",
+          shadowColor: COLORS.primary,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,
@@ -260,7 +273,11 @@ export function SearchForm({
               activeOpacity={0.7}
             >
               <View className="flex-row items-center">
-                <MaterialIcons name="location-city" size={24} color="#EA580C" />
+                <MaterialIcons
+                  name="location-city"
+                  size={24}
+                  color={COLORS.primary}
+                />
                 <Text className="ml-3 text-lg font-semibold text-gray-900">
                   TP. Hồ Chí Minh
                 </Text>
@@ -275,7 +292,11 @@ export function SearchForm({
               activeOpacity={0.7}
             >
               <View className="flex-row items-center">
-                <MaterialIcons name="location-city" size={24} color="#EA580C" />
+                <MaterialIcons
+                  name="location-city"
+                  size={24}
+                  color={COLORS.primary}
+                />
                 <Text className="ml-3 text-lg font-semibold text-gray-900">
                   Hà Nội
                 </Text>

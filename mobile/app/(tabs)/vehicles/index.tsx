@@ -1,10 +1,10 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, FlatList, RefreshControl, StatusBar } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { vehiclesApi } from "@/lib/api.vehicles";
+import { vehiclesApi } from "@/services/api.vehicles";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import { useState } from "react";
-import { useRequirePhoneVerification } from "@/lib/auth";
+import { useRequirePhoneVerification } from "@/hooks/useAuth";
 
 export default function VehiclesScreen() {
   const { requirePhoneVerification } = useRequirePhoneVerification({

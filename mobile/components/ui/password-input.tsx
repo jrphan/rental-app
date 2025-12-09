@@ -3,6 +3,7 @@ import { View, TouchableOpacity } from "react-native";
 import { Input } from "@/components/ui/input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import type { TextInputProps } from "react-native";
+import { COLORS } from "@/constants/colors";
 
 type PasswordInputProps = {
   toggleClassName?: string;
@@ -50,7 +51,7 @@ export function PasswordInput({
         <IconSymbol
           name={isVisible ? "eye" : "eye.slash"}
           size={22}
-          color="#EA580C"
+          color={COLORS.primary}
         />
       </TouchableOpacity>
     </View>

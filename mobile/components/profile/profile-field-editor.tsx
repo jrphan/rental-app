@@ -11,6 +11,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { TextEditor } from "./text-editor";
+import { COLORS } from "@/constants/colors";
 
 export type FieldType = "text" | "date" | "multiline" | "phone" | "editor";
 
@@ -112,7 +113,11 @@ export function ProfileFieldEditor({
             >
               {value ? formatDate(value) : placeholder || "Chọn ngày sinh"}
             </Text>
-            <MaterialIcons name="calendar-today" size={20} color="#EA580C" />
+            <MaterialIcons
+              name="calendar-today"
+              size={20}
+              color={COLORS.primary}
+            />
           </View>
         </TouchableOpacity>
         {error && <Text className="mt-1 text-sm text-red-600">{error}</Text>}

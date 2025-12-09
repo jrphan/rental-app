@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { VehicleItem } from "@/lib/api.vehicles";
+import { VehicleItem } from "@/services/api.vehicles";
 import { useRouter } from "expo-router";
 import { useState, useRef } from "react";
 
@@ -170,8 +170,8 @@ export function VehicleCard({
                 {vehicle.fuelType === "PETROL"
                   ? "Xăng"
                   : vehicle.fuelType === "ELECTRIC"
-                  ? "Điện"
-                  : "Hybrid"}
+                    ? "Điện"
+                    : "Hybrid"}
               </Text>
             </View>
           )}
@@ -184,8 +184,8 @@ export function VehicleCard({
                 {vehicle.transmission === "MANUAL"
                   ? "Số sàn"
                   : vehicle.transmission === "AUTOMATIC"
-                  ? "Tự động"
-                  : "Bán tự động"}
+                    ? "Tự động"
+                    : "Bán tự động"}
               </Text>
             </View>
           )}

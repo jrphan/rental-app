@@ -1,40 +1,128 @@
 import { Tabs } from "expo-router";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Platform, View, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { notificationsApi } from "@/lib/api.notifications";
+import { notificationsApi } from "@/services/api.notifications";
+import { useAuthStore } from "@/store/auth";
+import { COLORS } from "@/constants/colors";
+
+type TabItem = {
+  name: "index" | "vehicles" | "messages" | "profile";
+  title: string;
+  activeIcon: keyof typeof MaterialCommunityIcons.glyphMap;
+  inactiveIcon: keyof typeof MaterialCommunityIcons.glyphMap;
+};
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuthStore();
 
-  // Primary color from tailwind config: hsl(14, 85%, 48%) -> #EA580C (primary-600)
-  const primaryColor = "#EA580C";
-  const inactiveColor = "#6B7280";
+  const primaryColor = COLORS.primary;
+  const inactiveColor = COLORS.inactive;
 
-  // Fetch unread notification count
+  // Fetch unread notification count (chỉ khi đã đăng nhập)
   const { data: unreadCount } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: () => notificationsApi.getUnreadCount(),
     refetchInterval: 30000, // Refetch every 30 seconds
+    enabled: isAuthenticated, // Chỉ call API khi đã đăng nhập
   });
 
-  // Calculate tab bar height based on safe area insets
-  // Base height: 60px (icon + label + spacing)
-  // Add safe area bottom inset to avoid being hidden
   const baseHeight = 60;
-  const androidBottomPadding = 32; // Minimum padding for Android
+  const androidBottomPadding = 32;
   const iosBottomPadding = Math.max(insets.bottom, 10);
 
   const tabBarHeight =
     Platform.OS === "ios"
       ? baseHeight + iosBottomPadding
       : baseHeight + androidBottomPadding;
-
-  // Base padding for icons and labels
   const basePaddingTop = 8;
   const basePaddingBottom =
     Platform.OS === "ios" ? iosBottomPadding : androidBottomPadding;
+
+  const tabItems: TabItem[] = [
+    {
+      name: "index",
+      title: "TRANG CHỦ",
+      activeIcon: "home-variant",
+      inactiveIcon: "home-variant-outline",
+    },
+    {
+      name: "vehicles",
+      title: "XE",
+      activeIcon: "motorbike",
+      inactiveIcon: "motorbike",
+    },
+    {
+      name: "messages",
+      title: "TIN NHẮN",
+      activeIcon: "chat-processing",
+      inactiveIcon: "chat-outline",
+    },
+    {
+      name: "profile",
+      title: "CÁ NHÂN",
+      activeIcon: "account-circle",
+      inactiveIcon: "account-circle-outline",
+    },
+  ];
+
+  const tabBarStyle = {
+    backgroundColor: "#FFFFFF",
+    height: tabBarHeight,
+    paddingBottom: basePaddingBottom,
+    paddingTop: basePaddingTop,
+    borderTopWidth: 0,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: -3,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  };
+
+  const tabBarLabelStyle = {
+    fontSize: 10.5,
+    fontWeight: "700" as const,
+    letterSpacing: 0.2,
+    marginTop: 2,
+    marginBottom: 0,
+  };
+
+  const tabBarIconStyle = { marginTop: 2 };
+  const tabBarItemStyle = { paddingVertical: 6 };
+
+  const renderTabIcon = (item: TabItem, color: string, focused: boolean) => {
+    if (item.name !== "messages") {
+      return (
+        <MaterialCommunityIcons
+          name={focused ? item.activeIcon : item.inactiveIcon}
+          size={focused ? 26 : 24}
+          color={color}
+        />
+      );
+    }
+
+    return (
+      <View className="relative">
+        <MaterialCommunityIcons
+          name={focused ? item.activeIcon : item.inactiveIcon}
+          size={focused ? 26 : 24}
+          color={color}
+        />
+        {typeof unreadCount === "number" && unreadCount > 0 && (
+          <View className="absolute -top-1 -right-2 min-w-5 h-5 px-1.5 items-center justify-center rounded-full border-2 border-white bg-primary-600">
+            <Text className="text-white text-[10px] font-bold">
+              {unreadCount > 99 ? "99+" : String(unreadCount)}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <Tabs
@@ -42,126 +130,24 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: primaryColor,
         tabBarInactiveTintColor: inactiveColor,
-        tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          height: tabBarHeight,
-          paddingBottom: basePaddingBottom,
-          paddingTop: basePaddingTop,
-          borderTopWidth: 0,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          elevation: 10,
-          shadowColor: "#000",
-          shadowOffset: {
-            width: 0,
-            height: -3,
-          },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10.5,
-          fontWeight: "700",
-          letterSpacing: 0.2,
-          marginTop: 2,
-          marginBottom: 0,
-        },
-        tabBarIconStyle: {
-          marginTop: 2,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 6,
-        },
+        tabBarStyle,
+        tabBarLabelStyle,
+        tabBarIconStyle,
+        tabBarItemStyle,
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "TRANG CHỦ",
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons name="home" size={focused ? 28 : 26} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="vehicles"
-        options={{
-          title: "XE",
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons
-              name={focused ? "directions-car" : "directions-car-filled"}
-              size={focused ? 28 : 26}
-              color={color}
-            />
-          ),
-          // tabBarItemStyle:
-          //   user?.role !== USER_ROLES.OWNER
-          //     ? {
-          //         display: "none",
-          //         width: 0,
-          //         height: 0,
-          //         overflow: "hidden",
-          //       }
-          //     : undefined,
-        }}
-      />
-      <Tabs.Screen
-        name="messages"
-        options={{
-          title: "TIN NHẮN",
-          tabBarIcon: ({ color, focused }) => (
-            <View style={{ position: "relative" }}>
-              <MaterialIcons
-                name={focused ? "chat-bubble" : "chat-bubble-outline"}
-                size={focused ? 28 : 26}
-                color={color}
-              />
-              {typeof unreadCount === "number" && unreadCount > 0 && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: -4,
-                    right: -8,
-                    backgroundColor: "#EA580C",
-                    borderRadius: 10,
-                    minWidth: 20,
-                    height: 20,
-                    paddingHorizontal: 6,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 2,
-                    borderColor: "#FFFFFF",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 10,
-                      fontWeight: "700",
-                    }}
-                  >
-                    {unreadCount > 99 ? "99+" : String(unreadCount)}
-                  </Text>
-                </View>
-              )}
-            </View>
-          ),
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "CÁ NHÂN",
-          tabBarIcon: ({ color, focused }) => (
-            <MaterialIcons
-              name={focused ? "person" : "person-outline"}
-              size={focused ? 28 : 26}
-              color={color}
-            />
-          ),
-        }}
-      />
+      {tabItems.map((item) => (
+        <Tabs.Screen
+          key={item.name}
+          name={item.name}
+          options={{
+            title: item.title,
+            tabBarIcon: ({ color, focused }) =>
+              renderTabIcon(item, color, focused),
+            // Messages screen had headerShown: false already via global, keep default
+          }}
+        />
+      ))}
     </Tabs>
   );
 }

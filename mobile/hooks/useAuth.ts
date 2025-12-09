@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "expo-router";
-import { useToast } from "./toast";
+import { useToast } from "./useToast";
 
 /**
  * Hook để check authentication và redirect nếu chưa đăng nhập
@@ -102,8 +102,6 @@ export function useRequirePhoneVerification(options?: {
   const toast = useToast();
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
-
-  console.log("useruser", user);
 
   const isPhoneVerified = user?.isPhoneVerified ?? false;
   const hasPhone = !!user?.phone;

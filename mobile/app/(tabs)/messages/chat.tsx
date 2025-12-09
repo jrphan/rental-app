@@ -9,17 +9,11 @@ import {
   RefreshControl,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { messagesApi, Conversation } from "@/lib/api.messages";
+import { messagesApi, Conversation } from "@/services/api.messages";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useRouter } from "expo-router";
-import { useRequirePhoneVerification } from "@/lib/auth";
+import { COLORS } from "@/constants/colors";
 
 export default function ChatTab() {
-  const router = useRouter();
-  const { requirePhoneVerification } = useRequirePhoneVerification({
-    message: "Vui lòng xác minh số điện thoại để sử dụng tin nhắn",
-  });
-
   const [refreshing, setRefreshing] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
@@ -66,7 +60,7 @@ export default function ChatTab() {
           />
         ) : (
           <View className="w-12 h-12 rounded-full mr-3 bg-orange-100 items-center justify-center">
-            <MaterialIcons name="person" size={24} color="#EA580C" />
+            <MaterialIcons name="person" size={24} color={COLORS.primary} />
           </View>
         )}
 
@@ -110,7 +104,7 @@ export default function ChatTab() {
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-gray-50">
-        <ActivityIndicator size="large" color="#EA580C" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text className="mt-4 text-gray-600">Đang tải...</Text>
       </View>
     );
@@ -139,7 +133,7 @@ export default function ChatTab() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor="#EA580C"
+          tintColor={COLORS.primary}
         />
       }
       contentContainerStyle={{ paddingBottom: 20 }}

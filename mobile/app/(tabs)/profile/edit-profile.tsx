@@ -11,13 +11,14 @@ import { Controller } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { ProfileFieldEditor } from "@/components/profile/profile-field-editor";
 import { useUpdateProfileForm } from "@/forms/profile.forms";
-import { profileApi } from "@/lib/api.profile";
+import { profileApi } from "@/services/api.profile";
 import { useAuthStore } from "@/store/auth";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/lib/toast";
+import { useToast } from "@/hooks/useToast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { queryKeys } from "@/lib/queryClient";
+import { COLORS } from "@/constants/colors";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -134,7 +135,7 @@ export default function EditProfileScreen() {
         edges={["top", "left", "right"]}
       >
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#EA580C" />
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
       </SafeAreaView>
     );

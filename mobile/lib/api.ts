@@ -1,49 +1,33 @@
+import { router } from "expo-router";
+import { getAuthCache, useAuthStore } from "@/store/auth";
+import {
+  createErrorResponse,
+  validateResponse,
+  logResponse,
+} from "@/lib/response.utils";
 import axios, {
   AxiosError,
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from "axios";
-import { router } from "expo-router";
 import {
   ApiResponse,
-  // PaginatedResponse,
   ErrorResponse,
   ResponseType,
-  createErrorResponse,
-  logResponse,
-  validateResponse,
-} from "@/types";
-import { getAuthCache, useAuthStore } from "@/store/auth";
-import { resolveApiUrl } from "./utils";
+} from "@/types/response.types";
+import {
+  forceLogoutState,
+  matchesForceLogoutMessage,
+} from "@/lib/force-logout";
 
-// Ưu tiên dùng biến môi trường Expo: EXPO_PUBLIC_API_URL
-// Tự động resolve localhost thành IP network khi chạy trên thiết bị thật
-const rawBaseURL = process.env.EXPO_PUBLIC_API_URL || "";
-const baseURL = resolveApiUrl(rawBaseURL);
-
-const FORCE_LOGOUT_MESSAGES = [
-  "người dùng không tồn tại",
-  "invalid refresh token",
-  "refresh token đã hết hạn",
-  "invalid token type",
-];
-
-let isForceLoggingOut = false;
-
-const matchesForceLogoutMessage = (message?: string) => {
-  if (!message) {
-    return false;
-  }
-  const lower = message.toLowerCase();
-  return FORCE_LOGOUT_MESSAGES.some((msg) => lower.includes(msg));
-};
+const baseURL = process.env.EXPO_PUBLIC_API_URL || "";
 
 const forceLogoutAndRedirect = async (reason?: string) => {
-  if (isForceLoggingOut) {
+  if (forceLogoutState.isForceLoggingOut) {
     return;
   }
 
-  isForceLoggingOut = true;
+  forceLogoutState.isForceLoggingOut = true;
 
   if (reason) {
     console.warn(`[API] Force logout: ${reason}`);
@@ -58,7 +42,7 @@ const forceLogoutAndRedirect = async (reason?: string) => {
       } catch (navError) {
         console.warn("Failed to redirect to login", navError);
       } finally {
-        isForceLoggingOut = false;
+        forceLogoutState.isForceLoggingOut = false;
       }
     }, 0);
   }
@@ -133,7 +117,7 @@ api.interceptors.response.use(
       if (authData?.refreshToken) {
         try {
           // Lazy import để tránh circular dependency
-          const { authApi } = await import("./api.auth");
+          const { authApi } = await import("../services/api.auth");
           // Refresh token
           const tokens = await authApi.refreshToken(authData.refreshToken);
 
@@ -157,13 +141,15 @@ api.interceptors.response.use(
     let errorResponse: ErrorResponse;
 
     if (responseData && validateResponse(responseData)) {
-      // Nếu error response đã đúng format
+      // Nếu error response đã đúng format từ backend
+      // Backend HttpExceptionFilter trả về: { success: false, message, error, timestamp, path, statusCode, ...extra }
       errorResponse = responseData as ErrorResponse;
     } else {
-      // Tạo error response mới
+      // Tạo error response mới nếu backend chưa format (shouldn't happen với HttpExceptionFilter)
       errorResponse = createErrorResponse(
         {
           message: responseData?.message || error.message || "Đã xảy ra lỗi",
+          error: responseData?.error || error.message || "Unknown error",
           statusCode: status,
         },
         error.config?.url || ""

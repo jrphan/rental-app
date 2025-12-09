@@ -12,8 +12,8 @@ import {
   StyleSheet,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fileApi } from "@/lib/api.file";
-import { useToast } from "@/lib/toast";
+import { fileApi } from "@/services/api.file";
+import { useToast } from "@/hooks/useToast";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as ImagePicker from "expo-image-picker";
 import { queryKeys } from "@/lib/queryClient";

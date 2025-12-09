@@ -10,9 +10,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { vehiclesApi, VehicleItem } from "@/lib/api.vehicles";
+import { vehiclesApi, VehicleItem } from "@/services/api.vehicles";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useToast } from "@/lib/toast";
+import { COLORS } from "@/constants/colors";
+import { useToast } from "@/hooks/useToast";
 
 export default function MyVehiclesScreen() {
   const router = useRouter();
@@ -236,13 +237,13 @@ export default function MyVehiclesScreen() {
             onPress={() => router.push("/(tabs)/profile/vehicle-create")}
             className="ml-3"
           >
-            <MaterialIcons name="add-circle" size={28} color="#EA580C" />
+            <MaterialIcons name="add-circle" size={28} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#EA580C" />
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text className="mt-4 text-gray-600">Đang tải...</Text>
           </View>
         ) : !vehicles || vehicles.length === 0 ? (

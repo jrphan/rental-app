@@ -12,9 +12,9 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { vehiclesApi } from "@/lib/api.vehicles";
-import { useToast } from "@/lib/toast";
-import { useRequirePhoneVerification } from "@/lib/auth";
+import { vehiclesApi } from "@/services/api.vehicles";
+import { useToast } from "@/hooks/useToast";
+import { useRequirePhoneVerification } from "@/hooks/useAuth";
 import { GalleryButton } from "@/components/gallery/gallery-button";
 import { Select } from "@/components/ui/select";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -591,8 +591,8 @@ export default function VehicleCreateScreen() {
                 ? "Đang cập nhật..."
                 : "Đang tạo..."
               : isEditMode
-              ? "Cập nhật xe"
-              : "Tạo xe"}
+                ? "Cập nhật xe"
+                : "Tạo xe"}
           </Text>
         </TouchableOpacity>
       </ScrollView>

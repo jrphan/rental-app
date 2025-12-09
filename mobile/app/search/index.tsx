@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { vehiclesApi } from "@/lib/api.vehicles";
+import { vehiclesApi } from "@/services/api.vehicles";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import { useState, useEffect } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -24,7 +24,9 @@ export default function SearchScreen() {
 
   const [page] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
-  const [location, setLocation] = useState(params.location || "TP. Hồ Chí Minh");
+  const [location, setLocation] = useState(
+    params.location || "TP. Hồ Chí Minh"
+  );
   const [startDate, setStartDate] = useState(
     params.startDate ? new Date(params.startDate) : new Date()
   );
@@ -86,9 +88,7 @@ export default function SearchScreen() {
             >
               <MaterialIcons name="arrow-back" size={24} color="#111827" />
             </TouchableOpacity>
-            <Text className="text-xl font-bold text-gray-900">
-              Tìm kiếm xe
-            </Text>
+            <Text className="text-xl font-bold text-gray-900">Tìm kiếm xe</Text>
             <View className="w-10" />
           </View>
         </View>
@@ -148,4 +148,3 @@ export default function SearchScreen() {
     </SafeAreaView>
   );
 }
-

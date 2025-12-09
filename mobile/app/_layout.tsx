@@ -9,7 +9,6 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-
 import { queryClient } from "@/lib/queryClient";
 import { ToastContainer } from "@/components/ui/toast";
 

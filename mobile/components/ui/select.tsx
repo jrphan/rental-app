@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { COLORS } from "@/constants/colors";
 
 export interface SelectOption<T = string> {
   label: string;
@@ -116,7 +117,11 @@ export function Select<T = string>({
                     </Text>
                   </View>
                   {value === item.value && (
-                    <MaterialIcons name="check" size={24} color="#EA580C" />
+                    <MaterialIcons
+                      name="check"
+                      size={24}
+                      color={COLORS.primary}
+                    />
                   )}
                 </TouchableOpacity>
               )}

@@ -4,11 +4,11 @@ import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useLoginForm } from "@/forms/auth.forms";
-import { authApi } from "@/lib/api.auth";
+import { authApi } from "@/services/api.auth";
 import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
-import { useToast } from "@/lib/toast";
+import { useToast } from "@/hooks/useToast";
 import { PasswordInput } from "@/components/ui/password-input";
 
 export default function LoginScreen() {

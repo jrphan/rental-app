@@ -34,14 +34,22 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#EA580C",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#EA580C"
           }
         }
       ],
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#EA580C",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

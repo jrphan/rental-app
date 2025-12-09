@@ -1,4 +1,4 @@
-import { apiClient } from "./api";
+import { apiClient } from "@/lib/api";
 
 export type MessageType = "TEXT" | "IMAGE" | "LOCATION" | "SYSTEM";
 
@@ -88,7 +88,7 @@ export const messagesApi = {
     if (res.success && res.data && (res as any).pagination) {
       const pagination = (res as any).pagination;
       return {
-        data: res.data,
+        data: res.data as Conversation[],
         page: pagination.page,
         limit: pagination.limit,
         total: pagination.total,
@@ -115,7 +115,7 @@ export const messagesApi = {
     if (res.success && res.data && (res as any).pagination) {
       const pagination = (res as any).pagination;
       return {
-        data: res.data,
+        data: res.data as Message[],
         page: pagination.page,
         limit: pagination.limit,
         total: pagination.total,
@@ -136,9 +136,8 @@ export const messagesApi = {
       "/messages/unread-count"
     );
     if (res.success && res.data) {
-      return res.data.count;
+      return (res.data as { count: number }).count;
     }
     throw new Error(res.message || "Lấy số lượng tin nhắn chưa đọc thất bại");
   },
 };
-

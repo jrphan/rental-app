@@ -7,6 +7,13 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+interface ExceptionInfo {
+  status: number;
+  message: string;
+  errorName: string;
+  extra: Record<string, any>;
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
@@ -14,55 +21,121 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message: string | undefined;
-    let errorName: string | undefined;
-    let extra: Record<string, any> = {};
+    const exceptionInfo = this.extractExceptionInfo(exception);
+    const cleanedExtra = this.cleanExtraFields(exceptionInfo.extra);
+    const errorResponse = this.formatErrorResponse(
+      exceptionInfo,
+      cleanedExtra,
+      request.url,
+    );
 
+    response.status(exceptionInfo.status).json(errorResponse);
+  }
+
+  /**
+   * Extract exception information from various exception types
+   */
+  private extractExceptionInfo(exception: unknown): ExceptionInfo {
     if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const resBody: unknown = exception.getResponse();
-      if (typeof resBody === 'string') {
-        message = resBody;
-        errorName = exception.name;
-      } else if (resBody && typeof resBody === 'object') {
-        // Nest default structure often: { statusCode, message, error }
-        const obj = resBody as Record<string, unknown>;
-        message = (obj.message as string | undefined) ?? exception.message;
-        errorName = (obj.error as string | undefined) ?? exception.name;
-        extra = { ...obj } as Record<string, any>;
-      } else {
-        message = exception.message;
-        errorName = exception.name;
-      }
-    } else if (exception && typeof exception === 'object') {
-      // Non-HTTP exception
-      const errObj = exception as { message?: string; name?: string };
-      message = errObj.message ?? 'Internal server error';
-      errorName = errObj.name ?? 'Error';
-    } else {
-      message = 'Internal server error';
-      errorName = 'Error';
+      return this.extractHttpExceptionInfo(exception);
     }
 
-    // Remove fields that we will provide ourselves to avoid duplication
-    if (extra) {
-      delete (extra as Record<string, unknown>).statusCode;
-      delete (extra as Record<string, unknown>).timestamp;
-      delete (extra as Record<string, unknown>).path;
+    if (exception && typeof exception === 'object') {
+      return this.extractGenericExceptionInfo(exception);
     }
 
-    const body = {
+    return {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Internal server error',
+      errorName: 'Error',
+      extra: {},
+    };
+  }
+
+  /**
+   * Extract info from HttpException (NestJS standard exceptions)
+   */
+  private extractHttpExceptionInfo(exception: HttpException): ExceptionInfo {
+    const status = exception.getStatus();
+    const resBody: unknown = exception.getResponse();
+
+    // Case 1: Response body is a string
+    if (typeof resBody === 'string') {
+      return {
+        status,
+        message: resBody,
+        errorName: exception.name,
+        extra: {},
+      };
+    }
+
+    // Case 2: Response body is an object (NestJS default: { statusCode, message, error })
+    if (resBody && typeof resBody === 'object') {
+      const obj = resBody as Record<string, unknown>;
+      return {
+        status,
+        message: (obj.message as string | undefined) ?? exception.message,
+        errorName: (obj.error as string | undefined) ?? exception.name,
+        extra: { ...obj } as Record<string, any>,
+      };
+    }
+
+    // Case 3: Fallback to exception message
+    return {
+      status,
+      message: exception.message,
+      errorName: exception.name,
+      extra: {},
+    };
+  }
+
+  /**
+   * Extract info from generic exceptions (non-HTTP)
+   */
+  private extractGenericExceptionInfo(exception: object): ExceptionInfo {
+    const errObj = exception as { message?: string; name?: string };
+    return {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: errObj.message ?? 'Internal server error',
+      errorName: errObj.name ?? 'Error',
+      extra: {},
+    };
+  }
+
+  /**
+   * Remove fields that will be provided by formatErrorResponse to avoid duplication
+   */
+  private cleanExtraFields(extra: Record<string, any>): Record<string, any> {
+    const cleaned = { ...extra };
+    delete cleaned.statusCode;
+    delete cleaned.timestamp;
+    delete cleaned.path;
+    return cleaned;
+  }
+
+  /**
+   * Format error response according to ApiResponse standard
+   * Mobile and Web expect: { success: false, message, error, timestamp, path, statusCode, ...extra }
+   */
+  private formatErrorResponse(
+    exceptionInfo: ExceptionInfo,
+    extra: Record<string, any>,
+    requestPath: string,
+  ) {
+    const message = Array.isArray(exceptionInfo.message)
+      ? exceptionInfo.message.join(', ')
+      : exceptionInfo.message || '';
+
+    return {
       success: false,
-      message: Array.isArray(message) ? message.join(', ') : message || '',
-      error: errorName,
+      message,
+      error: exceptionInfo.errorName,
       timestamp: new Date().toISOString(),
-      path: request?.url || '',
-      statusCode: status,
-      // Preserve any custom metadata from thrown exceptions (e.g. requiresVerification, userId, email)
+      path: requestPath || '',
+      statusCode: exceptionInfo.status,
+      // Preserve any custom metadata from thrown exceptions
+      // (e.g. requiresVerification, userId, email)
       ...extra,
     };
-
-    response.status(status).json(body);
   }
 }

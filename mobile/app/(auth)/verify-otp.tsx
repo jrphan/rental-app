@@ -7,11 +7,11 @@ import {
   TextInput,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { authApi } from "@/lib/api.auth";
+import { authApi } from "@/services/api.auth";
 import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
-import { useToast } from "@/lib/toast";
+import { useToast } from "@/hooks/useToast";
 import { Controller } from "react-hook-form";
 import { useOtpForm } from "@/forms/otp.forms";
 
@@ -113,8 +113,8 @@ export default function VerifyOTPScreen() {
               {resendMutation.isPending
                 ? "Đang gửi..."
                 : canResend
-                ? "Gửi lại mã OTP"
-                : `Gửi lại mã OTP (${resendTimer}s)`}
+                  ? "Gửi lại mã OTP"
+                  : `Gửi lại mã OTP (${resendTimer}s)`}
             </Text>
           </TouchableOpacity>
         </View>

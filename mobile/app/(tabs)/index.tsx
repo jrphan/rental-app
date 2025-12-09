@@ -1,10 +1,11 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text, View, FlatList, RefreshControl, StatusBar } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { vehiclesApi } from "@/lib/api.vehicles";
+import { vehiclesApi } from "@/services/api.vehicles";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
 import { SearchForm } from "@/components/search/search-form";
 import { useState } from "react";
+import { COLORS } from "@/constants/colors";
 
 export default function HomeScreen() {
   const [page] = useState(1);
@@ -25,7 +26,7 @@ export default function HomeScreen() {
     <>
       <StatusBar
         barStyle="light-content"
-        backgroundColor="#EA580C"
+        backgroundColor={COLORS.primary}
         translucent={false}
       />
       <SafeAreaView className="flex-1 bg-primary-500" edges={["left", "right"]}>

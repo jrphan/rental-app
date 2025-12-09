@@ -9,20 +9,16 @@ import {
   Alert,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  notificationsApi,
-  Notification,
-} from "@/lib/api.notifications";
+import { notificationsApi, Notification } from "@/services/api.notifications";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useToast } from "@/lib/toast";
+import { useToast } from "@/hooks/useToast";
+import { COLORS } from "@/constants/colors";
 
 export default function NotificationsTab() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "unread">(
-    "all"
-  );
+  const [selectedFilter, setSelectedFilter] = useState<"all" | "unread">("all");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["notifications", selectedFilter],
@@ -44,7 +40,9 @@ export default function NotificationsTab() {
   const markAllAsReadMutation = useMutation({
     mutationFn: () => notificationsApi.markAllAsRead(),
     onSuccess: () => {
-      toast.showSuccess("Đã đánh dấu tất cả là đã đọc", { title: "Thành công" });
+      toast.showSuccess("Đã đánh dấu tất cả là đã đọc", {
+        title: "Thành công",
+      });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
@@ -67,18 +65,14 @@ export default function NotificationsTab() {
   };
 
   const handleDelete = (notification: Notification) => {
-    Alert.alert(
-      "Xóa thông báo",
-      "Bạn có chắc muốn xóa thông báo này?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          style: "destructive",
-          onPress: () => deleteMutation.mutate(notification.id),
-        },
-      ]
-    );
+    Alert.alert("Xóa thông báo", "Bạn có chắc muốn xóa thông báo này?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: () => deleteMutation.mutate(notification.id),
+      },
+    ]);
   };
 
   const getNotificationIcon = (type: string) => {
@@ -114,7 +108,7 @@ export default function NotificationsTab() {
       case "MESSAGE_RECEIVED":
         return "#3B82F6";
       default:
-        return "#EA580C";
+        return COLORS.primary;
     }
   };
 
@@ -185,7 +179,7 @@ export default function NotificationsTab() {
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-gray-50">
-        <ActivityIndicator size="large" color="#EA580C" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
         <Text className="mt-4 text-gray-600">Đang tải...</Text>
       </View>
     );
@@ -198,9 +192,7 @@ export default function NotificationsTab() {
         <View className="flex-row gap-2">
           <TouchableOpacity
             className={`px-3 py-1 rounded-full ${
-              selectedFilter === "all"
-                ? "bg-orange-600"
-                : "bg-gray-100"
+              selectedFilter === "all" ? "bg-orange-600" : "bg-gray-100"
             }`}
             onPress={() => setSelectedFilter("all")}
           >
@@ -214,9 +206,7 @@ export default function NotificationsTab() {
           </TouchableOpacity>
           <TouchableOpacity
             className={`px-3 py-1 rounded-full ${
-              selectedFilter === "unread"
-                ? "bg-orange-600"
-                : "bg-gray-100"
+              selectedFilter === "unread" ? "bg-orange-600" : "bg-gray-100"
             }`}
             onPress={() => setSelectedFilter("unread")}
           >
@@ -243,11 +233,7 @@ export default function NotificationsTab() {
 
       {!data || data.data.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <MaterialIcons
-            name="notifications-none"
-            size={64}
-            color="#D1D5DB"
-          />
+          <MaterialIcons name="notifications-none" size={64} color="#D1D5DB" />
           <Text className="mt-4 text-lg font-semibold text-gray-900">
             {selectedFilter === "unread"
               ? "Không có thông báo chưa đọc"
@@ -268,7 +254,7 @@ export default function NotificationsTab() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#EA580C"
+              tintColor={COLORS.primary}
             />
           }
           contentContainerStyle={{ paddingBottom: 20 }}
@@ -277,4 +263,3 @@ export default function NotificationsTab() {
     </View>
   );
 }
-

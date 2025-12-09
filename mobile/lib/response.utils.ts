@@ -11,7 +11,7 @@ import {
   isSuccessResponse,
   isErrorResponse,
   isPaginatedResponse,
-} from "./response.types";
+} from "@/types/response.types";
 
 /**
  * Extract data từ response thành công
@@ -136,27 +136,6 @@ export function createPaginatedResponse<T>(
 }
 
 /**
- * Format response để hiển thị trong UI
- */
-export function formatResponseForUI<T>(response: ResponseType<T>) {
-  if (isSuccessResponse(response)) {
-    return {
-      success: true,
-      message: response.message,
-      data: response.data,
-      timestamp: response.timestamp,
-    };
-  }
-
-  return {
-    success: false,
-    message: response.message,
-    error: isErrorResponse(response) ? response.error : undefined,
-    timestamp: response.timestamp,
-  };
-}
-
-/**
  * Log response để debug
  */
 export function logResponse<T>(
@@ -164,27 +143,60 @@ export function logResponse<T>(
   label: string = "API Response"
 ) {
   if (__DEV__) {
-    console.log(`[${label}]`, {
-      success: response.success,
-      message: response.message,
-      statusCode: response.statusCode,
-      path: response.path,
-      timestamp: response.timestamp,
-      data: isSuccessResponse(response)
-        ? (response as ApiResponse<T>).data
-        : undefined,
-      error: isErrorResponse(response)
-        ? (response as ErrorResponse).error
-        : undefined,
-      pagination: isPaginatedResponse(response)
-        ? (response as PaginatedResponse<T>).pagination
-        : undefined,
-    });
+    const isSuccess = response.success;
+    const emoji = isSuccess ? "✅" : "❌";
+    const statusEmoji = isSuccess ? "🟢" : "🔴";
+
+    console.group(`${emoji} ${label} ${statusEmoji}`);
+
+    // Status và message
+    if (isSuccess) {
+      console.log(`✅ Success: ${response.message || "Thành công"}`);
+    } else {
+      console.log("❌ Error:", `${response?.message || "Đã xảy ra lỗi"}`);
+    }
+
+    // Status code với màu
+    const statusColor = response.statusCode >= 400 ? "🔴" : "🟢";
+    console.log(`${statusColor} Status: ${response.statusCode}`);
+
+    // Path
+    console.log(`📍 Path: ${response.path || "N/A"}`);
+
+    // Timestamp
+    console.log(`🕐 Time: ${response.timestamp || "N/A"}`);
+
+    // Data (nếu có)
+    if (isSuccessResponse(response) && response.data !== undefined) {
+      const data = response.data;
+      if (typeof data === "object" && data !== null && !Array.isArray(data)) {
+        console.log("📦 Data:", JSON.stringify(data, null, 2));
+      } else {
+        console.log("📦 Data:", data);
+      }
+    }
+
+    // Error (nếu có)
+    if (isErrorResponse(response) && response?.error) {
+      console.log("❌ Error:", JSON.stringify(response, null, 2));
+    }
+
+    // Pagination (nếu có)
+    if (isPaginatedResponse(response) && response?.pagination) {
+      console.log("📄 Pagination:", response?.pagination);
+      console.log(""); // Khoảng cách
+    }
+
+    console.log("----------------------------------------------------");
+    console.groupEnd();
   }
 }
 
 /**
- * Validate response structure
+ * Validate response structure theo format từ backend
+ * Backend ResponseInterceptor và HttpExceptionFilter trả về format:
+ * - Success: { success: true, message: string, data?: T, timestamp: string, path: string, statusCode: number }
+ * - Error: { success: false, message: string, error?: string, timestamp: string, path: string, statusCode: number, ...extra }
  */
 export function validateResponse<T>(
   response: any

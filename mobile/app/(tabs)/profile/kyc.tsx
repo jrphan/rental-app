@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { ImageInput } from "@/components/ui/image-input";
 import { Button } from "@/components/ui/button";
 import { useKycSubmissionForm } from "@/forms/profile.forms";
-import { profileApi } from "@/lib/api.profile";
+import { profileApi } from "@/services/api.profile";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/lib/toast";
+import { useToast } from "@/hooks/useToast";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useAuthStore } from "@/store/auth";
+import { COLORS } from "@/constants/colors";
 
 export default function KycScreen() {
   const router = useRouter();
@@ -93,7 +94,7 @@ export default function KycScreen() {
 
         {isLoadingKyc ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#EA580C" />
+            <ActivityIndicator size="large" color={COLORS.primary} />
           </View>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -110,16 +111,16 @@ export default function KycScreen() {
                         existingKyc.status === "APPROVED"
                           ? "bg-green-500"
                           : existingKyc.status === "REJECTED"
-                          ? "bg-red-500"
-                          : "bg-yellow-500"
+                            ? "bg-red-500"
+                            : "bg-yellow-500"
                       }`}
                     />
                     <Text className="text-sm font-semibold text-gray-900">
                       {existingKyc.status === "APPROVED"
                         ? "Đã được duyệt"
                         : existingKyc.status === "REJECTED"
-                        ? "Bị từ chối"
-                        : "Đang chờ duyệt"}
+                          ? "Bị từ chối"
+                          : "Đang chờ duyệt"}
                     </Text>
                   </View>
                 </View>

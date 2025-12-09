@@ -1,23 +1,50 @@
 import { Redirect } from "expo-router";
-import { View, ActivityIndicator } from "react-native";
 import { useEffect, useState } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import { SplashScreen as CustomSplashScreen } from "@/components/SplashScreen";
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 export default function Index() {
   const [isReady, setIsReady] = useState(false);
+  const [showCustomSplash, setShowCustomSplash] = useState(true);
 
   useEffect(() => {
-    // Wait for store to hydrate
-    setIsReady(true);
+    async function prepare() {
+      try {
+        // Pre-load fonts, make any API calls you need to do here
+        // Wait for store to hydrate
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setIsReady(true);
+        // Hide native splash screen
+        await SplashScreen.hideAsync();
+        // Show custom splash for a bit longer
+        setTimeout(() => {
+          setShowCustomSplash(false);
+        }, 500);
+      }
+    }
+
+    prepare();
   }, []);
 
-  if (!isReady) {
+  if (showCustomSplash) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#EA580C" />
-      </View>
+      <CustomSplashScreen
+        onFinish={() => {
+          setShowCustomSplash(false);
+        }}
+      />
     );
   }
 
-  // Always redirect to tabs - no auth required
+  if (!isReady) {
+    return null;
+  }
+
   return <Redirect href="/(tabs)" />;
 }

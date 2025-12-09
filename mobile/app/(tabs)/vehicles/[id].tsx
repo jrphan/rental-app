@@ -13,9 +13,9 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { vehiclesApi, rentalsApi } from "@/lib/api.vehicles";
-import { useToast } from "@/lib/toast";
-import { useRequirePhoneVerification } from "@/lib/auth";
+import { vehiclesApi, rentalsApi } from "@/services/api.vehicles";
+import { useToast } from "@/hooks/useToast";
+import { useRequirePhoneVerification } from "@/hooks/useAuth";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState, useRef, useEffect } from "react";
 
@@ -307,8 +307,8 @@ export default function VehicleDetailScreen() {
                       {vehicle.fuelType === "PETROL"
                         ? "Xăng"
                         : vehicle.fuelType === "ELECTRIC"
-                        ? "Điện"
-                        : "Hybrid"}
+                          ? "Điện"
+                          : "Hybrid"}
                     </Text>
                   </View>
                 </View>
@@ -323,8 +323,8 @@ export default function VehicleDetailScreen() {
                       {vehicle.transmission === "MANUAL"
                         ? "Số sàn"
                         : vehicle.transmission === "AUTOMATIC"
-                        ? "Tự động"
-                        : "Bán tự động"}
+                          ? "Tự động"
+                          : "Bán tự động"}
                     </Text>
                   </View>
                 </View>
