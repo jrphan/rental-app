@@ -8,6 +8,7 @@
       "@/hooks/*": ["./hooks/*"],
       "@/constants/*": ["./constants/*"],
       "@/app/*": ["./app/*"],
+      "@/screens/*": ["./screens/*"],
       "@/assets/*": ["./assets/*"],
       "@/utils/*": ["./utils/*"],
       "@/types/*": ["./types/*"],

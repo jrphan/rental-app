@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
