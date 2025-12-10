@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api";
 import {
+  ChangePasswordInput,
   ForgotPasswordInput,
   LoginInput,
   RegisterInput,
@@ -106,10 +107,9 @@ export const authApi = {
   /**
    * Đổi mật khẩu
    */
-  async changePassword(data: {
-    oldPassword: string;
-    newPassword: string;
-  }): Promise<void> {
+  async changePassword(
+    data: Omit<ChangePasswordInput, "confirmPassword">
+  ): Promise<void> {
     const response = await apiClient.put("/auth/change-password", data);
     if (!response.success) {
       throw new Error(response.message || "Đổi mật khẩu thất bại");

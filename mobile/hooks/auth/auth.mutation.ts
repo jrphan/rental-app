@@ -6,6 +6,7 @@ import {
 } from "@/services/api.auth";
 import { ApiError } from "@/types/api.types";
 import {
+  ChangePasswordInput,
   ForgotPasswordInput,
   LoginInput,
   RegisterInput,
@@ -213,6 +214,26 @@ export function useResendPhoneOTP() {
     onError: (error: ApiError) => {
       const errorMessage = error?.message || "Gửi lại OTP thất bại";
       toast.showError(errorMessage, { title: "Lỗi gửi lại OTP" });
+    },
+  });
+}
+
+export function useChangePassword() {
+  const toast = useToast();
+  const router = useRouter();
+  return useMutation<
+    void,
+    ApiError,
+    Omit<ChangePasswordInput, "confirmPassword">
+  >({
+    mutationFn: authApi.changePassword,
+    onSuccess: () => {
+      toast.showSuccess("Đổi mật khẩu thành công!", { title: "Thành công" });
+      router.back();
+    },
+    onError: (error: ApiError) => {
+      const errorMessage = error?.message || "Đổi mật khẩu thất bại";
+      toast.showError(errorMessage, { title: "Lỗi" });
     },
   });
 }
