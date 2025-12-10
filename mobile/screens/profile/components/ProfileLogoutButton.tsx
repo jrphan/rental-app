@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { Button } from "@/components/ui/button";
 
 interface ProfileLogoutButtonProps {
@@ -8,10 +8,16 @@ interface ProfileLogoutButtonProps {
 export default function ProfileLogoutButton({
   onLogout,
 }: ProfileLogoutButtonProps) {
+  const confirmLogout = () =>
+    Alert.alert("Xác nhận", "Bạn có chắc muốn đăng xuất?", [
+      { text: "Hủy", style: "cancel" },
+      { text: "Đăng xuất", style: "destructive", onPress: onLogout },
+    ]);
+
   return (
     <View className="mx-6">
       <Button
-        onPress={onLogout}
+        onPress={confirmLogout}
         variant="destructive"
         className="mb-24"
         size="lg"
