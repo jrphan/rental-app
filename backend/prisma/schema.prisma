@@ -11,73 +11,73 @@ datasource db {
 // ==================== ENUMS ====================
 
 enum UserRole {
-  USER      
-  ADMIN     
-  SUPPORT   
+  USER      // Người dùng thuê xe
+  ADMIN     // Quản trị hệ thống
+  SUPPORT   // Hỗ trợ khách hàng
 }
 
 enum VehicleStatus {
-  DRAFT       
-  PENDING     
-  APPROVED    
-  REJECTED    
-  MAINTENANCE 
-  HIDDEN      
+  DRAFT       // Chưa đủ thông tin
+  PENDING     // Chờ duyệt
+  APPROVED     // Đã được duyệt
+  REJECTED     // Bị từ chối
+  MAINTENANCE  // Đang trong quá trình bảo trì
+  HIDDEN       // Ẩn xe
 }
 
 enum LicenseType {
-  A1 
-  A2 
-  A3 
-  A4
+  A1 // Giấy phép lái xe A1
+  A2 // Giấy phép lái xe A2
+  A3 // Giấy phép lái xe A3
+  A4 // Giấy phép lái xe A4
 }
 
 enum RentalStatus {
-  PENDING_PAYMENT 
-  AWAIT_APPROVAL  
-  CONFIRMED       
-  ON_TRIP         
-  COMPLETED       
-  CANCELLED       
-  DISPUTED        
+  PENDING_PAYMENT // Chờ thanh toán
+  AWAIT_APPROVAL  // Chờ duyệt
+  CONFIRMED       // Đã được xác nhận
+  ON_TRIP         // Đang trên đường
+  COMPLETED       // Đã hoàn thành
+  CANCELLED       // Đã hủy
+  DISPUTED        // Khi có tranh chấp giữa renter và owner    
 }
 
 enum KycStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  NEEDS_UPDATE
+  PENDING // Chờ duyệt
+  APPROVED // Đã được duyệt
+  REJECTED // Bị từ chối
+  NEEDS_UPDATE // Cần cập nhật
 }
 
 enum DisputeStatus {
-  OPEN
-  UNDER_REVIEW
-  RESOLVED_REFUND
-  RESOLVED_NO_REFUND
-  CANCELLED
+  OPEN // Mở
+  UNDER_REVIEW // Đang xem xét
+  RESOLVED_REFUND // Đã được giải quyết và hoàn trả tiền
+  RESOLVED_NO_REFUND // Đã được giải quyết và không hoàn trả tiền
+  CANCELLED // Đã hủy
 }
 
 enum NotificationType {
-  SYSTEM
-  PROMOTION
-  RENTAL_UPDATE
-  PAYMENT
-  KYC_UPDATE
+  SYSTEM // Thông báo hệ thống
+  PROMOTION // Thông báo khuyến mãi
+  RENTAL_UPDATE // Thông báo cập nhật đơn thuê
+  PAYMENT // Thông báo thanh toán
+  KYC_UPDATE // Thông báo cập nhật hồ sơ KYC
 }
 
 enum TransactionType {
-  DEPOSIT
-  PAYMENT
-  REFUND
-  PAYOUT
-  PENALTY
+  DEPOSIT // Tiền cọc giữ xe
+  PAYMENT // Tiền thuê xe
+  REFUND // Tiền hoàn trả khi hủy đơn thuê
+  PAYOUT // Tiền thanh toán cho chủ xe  
+  PENALTY // Tiền phạt khi hủy đơn thuê
 }
 
 enum TransactionStatus {
-  PENDING
-  SUCCESS
-  FAILED
-  REFUNDED
+  PENDING // Chờ thanh toán
+  SUCCESS // Thanh toán thành công
+  FAILED // Thanh toán thất bại
+  REFUNDED // Tiền đã được hoàn trả
 }
 
 enum ReviewType {
@@ -86,34 +86,34 @@ enum ReviewType {
 }
 
 enum AuditAction {
-  CREATE
-  UPDATE
-  DELETE
-  APPROVE
-  REJECT
-  LOGIN
+  CREATE // Tạo
+  UPDATE // Cập nhật
+  DELETE // Xóa
+  APPROVE // Duyệt
+  REJECT // Từ chối
+  LOGIN // Đăng nhập
 }
 
 enum AuditTargetType {
-  RENTAL
-  VEHICLE
-  USER
-  PAYMENT
-  SYSTEM
+  RENTAL // Đơn thuê
+  VEHICLE // Xe
+  USER // Người dùng
+  PAYMENT // Thanh toán
+  SYSTEM // Hệ thống
 }
 
 enum EvidenceType {
-  PICKUP_FRONT
-  PICKUP_BACK
-  PICKUP_LEFT
-  PICKUP_RIGHT
-  PICKUP_DASHBOARD
-  RETURN_FRONT
-  RETURN_BACK
-  RETURN_LEFT
-  RETURN_RIGHT
-  RETURN_DASHBOARD
-  DAMAGE_DETAIL
+  PICKUP_FRONT // Ảnh khi nhận xe phía trước
+  PICKUP_BACK // Ảnh khi nhận xe phía sau
+  PICKUP_LEFT // Ảnh khi nhận xe phía trái
+  PICKUP_RIGHT // Ảnh khi nhận xe phía phải
+  PICKUP_DASHBOARD // Ảnh khi nhận xe phía dashboard
+  RETURN_FRONT // Ảnh khi trả xe phía trước
+  RETURN_BACK // Ảnh khi trả xe phía sau
+  RETURN_LEFT // Ảnh khi trả xe phía trái
+  RETURN_RIGHT // Ảnh khi trả xe phía phải
+  RETURN_DASHBOARD // Ảnh khi trả xe phía dashboard
+  DAMAGE_DETAIL // Ảnh chi tiết về sự cố
 }
 
 // ==================== USER & AUTH ====================
@@ -163,12 +163,12 @@ model Kyc {
   id              String      @id @default(cuid())
   userId          String      @unique
   
-  citizenId       String?     @unique // Logic validate format ở BE
+  citizenId       String?     @unique // Mã số công dân
   fullNameInId    String?
   dob             DateTime?
   addressInId     String?     
   
-  driverLicense   String?     @unique
+  driverLicense   String?     @unique // Giấy phép lái xe
   licenseType     LicenseType?
   
   idCardFront     String?
@@ -212,7 +212,7 @@ model Vehicle {
   description     String?       @db.Text
   images          VehicleImage[]
   
-  address         String        // Full text address
+  address         String        // Địa chỉ chi tiết
   district        String?       
   city            String?       
   lat             Float
@@ -230,7 +230,7 @@ model Vehicle {
 
   owner           User          @relation("OwnerVehicles", fields: [ownerId], references: [id])
   rentals         Rental[]
-  reviews         Review[]      // Reviews dành cho xe này
+  reviews         Review[]      // Đánh giá dành cho xe này
   unavailabilities VehicleUnavailability[] 
 
   @@index([status])
@@ -245,7 +245,7 @@ model VehicleImage {
   vehicleId String
   url       String
   isPrimary Boolean  @default(false)
-  order     Int      @default(0) // Sắp xếp hiển thị
+  order     Int      @default(0) // Thứ tự ảnh
   
   vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   @@map("vehicle_images")
@@ -392,7 +392,7 @@ model Review {
   
   rating    Int        @default(5)
   content   String?
-  isHidden  Boolean    @default(false) // Admin ẩn
+  isHidden  Boolean    @default(false) // Admin ẩn đánh giá
   
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -402,7 +402,7 @@ model Review {
   reviewee  User       @relation("ReviewTarget", fields: [revieweeId], references: [id])
   vehicle   Vehicle?   @relation(fields: [vehicleId], references: [id])
   
-  @@unique([rentalId, authorId, type]) // Một người chỉ review 1 lần/chiều cho 1 đơn
+  @@unique([rentalId, authorId, type]) // Một người chỉ đánh giá 1 lần/chiều cho 1 đơn
   @@index([vehicleId])
   @@index([revieweeId])
   @@map("reviews")
@@ -425,7 +425,7 @@ model Notification {
 
 model AuditLog {
   id          String      @id @default(cuid())
-  actorId     String?     // Người thực hiện (User/Admin ID) - Null nếu là System
+  actorId     String?     // Người thực hiện (ID của User/Admin) - Null nếu là System
   action      AuditAction
   
   targetId    String?     // ID đối tượng (RentalID, VehicleID...)
