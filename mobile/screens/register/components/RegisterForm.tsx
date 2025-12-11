@@ -19,21 +19,20 @@ export default function RegisterForm() {
     <>
       <Controller
         control={form.control}
-        name="email"
+        name="phone"
         render={({
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
           <Input
-            label="Email"
-            placeholder="Nhập email của bạn"
-            value={value}
+            label="Số điện thoại"
+            placeholder="Nhập số điện thoại"
+            value={value || ""}
             onChangeText={onChange}
             onBlur={onBlur}
             error={error?.message}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoComplete="email"
+            keyboardType="phone-pad"
+            autoComplete="tel"
           />
         )}
       />
@@ -53,26 +52,6 @@ export default function RegisterForm() {
             onBlur={onBlur}
             error={error?.message}
             autoComplete="password"
-          />
-        )}
-      />
-
-      <Controller
-        control={form.control}
-        name="phone"
-        render={({
-          field: { onChange, onBlur, value },
-          fieldState: { error },
-        }) => (
-          <Input
-            label="Số điện thoại"
-            placeholder="Nhập số điện thoại"
-            value={value || ""}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            error={error?.message}
-            keyboardType="phone-pad"
-            autoComplete="tel"
           />
         )}
       />

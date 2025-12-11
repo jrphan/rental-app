@@ -6,7 +6,7 @@ export default function ForgotPasswordScreen() {
   return (
     <AuthLayout
       title="Quên mật khẩu?"
-      subtitle="Nhập email của bạn để nhận mã OTP đặt lại mật khẩu"
+      subtitle="Nhập số điện thoại của bạn để nhận mã OTP đặt lại mật khẩu"
       iconName="moped"
       showBackButton={true}
     >

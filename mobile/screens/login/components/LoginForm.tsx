@@ -22,21 +22,21 @@ export default function LoginForm() {
     <>
       <Controller
         control={form.control}
-        name="email"
+        name="phone"
         render={({
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
           <Input
-            label="Email"
-            placeholder="Nhập email của bạn"
+            label="Số điện thoại"
+            placeholder="Nhập số điện thoại"
             value={value}
             onChangeText={onChange}
             onBlur={onBlur}
             error={error?.message}
-            keyboardType="email-address"
+            keyboardType="phone-pad"
             autoCapitalize="none"
-            autoComplete="email"
+            autoComplete="tel"
           />
         )}
       />

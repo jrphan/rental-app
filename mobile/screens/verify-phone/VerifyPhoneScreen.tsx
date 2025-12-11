@@ -39,7 +39,7 @@ export default function VerifyPhoneScreen() {
     <AuthLayout
       title="Xác minh Số điện thoại"
       subtitle={"Chúng tôi đã gửi mã OTP đến số:"}
-      email={phone}
+      phone={phone}
       iconName="phone"
       showBackButton={true}
     >

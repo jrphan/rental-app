@@ -360,8 +360,38 @@ export class AuthService {
       },
     });
 
+    console.log('otp', otp, verifyOtpDto);
+
     if (!otp) {
       throw new BadRequestException('Mã OTP không hợp lệ');
+    }
+
+    try {
+      await this.prismaService.$transaction(async tx => {
+        await tx.otp.update({
+          where: {
+            id: otp.id,
+          },
+          data: {
+            isUsed: true,
+          },
+        });
+        await tx.user.update({
+          where: {
+            id: verifyOtpDto.userId,
+          },
+          data: {
+            isPhoneVerified: true,
+          },
+        });
+      });
+    } catch (error) {
+      void this.loggerService.error(
+        `Failed to verify OTP for user ${verifyOtpDto.userId} with error: ${error}`,
+        error,
+        { category: LOG_CATEGORY.AUTH },
+      );
+      throw new BadRequestException(error || 'Failed to verify OTP');
     }
 
     return {

@@ -12,12 +12,12 @@ import {
 export interface AuthResponse {
   user: {
     id: string;
-    email: string;
-    phone?: string;
+    phone: string;
+    email?: string | null;
+    fullName?: string | null;
     role: string;
     isActive: boolean;
-    isVerified: boolean;
-    isPhoneVerified?: boolean;
+    isPhoneVerified: boolean;
     createdAt: string;
     updatedAt: string;
   };
@@ -32,7 +32,6 @@ export interface RefreshTokenResponse {
 
 export interface RegisterResponse {
   userId: string;
-  email: string;
   message: string;
 }
 
@@ -110,7 +109,7 @@ export const authApi = {
   async changePassword(
     data: Omit<ChangePasswordInput, "confirmPassword">
   ): Promise<void> {
-    const response = await apiClient.put("/auth/change-password", data);
+    const response = await apiClient.post("/auth/change-password", data);
     if (!response.success) {
       throw new Error(response.message || "Đổi mật khẩu thất bại");
     }
@@ -152,16 +151,16 @@ export const authApi = {
    * Đặt lại mật khẩu bằng OTP
    */
   async resetPassword(
-    email: string,
+    phone: string,
     otpCode: string,
     newPassword: string
-  ): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>(
-      "/auth/reset-password",
+  ): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      "/auth/verify-reset-password",
       {
-        email,
+        phone,
         otpCode,
-        newPassword,
+        password: newPassword,
       }
     );
     if (response.success && response.data && !Array.isArray(response.data)) {

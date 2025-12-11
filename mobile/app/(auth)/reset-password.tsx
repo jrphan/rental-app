@@ -1,11 +1,11 @@
 import { View, ActivityIndicator, Text } from "react-native";
+import { useEffect } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Controller } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useResetPasswordForm } from "@/hooks/forms/auth.forms";
 import { authApi } from "@/services/api.auth";
-import { useAuthStore } from "@/store/auth";
 import { useMutation } from "@tanstack/react-query";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { useToast } from "@/hooks/useToast";
@@ -13,39 +13,36 @@ import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ email: string }>();
-  const email = params.email || "";
-  const login = useAuthStore((state) => state.login);
+  const params = useLocalSearchParams<{ phone: string }>();
+  const phone = params.phone || "";
   const toast = useToast();
 
   const form = useResetPasswordForm();
 
+  useEffect(() => {
+    if (phone) {
+      form.setValue("phone", phone);
+    }
+  }, [phone, form]);
+
   const mutation = useMutation({
     mutationFn: ({
-      email,
+      phone,
       otpCode,
       newPassword,
     }: {
-      email: string;
+      phone: string;
       otpCode: string;
       newPassword: string;
-    }) => authApi.resetPassword(email, otpCode, newPassword),
-    onSuccess: (data) => {
-      login(data.user, {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+    }) => authApi.resetPassword(phone, otpCode, newPassword),
+    onSuccess: () => {
+      toast.showSuccess("Đặt lại mật khẩu thành công. Vui lòng đăng nhập.", {
+        title: "Thành công",
+        onPress: () => router.replace("/(auth)/login"),
+        duration: 2000,
       });
-      toast.showSuccess(
-        "Mật khẩu của bạn đã được đặt lại thành công. Bạn đã được đăng nhập tự động.",
-        {
-          title: "Đặt lại mật khẩu thành công",
-          onPress: () => router.replace("/(tabs)"),
-          duration: 3000,
-        }
-      );
-      // Navigate after showing toast
       setTimeout(() => {
-        router.replace("/(tabs)");
+        router.replace("/(auth)/login");
       }, 1000);
     },
     onError: (error: any) => {
@@ -56,7 +53,7 @@ export default function ResetPasswordScreen() {
 
   const onSubmit = (data: typeof form.formState.defaultValues) => {
     mutation.mutate({
-      email,
+      phone,
       otpCode: data?.otpCode ?? "",
       newPassword: data?.newPassword ?? "",
     });
@@ -66,7 +63,7 @@ export default function ResetPasswordScreen() {
     <AuthLayout
       title="Đặt lại mật khẩu"
       subtitle="Nhập mã OTP và mật khẩu mới"
-      email={email}
+      phone={phone}
       iconName="moped"
       showBackButton={true}
     >

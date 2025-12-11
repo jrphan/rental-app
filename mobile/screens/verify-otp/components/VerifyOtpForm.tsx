@@ -13,7 +13,6 @@ import { useEffect, useState } from "react";
 
 interface VerifyOtpFormProps {
   userId: string;
-  email?: string;
 }
 
 export default function VerifyOtpForm({ userId }: VerifyOtpFormProps) {

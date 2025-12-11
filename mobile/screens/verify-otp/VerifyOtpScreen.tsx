@@ -6,7 +6,7 @@ import VerifyOtpForm from "./components/VerifyOtpForm";
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ userId?: string; email?: string }>();
+  const params = useLocalSearchParams<{ userId?: string; phone?: string }>();
 
   if (!params.userId) {
     return (
@@ -33,14 +33,14 @@ export default function VerifyOtpScreen() {
 
   return (
     <AuthLayout
-      title="Xác thực Email"
-      subtitle={"Chúng tôi đã gửi mã OTP đến địa chỉ:"}
-      email={params.email}
+      title="Xác thực tài khoản"
+      subtitle={"Chúng tôi đã gửi mã OTP đến số điện thoại:"}
+      phone={params.phone}
       iconName="moped"
       showBackButton={true}
     >
       <VerifyOtpHeader />
-      <VerifyOtpForm userId={params.userId} email={params.email} />
+      <VerifyOtpForm userId={params.userId} />
     </AuthLayout>
   );
 }

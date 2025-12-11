@@ -12,16 +12,13 @@ import {
   ResetPasswordInput,
   RegisterInput,
 } from "@/schemas/auth.schema";
-import { USER_ROLES } from "@/constants/constants";
 
 export function useRegisterForm() {
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      email: "",
       password: "",
       phone: "",
-      role: USER_ROLES.RENTER,
     },
     mode: "onSubmit",
   });
@@ -33,7 +30,7 @@ export function useLoginForm() {
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      phone: "",
       password: "",
     },
     mode: "onSubmit",
@@ -60,7 +57,7 @@ export function useForgotPasswordForm() {
   const form = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
-      email: "",
+      phone: "",
     },
     mode: "onSubmit",
   });
@@ -72,6 +69,7 @@ export function useResetPasswordForm() {
   const form = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
+      phone: "",
       otpCode: "",
       newPassword: "",
       confirmPassword: "",

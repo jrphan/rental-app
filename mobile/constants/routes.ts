@@ -8,7 +8,7 @@ interface RoutesType {
   LOGIN: RelativePathString;
   REGISTER: RelativePathString;
   FORGOT_PASSWORD: RelativePathString;
-  VERIFY_OTP: ([userId, email]: [string, string]) => RelativePathString;
+  VERIFY_OTP: ([userId, phone]: [string, string]) => RelativePathString;
   RESET_PASSWORD: RelativePathString;
 }
 
@@ -23,10 +23,10 @@ const ROUTES = {
   LOGIN: "/(auth)/login" as RelativePathString,
   REGISTER: "/(auth)/register" as RelativePathString,
   FORGOT_PASSWORD: "/(auth)/forgot-password" as RelativePathString,
-  VERIFY_OTP: ([userId, email]: [string, string]) =>
+  VERIFY_OTP: ([userId, phone]: [string, string]) =>
     `/(auth)/verify-otp?userId=${encodeURIComponent(
       userId
-    )}&email=${encodeURIComponent(email)}` as RelativePathString,
+    )}&phone=${encodeURIComponent(phone)}` as RelativePathString,
   RESET_PASSWORD: "/(auth)/reset-password" as RelativePathString,
 } satisfies RoutesType;
 

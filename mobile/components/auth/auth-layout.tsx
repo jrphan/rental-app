@@ -16,7 +16,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 interface AuthLayoutProps {
   title: string;
   subtitle: string;
-  email?: string;
+  phone?: string;
   iconName: Parameters<typeof IconSymbol>[0]["name"];
   children: React.ReactNode;
   footer?: React.ReactNode;
@@ -27,7 +27,7 @@ interface AuthLayoutProps {
 export function AuthLayout({
   title,
   subtitle,
-  email,
+  phone,
   iconName,
   children,
   footer,
@@ -92,9 +92,9 @@ export function AuthLayout({
             <Text className="text-center text-base text-gray-600">
               {subtitle}
             </Text>
-            {email && (
+            {phone && (
               <Text className="text-center text-base text-primary-500">
-                {email}
+                {phone}
               </Text>
             )}
           </View>
