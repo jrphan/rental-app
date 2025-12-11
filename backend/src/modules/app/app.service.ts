@@ -1,9 +1,25 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { ENV } from '@/config';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return `Hello World! from ${ENV.port} port and ${ENV.globalPrefix} global prefix`;
+  constructor(private readonly prismaService: PrismaService) {}
+
+  async getHealth() {
+    const dbStatus = this.prismaService.getConnectionStatus();
+    const isDbHealthy = await this.prismaService.checkConnection();
+
+    return {
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: {
+        connected: dbStatus,
+        healthy: isDbHealthy,
+        message:
+          dbStatus && isDbHealthy
+            ? 'Database is connected and healthy'
+            : 'Database is not available',
+      },
+    };
   }
 }

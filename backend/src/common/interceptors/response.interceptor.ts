@@ -7,7 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Request, Response } from 'express';
-import { ApiResponse } from '@/common/interfaces/Response/response.interface';
+import { ApiResponse } from '@/types/response.type';
 
 @Injectable()
 export class ResponseInterceptor<T>

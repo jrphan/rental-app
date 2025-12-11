@@ -1,11 +1,11 @@
 // Response interfaces
-export * from './interfaces/Response/response.interface';
+export * from '../types/response.type';
 
 // Response DTOs
 export * from './dto/Response/response.dto';
 
-// Response utilities
-export * from './utils/response.util';
-
 // Response interceptor
 export * from './interceptors/response.interceptor';
+
+// Guards
+export * from './guards/auth.guard';

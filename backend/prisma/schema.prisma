@@ -116,6 +116,14 @@ enum EvidenceType {
   DAMAGE_DETAIL // Ảnh chi tiết về sự cố
 }
 
+enum OtpType {
+  REGISTER           // Xác thực SĐT khi đăng ký mới
+  LOGIN              // Đăng nhập nhanh (nếu hỗ trợ)
+  RESET_PASSWORD     // Quên mật khẩu
+  VERIFY_PHONE       // Xác thực lại SĐT (cho user cũ update profile)
+  CONFIRM_TRANSACTION // Xác thực rút tiền/giao dịch lớn (Bảo mật cao)
+}
+
 // ==================== USER & AUTH ====================
 
 model User {
@@ -123,7 +131,7 @@ model User {
   phone              String    @unique 
   email              String?   @unique 
   password           String    
-  fullName           String
+  fullName           String?
   avatar             String?
   
   isActive           Boolean   @default(true) 
@@ -152,9 +160,33 @@ model User {
   notifications    Notification[]
   transactions     Transaction[]
 
+  otps             Otp[] // <--- Thêm dòng này
+
   @@index([phone])
   @@index([email])
   @@map("users")
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  
+  phone     String   // Định danh chính ở VN (Bắt buộc)
+  email     String?  // Optional (nếu user muốn nhận qua email)
+  code      String   // Mã 6 số: "123456"
+  
+  type      OtpType  @default(REGISTER)
+  isUsed    Boolean  @default(false) // Chống Replay attack (dùng lại mã cũ)
+  expiresAt DateTime // Thời gian hết hạn
+  
+  createdAt DateTime @default(now())
+  
+  // Relation (Optional: Chỉ link nếu User đã tồn tại)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phone, code, isUsed]) // Index để verify nhanh
+  @@index([expiresAt]) // Index để job cleanup xóa OTP rác
+  @@map("otps")
 }
 
 // ==================== KYC ====================

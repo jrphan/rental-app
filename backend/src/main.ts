@@ -10,7 +10,7 @@ import { ENV } from '@/config/env';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@/modules/app/app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+// import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
 
@@ -48,35 +48,35 @@ async function bootstrap() {
     app.useGlobalFilters(new HttpExceptionFilter());
 
     // Setup Swagger documentation
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('Rental App API')
-      .setDescription('API documentation for Rental App')
-      .setVersion('1.0')
-      .addTag('auth', 'Authentication endpoints')
-      .addTag('app', 'Application endpoints')
-      .addBearerAuth(
-        {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          name: 'JWT',
-          description: 'Enter JWT token',
-          in: 'header',
-        },
-        'JWT-auth',
-      )
-      .build();
+    // const swaggerConfig = new DocumentBuilder()
+    //   .setTitle('Rental App API')
+    //   .setDescription('API documentation for Rental App')
+    //   .setVersion('1.0')
+    //   .addTag('auth', 'Authentication endpoints')
+    //   .addTag('app', 'Application endpoints')
+    //   .addBearerAuth(
+    //     {
+    //       type: 'http',
+    //       scheme: 'bearer',
+    //       bearerFormat: 'JWT',
+    //       name: 'JWT',
+    //       description: 'Enter JWT token',
+    //       in: 'header',
+    //     },
+    //     'JWT-auth',
+    //   )
+    //   .build();
 
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup(`${ENV.globalPrefix}/docs`, app, document);
+    // const document = SwaggerModule.createDocument(app, swaggerConfig);
+    // SwaggerModule.setup(`${ENV.globalPrefix}/docs`, app, document);
 
     await app.listen(ENV.port);
     logger.log(
       `Server is running on port http://localhost:${ENV.port}/${ENV.globalPrefix}`,
     );
-    logger.log(
-      `Swagger documentation available at http://localhost:${ENV.port}/${ENV.globalPrefix}/docs`,
-    );
+    // logger.log(
+    //   `Swagger documentation available at http://localhost:${ENV.port}/${ENV.globalPrefix}/docs`,
+    // );
   } catch (error: unknown) {
     logger.error(
       'Failed to start application:',
