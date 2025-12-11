@@ -39,17 +39,26 @@ export function useLogin() {
 
   return useMutation<AuthResponse, ApiError, LoginInput>({
     mutationFn: authApi.login,
-    onSuccess: (data) => {
-      const user = {
-        ...data.user,
-        isVerified: data.user.isPhoneVerified,
-        email: data.user.email ?? undefined,
-      };
-      login(user, {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      });
-      router.replace(ROUTES.HOME);
+    onSuccess: (data, variables) => {
+      console.log("data login", data);
+
+      if (data.message) {
+        toast.showSuccess(data.message, { title: "Đăng nhập thành công" });
+        if (data.userId) {
+          router.push(ROUTES.VERIFY_OTP([data.userId, variables.phone]));
+        }
+      } else {
+        const user = {
+          ...data.user,
+          isVerified: data.user.isPhoneVerified,
+          email: data.user.email ?? undefined,
+        };
+        login(user, {
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+        });
+        router.replace(ROUTES.HOME);
+      }
     },
     onError: (error: any, variables: LoginInput) => {
       const errorMessage = error.message || "Đăng nhập thất bại";

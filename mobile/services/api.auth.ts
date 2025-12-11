@@ -12,6 +12,7 @@ import API_ENDPOINTS from "./api.endpoints";
  */
 export interface AuthResponse {
   message: string;
+  userId?: string;
   user: {
     id: string;
     phone: string;
