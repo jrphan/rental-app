@@ -5,6 +5,7 @@ import {
   LoginInput,
   RegisterInput,
 } from "@/schemas/auth.schema";
+import API_ENDPOINTS from "./api.endpoints";
 
 /**
  * Auth API response types
@@ -48,7 +49,7 @@ export const authApi = {
    */
   async register(data: RegisterInput): Promise<RegisterResponse> {
     const response = await apiClient.post<RegisterResponse>(
-      "/auth/register",
+      API_ENDPOINTS.AUTH.REGISTER,
       data
     );
     if (response.success && response.data && !Array.isArray(response.data)) {
@@ -61,10 +62,13 @@ export const authApi = {
    * Xác thực OTP
    */
   async verifyOTP(userId: string, otpCode: string): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>("/auth/verify-otp", {
-      userId,
-      otpCode,
-    });
+    const response = await apiClient.post<AuthResponse>(
+      API_ENDPOINTS.AUTH.VERIFY_OTP,
+      {
+        userId,
+        otpCode,
+      }
+    );
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data;
     }
@@ -75,7 +79,9 @@ export const authApi = {
    * Gửi lại OTP
    */
   async resendOTP(userId: string): Promise<void> {
-    const response = await apiClient.post("/auth/resend-otp", { userId });
+    const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_OTP, {
+      userId,
+    });
     if (!response.success) {
       throw new Error(response.message || "Gửi lại OTP thất bại");
     }
@@ -85,7 +91,10 @@ export const authApi = {
    * Đăng nhập
    */
   async login(data: LoginInput): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>("/auth/login", data);
+    const response = await apiClient.post<AuthResponse>(
+      API_ENDPOINTS.AUTH.LOGIN,
+      data
+    );
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data;
     }
@@ -109,7 +118,10 @@ export const authApi = {
   async changePassword(
     data: Omit<ChangePasswordInput, "confirmPassword">
   ): Promise<void> {
-    const response = await apiClient.post("/auth/change-password", data);
+    const response = await apiClient.post(
+      API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
+      data
+    );
     if (!response.success) {
       throw new Error(response.message || "Đổi mật khẩu thất bại");
     }
@@ -138,7 +150,7 @@ export const authApi = {
     data: ForgotPasswordInput
   ): Promise<ForgotPasswordResponse> {
     const response = await apiClient.post<ForgotPasswordResponse>(
-      "/auth/forgot-password",
+      API_ENDPOINTS.AUTH.FORGOT_PASSWORD,
       data
     );
     if (response.success && response.data && !Array.isArray(response.data)) {
@@ -156,7 +168,7 @@ export const authApi = {
     newPassword: string
   ): Promise<{ message: string }> {
     const response = await apiClient.post<{ message: string }>(
-      "/auth/verify-reset-password",
+      API_ENDPOINTS.AUTH.VERIFY_RESET_PASSWORD,
       {
         phone,
         otpCode,
