@@ -78,7 +78,7 @@ export function AuthLayout({
           keyboardDismissMode="on-drag"
         >
           {/* Header Section */}
-          <View className="mb-8 items-center">
+          <View className={`${phone ? "mb-4" : "mb-8"} items-center`}>
             <View className="mb-4 h-20 w-20 items-center justify-center rounded-3xl bg-primary-500 shadow-lg">
               <MaterialCommunityIcons
                 name="motorbike"

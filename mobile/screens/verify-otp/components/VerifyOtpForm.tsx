@@ -97,10 +97,10 @@ export default function VerifyOtpForm({ userId }: VerifyOtpFormProps) {
       <TouchableOpacity
         onPress={form.handleSubmit(handleVerify)}
         disabled={verifyMutation.isPending || !form.formState.isValid}
-        className={`mb-6 rounded-2xl py-4 ${
+        className={`mb-6 rounded-2xl py-4 bg-primary-600 ${
           verifyMutation.isPending || !form.formState.isValid
-            ? "bg-gray-300"
-            : "bg-primary-600"
+            ? "opacity-50"
+            : ""
         }`}
       >
         {verifyMutation.isPending ? (

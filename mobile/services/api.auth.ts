@@ -11,6 +11,7 @@ import API_ENDPOINTS from "./api.endpoints";
  * Auth API response types
  */
 export interface AuthResponse {
+  message: string;
   user: {
     id: string;
     phone: string;
@@ -78,13 +79,18 @@ export const authApi = {
   /**
    * Gửi lại OTP
    */
-  async resendOTP(userId: string): Promise<void> {
-    const response = await apiClient.post(API_ENDPOINTS.AUTH.RESEND_OTP, {
-      userId,
-    });
-    if (!response.success) {
-      throw new Error(response.message || "Gửi lại OTP thất bại");
+  async resendOTP(userId: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      API_ENDPOINTS.AUTH.RESEND_OTP,
+      {
+        userId,
+      }
+    );
+
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
     }
+    throw new Error(response.message || "Gửi lại OTP thất bại");
   },
 
   /**

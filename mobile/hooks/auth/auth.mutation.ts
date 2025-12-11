@@ -1,14 +1,10 @@
-import {
-  authApi,
-  AuthResponse,
-  ForgotPasswordResponse,
-  RegisterResponse,
-} from "@/services/api.auth";
+import { authApi, AuthResponse, RegisterResponse } from "@/services/api.auth";
 import { ApiError } from "@/types/api.types";
 import {
   ChangePasswordInput,
   ForgotPasswordInput,
   LoginInput,
+  ResetPasswordInput,
   RegisterInput,
 } from "@/schemas/auth.schema";
 import { useToast } from "@/hooks/useToast";
@@ -24,6 +20,7 @@ export function useRegister() {
   return useMutation<RegisterResponse, ApiError, RegisterInput>({
     mutationFn: authApi.register,
     onSuccess: (data, variables) => {
+      toast.showSuccess(data.message, { title: "Đăng ký thành công" });
       if (data.userId) {
         router.push(ROUTES.VERIFY_OTP([data.userId, variables.phone]));
       }
@@ -67,25 +64,12 @@ export function useLogin() {
 export function useForgotPassword() {
   const toast = useToast();
   const router = useRouter();
-  return useMutation<ForgotPasswordResponse, ApiError, ForgotPasswordInput>({
+  return useMutation<{ message: string }, ApiError, ForgotPasswordInput>({
     mutationFn: authApi.forgotPassword,
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
       const phone = variables.phone;
-      toast.showSuccess(
-        "Nếu số điện thoại tồn tại, mã OTP đã được gửi. Vui lòng nhập mã OTP để đặt lại mật khẩu.",
-        {
-          title: "Đã gửi OTP",
-          onPress: () => {
-            if (phone) {
-              router.push({
-                pathname: ROUTES.RESET_PASSWORD,
-                params: { phone },
-              });
-            }
-          },
-          duration: 3000,
-        }
-      );
+      toast.showSuccess(data.message, { title: "Đã gửi OTP" });
+
       setTimeout(() => {
         if (phone) {
           router.push({
@@ -107,20 +91,15 @@ export function useVerifyOTP() {
   const router = useRouter();
 
   return useMutation<
-    AuthResponse,
+    { message: string },
     ApiError,
     { userId: string; otpCode: string }
   >({
     mutationFn: ({ userId, otpCode }) => authApi.verifyOTP(userId, otpCode),
     onSuccess: (data) => {
-      toast.showSuccess("Chào mừng bạn đến với Rental App!", {
-        title: "Xác thực thành công",
-        onPress: () => router.replace(ROUTES.HOME),
-        duration: 2000,
-      });
-      setTimeout(() => {
-        router.replace(ROUTES.HOME);
-      }, 1000);
+      console.log("data", data);
+      toast.showSuccess(data.message, { title: "Xác thực thành công" });
+      router.replace(ROUTES.LOGIN);
     },
     onError: (error: ApiError) => {
       const errorMessage = error?.message || "Xác thực OTP thất bại";
@@ -131,12 +110,11 @@ export function useVerifyOTP() {
 
 export function useResendOTP() {
   const toast = useToast();
-  return useMutation<void, ApiError, { userId: string }>({
+  return useMutation<{ message: string }, ApiError, { userId: string }>({
     mutationFn: ({ userId }) => authApi.resendOTP(userId),
-    onSuccess: () => {
-      toast.showSuccess("Đã gửi lại mã OTP đến email của bạn", {
-        title: "Thành công",
-      });
+    onSuccess: (data) => {
+      console.log("data resend OTP", data);
+      toast.showSuccess(data.message, { title: "Đã gửi lại mã OTP" });
     },
     onError: (error: ApiError) => {
       const errorMessage = error?.message || "Gửi lại OTP thất bại";
@@ -214,6 +192,24 @@ export function useResendPhoneOTP() {
     onError: (error: ApiError) => {
       const errorMessage = error?.message || "Gửi lại OTP thất bại";
       toast.showError(errorMessage, { title: "Lỗi gửi lại OTP" });
+    },
+  });
+}
+
+export function useResetPassword() {
+  const toast = useToast();
+  const router = useRouter();
+
+  return useMutation<{ message: string }, ApiError, ResetPasswordInput>({
+    mutationFn: ({ phone, otpCode, newPassword }) =>
+      authApi.resetPassword(phone, otpCode, newPassword),
+    onSuccess: (data) => {
+      toast.showSuccess(data.message, { title: "Đặt lại mật khẩu thành công" });
+      router.replace(ROUTES.LOGIN);
+    },
+    onError: (error) => {
+      const errorMessage = error?.message || "Đặt lại mật khẩu thất bại";
+      toast.showError(errorMessage, { title: "Lỗi" });
     },
   });
 }
