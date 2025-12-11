@@ -24,7 +24,7 @@ import { UserService } from '@/modules/user/user.service';
 import { SmsService } from '@/modules/sms/sms.service';
 import { LOG_CATEGORY, LoggerService } from '@/modules/logger/logger.service';
 import { RateLimitService } from '@/modules/rate-limit/rate-limit.service';
-import { OtpType } from '@prisma/client';
+import { AuditAction, AuditTargetType, OtpType } from '@prisma/client';
 import { VerifyOtpDto } from '@/common/dto/Auth/verify-otp.dto';
 import { ResendOtpDto } from '@/common/dto/Auth/resend-otp.dto';
 import { ENV } from '@/config/env';
@@ -32,6 +32,7 @@ import * as bcrypt from 'bcrypt';
 import { ForgotPasswordDto } from '@/common/dto/Auth/forgot-password.dto';
 import { VerifyResetPasswordDto } from '@/common/dto/Auth/verify-reset-password.dto';
 import { ChangePasswordDto } from '@/common/dto/Auth/change-password.dto';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
 
 type FlexibleSignOptions = Omit<SignOptions, 'expiresIn'> & {
   expiresIn?: string | number;
@@ -47,6 +48,7 @@ export class AuthService {
     private readonly loggerService: LoggerService,
     private readonly jwtService: JwtService,
     private readonly rateLimitService: RateLimitService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async changePassword(
@@ -65,6 +67,17 @@ export class AuthService {
     });
 
     if (!user) {
+      void this.auditLogService.log({
+        actorId: userId,
+        action: AuditAction.UPDATE,
+        targetId: userId,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'user_not_found',
+          action: 'change_password',
+        },
+      });
       throw new BadRequestException('Người dùng không tồn tại');
     }
 
@@ -74,6 +87,17 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      void this.auditLogService.log({
+        actorId: userId,
+        action: AuditAction.UPDATE,
+        targetId: userId,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'invalid_old_password',
+          action: 'change_password',
+        },
+      });
       throw new BadRequestException('Mật khẩu cũ không đúng');
     }
 
@@ -93,6 +117,13 @@ export class AuthService {
       { userId: user.id },
       { category: LOG_CATEGORY.AUTH },
     );
+    void this.auditLogService.log({
+      actorId: user.id,
+      action: AuditAction.UPDATE,
+      targetId: user.id,
+      targetType: AuditTargetType.USER,
+      metadata: { result: 'success', action: 'change_password' },
+    });
 
     return {
       message: 'Mật khẩu đã được đổi thành công',
@@ -111,6 +142,17 @@ export class AuthService {
     });
 
     if (userCheck) {
+      void this.auditLogService.log({
+        actorId: null,
+        action: AuditAction.CREATE,
+        targetId: userCheck.id,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'phone_exists',
+          phone: registerUserDto.phone,
+        },
+      });
       throw new BadRequestException('Số điện thoại đã tồn tại');
     }
 
@@ -132,6 +174,13 @@ export class AuthService {
       { userId: user.id },
       { category: LOG_CATEGORY.AUTH },
     );
+    void this.auditLogService.log({
+      actorId: user.id,
+      action: AuditAction.CREATE,
+      targetId: user.id,
+      targetType: AuditTargetType.USER,
+      metadata: { result: 'success', phone: registerUserDto.phone },
+    });
 
     return {
       userId: user.id,
@@ -153,14 +202,43 @@ export class AuthService {
     });
 
     if (!user) {
+      void this.auditLogService.log({
+        action: AuditAction.LOGIN,
+        targetType: AuditTargetType.SYSTEM,
+        metadata: {
+          result: 'failure',
+          reason: 'user_not_found',
+          phone: loginDto.phone,
+        },
+      });
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
     if (!user.isActive) {
+      void this.auditLogService.log({
+        actorId: user.id,
+        action: AuditAction.LOGIN,
+        targetType: AuditTargetType.SYSTEM,
+        metadata: {
+          result: 'failure',
+          reason: 'user_inactive',
+          userId: user.id,
+        },
+      });
       throw new UnauthorizedException('Tài khoản đã bị khóa');
     }
 
     if (!user.password) {
+      void this.auditLogService.log({
+        actorId: user.id,
+        action: AuditAction.LOGIN,
+        targetType: AuditTargetType.SYSTEM,
+        metadata: {
+          result: 'failure',
+          reason: 'missing_password',
+          userId: user.id,
+        },
+      });
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
@@ -170,6 +248,16 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      void this.auditLogService.log({
+        actorId: user.id,
+        action: AuditAction.LOGIN,
+        targetType: AuditTargetType.SYSTEM,
+        metadata: {
+          result: 'failure',
+          reason: 'invalid_password',
+          userId: user.id,
+        },
+      });
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
@@ -184,6 +272,14 @@ export class AuthService {
         );
         throw new BadRequestException(error || 'Failed to send OTP');
       }
+
+      void this.auditLogService.log({
+        actorId: user.id,
+        action: AuditAction.LOGIN,
+        targetId: user.id,
+        targetType: AuditTargetType.USER,
+        metadata: { result: 'pending_phone_verification', phone: user.phone },
+      });
 
       return {
         message: 'Mã OTP đã được gửi đến số điện thoại của bạn',
@@ -231,6 +327,13 @@ export class AuthService {
       { userId: user.id, phone: user.phone },
       { category: LOG_CATEGORY.AUTH },
     );
+    void this.auditLogService.log({
+      actorId: user.id,
+      action: AuditAction.LOGIN,
+      targetId: user.id,
+      targetType: AuditTargetType.USER,
+      metadata: { result: 'success', phone: user.phone },
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...userWithoutPassword } = user;
@@ -256,6 +359,16 @@ export class AuthService {
     });
 
     if (!userCheck) {
+      void this.auditLogService.log({
+        action: AuditAction.UPDATE,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'user_not_found',
+          action: 'forgot_password',
+          phone: forgotPasswordDto.phone,
+        },
+      });
       throw new BadRequestException('Số điện thoại không tồn tại');
     }
 
@@ -267,9 +380,32 @@ export class AuthService {
         error,
         { category: LOG_CATEGORY.AUTH },
       );
+      void this.auditLogService.log({
+        actorId: userCheck.id,
+        action: AuditAction.UPDATE,
+        targetId: userCheck.id,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'send_otp_failed',
+          action: 'forgot_password',
+        },
+      });
 
       throw new BadRequestException(error || 'Failed to send OTP');
     }
+
+    void this.auditLogService.log({
+      actorId: userCheck.id,
+      action: AuditAction.UPDATE,
+      targetId: userCheck.id,
+      targetType: AuditTargetType.USER,
+      metadata: {
+        result: 'success',
+        action: 'forgot_password',
+        phone: userCheck.phone,
+      },
+    });
 
     return { message: 'Mã OTP đã được gửi đến số điện thoại của bạn' };
   }
@@ -288,6 +424,16 @@ export class AuthService {
     });
 
     if (!user) {
+      void this.auditLogService.log({
+        action: AuditAction.UPDATE,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'user_not_found',
+          action: 'verify_reset_password',
+          phone: verifyResetPasswordDto.phone,
+        },
+      });
       throw new BadRequestException('Số điện thoại không tồn tại');
     }
 
@@ -304,6 +450,18 @@ export class AuthService {
     });
 
     if (!otp) {
+      void this.auditLogService.log({
+        actorId: user.id,
+        action: AuditAction.UPDATE,
+        targetId: user.id,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'otp_invalid',
+          action: 'verify_reset_password',
+          phone: verifyResetPasswordDto.phone,
+        },
+      });
       throw new BadRequestException('Mã OTP không hợp lệ');
     }
 
@@ -339,8 +497,31 @@ export class AuthService {
         error,
         { category: LOG_CATEGORY.AUTH },
       );
+      void this.auditLogService.log({
+        actorId: user.id,
+        action: AuditAction.UPDATE,
+        targetId: user.id,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'transaction_error',
+          action: 'verify_reset_password',
+        },
+      });
       throw new BadRequestException(error || 'Failed to verify reset password');
     }
+
+    void this.auditLogService.log({
+      actorId: user.id,
+      action: AuditAction.UPDATE,
+      targetId: user.id,
+      targetType: AuditTargetType.USER,
+      metadata: {
+        result: 'success',
+        action: 'verify_reset_password',
+        phone: verifyResetPasswordDto.phone,
+      },
+    });
 
     return {
       message: 'Mật khẩu đã được đặt lại thành công',
@@ -363,6 +544,17 @@ export class AuthService {
     console.log('otp', otp, verifyOtpDto);
 
     if (!otp) {
+      void this.auditLogService.log({
+        actorId: verifyOtpDto.userId,
+        action: AuditAction.UPDATE,
+        targetId: verifyOtpDto.userId,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'otp_invalid',
+          action: 'verify_register_otp',
+        },
+      });
       throw new BadRequestException('Mã OTP không hợp lệ');
     }
 
@@ -391,8 +583,30 @@ export class AuthService {
         error,
         { category: LOG_CATEGORY.AUTH },
       );
+      void this.auditLogService.log({
+        actorId: verifyOtpDto.userId,
+        action: AuditAction.UPDATE,
+        targetId: verifyOtpDto.userId,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'transaction_error',
+          action: 'verify_register_otp',
+        },
+      });
       throw new BadRequestException(error || 'Failed to verify OTP');
     }
+
+    void this.auditLogService.log({
+      actorId: verifyOtpDto.userId,
+      action: AuditAction.UPDATE,
+      targetId: verifyOtpDto.userId,
+      targetType: AuditTargetType.USER,
+      metadata: {
+        result: 'success',
+        action: 'verify_register_otp',
+      },
+    });
 
     return {
       message: 'Mã OTP đã được xác thực thành công',
@@ -412,6 +626,16 @@ export class AuthService {
     });
 
     if (!user) {
+      void this.auditLogService.log({
+        action: AuditAction.UPDATE,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'failure',
+          reason: 'user_not_found_or_verified',
+          action: 'resend_register_otp',
+          userId: resendOtpDto.userId,
+        },
+      });
       throw new BadRequestException(
         'Người dùng không tồn tại hoặc đã xác thực số điện thoại',
       );
@@ -433,6 +657,17 @@ export class AuthService {
       { userId: user.id, phone: user.phone },
       { category: LOG_CATEGORY.AUTH },
     );
+    void this.auditLogService.log({
+      actorId: user.id,
+      action: AuditAction.UPDATE,
+      targetId: user.id,
+      targetType: AuditTargetType.USER,
+      metadata: {
+        result: 'success',
+        action: 'resend_register_otp',
+        phone: user.phone,
+      },
+    });
 
     return {
       message: 'Mã OTP đã được gửi đến số điện thoại của bạn',
