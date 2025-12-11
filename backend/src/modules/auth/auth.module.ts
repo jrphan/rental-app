@@ -7,9 +7,17 @@ import { UserModule } from '@/modules/user/user.module';
 import { SmsModule } from '@/modules/sms/sms.module';
 import { RateLimitModule } from '@/modules/rate-limit/rate-limit.module';
 import { AuthGuard } from '@/common/guards/auth.guard';
+import { AuditLogModule } from '@/modules/audit/audit-log.module';
 
 @Module({
-  imports: [PrismaModule, SmsModule, JwtModule, UserModule, RateLimitModule],
+  imports: [
+    AuditLogModule,
+    PrismaModule,
+    SmsModule,
+    JwtModule,
+    UserModule,
+    RateLimitModule,
+  ],
   controllers: [AuthController],
   providers: [AuthService, AuthGuard],
   exports: [AuthService],

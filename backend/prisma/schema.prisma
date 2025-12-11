@@ -458,13 +458,13 @@ model Notification {
 model AuditLog {
   id          String      @id @default(cuid())
   actorId     String?     // Người thực hiện (ID của User/Admin) - Null nếu là System
-  action      AuditAction
+  action      AuditAction // Tạo, Cập nhật, Xóa, Duyệt, Từ chối, Đăng nhập
   
   targetId    String?     // ID đối tượng (RentalID, VehicleID...)
-  targetType  AuditTargetType
+  targetType  AuditTargetType // Đơn thuê, Xe, Người dùng, Thanh toán, Hệ thống
   
-  ipAddress   String?
-  userAgent   String?
+  ipAddress   String?     // IP address của người dùng
+  userAgent   String?     // User agent của người dùng
   metadata    Json?       // Lưu { field: "oldValue", to: "newValue" }
   
   createdAt   DateTime    @default(now())
