@@ -16,16 +16,16 @@ export default function MessagesLayout() {
   const tabs = useMemo<TabConfig[]>(
     () => [
       {
-        label: "Nhắn tin",
-        value: "chat",
-        route: "/(tabs)/messages/chat",
-        content: <ChatTab />,
-      },
-      {
         label: "Thông báo",
         value: "notifications",
         route: "/(tabs)/messages/notifications",
         content: <NotificationsTab />,
+      },
+      {
+        label: "Nhắn tin",
+        value: "chat",
+        route: "/(tabs)/messages/chat",
+        content: <ChatTab />,
       },
     ],
     []
