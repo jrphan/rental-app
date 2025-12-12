@@ -39,42 +39,6 @@ export interface ApiEndpoint {
 }
 
 /**
- * Common API endpoints
- */
-export const API_ENDPOINTS = {
-  // Auth endpoints
-  AUTH: {
-    LOGIN: { method: "POST" as const, path: "/auth/login" },
-    REGISTER: { method: "POST" as const, path: "/auth/register" },
-    REFRESH: { method: "POST" as const, path: "/auth/refresh" },
-    LOGOUT: { method: "POST" as const, path: "/auth/logout" },
-    PROFILE: {
-      method: "GET" as const,
-      path: "/auth/profile",
-      requiresAuth: true,
-    },
-  },
-
-  // User endpoints
-  USERS: {
-    LIST: { method: "GET" as const, path: "/users" },
-    CREATE: { method: "POST" as const, path: "/users" },
-    GET: { method: "GET" as const, path: "/users/:id" },
-    UPDATE: { method: "PUT" as const, path: "/users/:id" },
-    DELETE: { method: "DELETE" as const, path: "/users/:id" },
-  },
-
-  // Property endpoints (ví dụ cho rental app)
-  PROPERTIES: {
-    LIST: { method: "GET" as const, path: "/properties" },
-    CREATE: { method: "POST" as const, path: "/properties" },
-    GET: { method: "GET" as const, path: "/properties/:id" },
-    UPDATE: { method: "PUT" as const, path: "/properties/:id" },
-    DELETE: { method: "DELETE" as const, path: "/properties/:id" },
-  },
-} as const;
-
-/**
  * Type cho pagination query parameters
  */
 export interface PaginationQuery {
