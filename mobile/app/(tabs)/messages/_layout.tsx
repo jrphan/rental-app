@@ -1,18 +1,35 @@
+import React, { useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { View, TouchableOpacity, Text, StatusBar } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useRouter, usePathname } from "expo-router";
+import { useRouter } from "expo-router";
 import ChatTab from "./chat";
 import NotificationsTab from "./notifications";
-import { COLORS } from "@/constants/colors";
+import { Tabs } from "@/components/ui/tabs";
+import type { TabConfig } from "@/components/ui/tabs";
 
 export default function MessagesLayout() {
   const router = useRouter();
-  const pathname = usePathname();
-  const isChatTab =
-    pathname?.includes("/chat") ||
-    pathname === "/(tabs)/messages" ||
-    pathname === "/(tabs)/messages/";
+
+  // Tabs config - mỗi tab có content riêng
+  // Logic match path được xử lý tự động bên trong Tabs component
+  const tabs = useMemo<TabConfig[]>(
+    () => [
+      {
+        label: "Nhắn tin",
+        value: "chat",
+        route: "/(tabs)/messages/chat",
+        content: <ChatTab />,
+      },
+      {
+        label: "Thông báo",
+        value: "notifications",
+        route: "/(tabs)/messages/notifications",
+        content: <NotificationsTab />,
+      },
+    ],
+    []
+  );
 
   return (
     <>
@@ -26,7 +43,7 @@ export default function MessagesLayout() {
         edges={["top", "left", "right"]}
       >
         {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
+        <View className="flex-row items-center justify-between px-4 py-3">
           <TouchableOpacity onPress={() => router.back()}>
             <MaterialIcons name="arrow-back" size={24} color="#111827" />
           </TouchableOpacity>
@@ -35,41 +52,7 @@ export default function MessagesLayout() {
         </View>
 
         {/* Custom Tabs */}
-        <View className="flex-row border-b border-gray-200 bg-white">
-          <TouchableOpacity
-            className="flex-1 py-3 items-center border-b-2"
-            style={{
-              borderBottomColor: isChatTab ? COLORS.primary : "transparent",
-            }}
-            onPress={() => router.push("/(tabs)/messages/chat")}
-          >
-            <Text
-              className="text-sm font-semibold"
-              style={{ color: isChatTab ? COLORS.primary : "#6B7280" }}
-            >
-              Nhắn tin
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="flex-1 py-3 items-center border-b-2"
-            style={{
-              borderBottomColor: !isChatTab ? COLORS.primary : "transparent",
-            }}
-            onPress={() => router.push("/(tabs)/messages/notifications")}
-          >
-            <Text
-              className="text-sm font-semibold"
-              style={{ color: !isChatTab ? COLORS.primary : "#6B7280" }}
-            >
-              Thông báo
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Content */}
-        <View className="flex-1">
-          {isChatTab ? <ChatTab /> : <NotificationsTab />}
-        </View>
+        <Tabs tabs={tabs} variant="pill" />
       </SafeAreaView>
     </>
   );
