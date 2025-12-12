@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { View, Text, TouchableOpacity } from "react-native";
 import ROUTES from "@/constants/routes";
 
-export default function RegisterPrompt() {
+export default function LoginPrompt() {
   const router = useRouter();
 
   const handleRegisterPress = () => {

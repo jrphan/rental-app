@@ -5,14 +5,13 @@ import { persist, createJSONStorage, StateStorage } from "zustand/middleware";
 // Custom storage adapter for Zustand
 const zustandStorage: StateStorage<void> = {
   setItem: <T>(name: string, value: T): void => {
-    return setItem(name, value);
+    setItem(name, value);
   },
-  getItem: <T>(name: string): T | null => {
-    const value = getItem<T>(name);
-    return value ?? null;
+  getItem: async <T>(name: string): Promise<T | null> => {
+    return await getItem<T>(name);
   },
-  removeItem: (name: string): void => {
-    return removeItem(name);
+  removeItem: async (name: string): Promise<void> => {
+    await removeItem(name);
   },
 };
 

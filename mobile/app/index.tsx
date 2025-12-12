@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { SplashScreen as CustomSplashScreen } from "@/components/SplashScreen";
 
-// Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
 export default function Index() {
@@ -13,16 +12,12 @@ export default function Index() {
   useEffect(() => {
     async function prepare() {
       try {
-        // Pre-load fonts, make any API calls you need to do here
-        // Wait for store to hydrate
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (e) {
         console.warn(e);
       } finally {
         setIsReady(true);
-        // Hide native splash screen
         await SplashScreen.hideAsync();
-        // Show custom splash for a bit longer
         setTimeout(() => {
           setShowCustomSplash(false);
         }, 500);
