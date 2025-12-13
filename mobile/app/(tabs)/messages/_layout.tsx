@@ -1,18 +1,13 @@
 import React, { useMemo } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { View, TouchableOpacity, Text, StatusBar } from "react-native";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useRouter } from "expo-router";
+import { StatusBar } from "react-native";
 import ChatTab from "./chat";
 import NotificationsTab from "./notifications";
 import { Tabs } from "@/components/ui/tabs";
 import type { TabConfig } from "@/components/ui/tabs";
+import HeaderBase from "@/components/header/HeaderBase";
 
 export default function MessagesLayout() {
-  const router = useRouter();
-
-  // Tabs config - mỗi tab có content riêng
-  // Logic match path được xử lý tự động bên trong Tabs component
   const tabs = useMemo<TabConfig[]>(
     () => [
       {
@@ -42,16 +37,8 @@ export default function MessagesLayout() {
         className="flex-1 bg-white"
         edges={["top", "left", "right"]}
       >
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-3">
-          <TouchableOpacity onPress={() => router.back()}>
-            <MaterialIcons name="arrow-back" size={24} color="#111827" />
-          </TouchableOpacity>
-          <Text className="text-lg font-bold text-gray-900">Tin nhắn</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <HeaderBase title="Tin nhắn" showBackButton />
 
-        {/* Custom Tabs */}
         <Tabs tabs={tabs} variant="pill" />
       </SafeAreaView>
     </>
