@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import LoginForm from "./components/LoginForm";
 import LoginHeader from "./components/LoginHeader";
-import RegisterPrompt from "./components/RegisterPrompt";
+import RegisterPrompt from "./components/LoginPrompt";
 import ROUTES from "@/constants/routes";
 
 export default function LoginScreen() {

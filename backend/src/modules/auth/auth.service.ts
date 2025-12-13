@@ -541,8 +541,6 @@ export class AuthService {
       },
     });
 
-    console.log('otp', otp, verifyOtpDto);
-
     if (!otp) {
       void this.auditLogService.log({
         actorId: verifyOtpDto.userId,

@@ -1,10 +1,7 @@
 import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Platform, View, Text } from "react-native";
+import { Platform, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
-import { notificationsApi } from "@/services/api.notifications";
-import { useAuthStore } from "@/store/auth";
 import { COLORS } from "@/constants/colors";
 
 type TabItem = {
@@ -16,18 +13,9 @@ type TabItem = {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const { isAuthenticated } = useAuthStore();
 
   const primaryColor = COLORS.primary;
   const inactiveColor = COLORS.inactive;
-
-  // Fetch unread notification count (chỉ khi đã đăng nhập)
-  const { data: unreadCount } = useQuery({
-    queryKey: ["notifications", "unread-count"],
-    queryFn: () => notificationsApi.getUnreadCount(),
-    refetchInterval: 30000, // Refetch every 30 seconds
-    enabled: isAuthenticated, // Chỉ call API khi đã đăng nhập
-  });
 
   const baseHeight = 60;
   const androidBottomPadding = 32;
@@ -113,13 +101,13 @@ export default function TabLayout() {
           size={focused ? 26 : 24}
           color={color}
         />
-        {typeof unreadCount === "number" && unreadCount > 0 && (
+        {/* {typeof unreadCount === "number" && unreadCount > 0 && (
           <View className="absolute -top-1 -right-2 min-w-5 h-5 px-1.5 items-center justify-center rounded-full border-2 border-white bg-primary-600">
             <Text className="text-white text-[10px] font-bold">
               {unreadCount > 99 ? "99+" : String(unreadCount)}
             </Text>
           </View>
-        )}
+        )} */}
       </View>
     );
   };
@@ -134,6 +122,7 @@ export default function TabLayout() {
         tabBarLabelStyle,
         tabBarIconStyle,
         tabBarItemStyle,
+        animation: "shift",
       }}
     >
       {tabItems.map((item) => (
@@ -144,7 +133,6 @@ export default function TabLayout() {
             title: item.title,
             tabBarIcon: ({ color, focused }) =>
               renderTabIcon(item, color, focused),
-            // Messages screen had headerShown: false already via global, keep default
           }}
         />
       ))}

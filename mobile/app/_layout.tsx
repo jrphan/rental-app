@@ -9,6 +9,7 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { queryClient } from "@/lib/queryClient";
 import { ToastContainer } from "@/components/ui/toast";
 
@@ -18,25 +19,26 @@ export const unstable_settings = {
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, animation: "flip" }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="search/index" />
     </Stack>
   );
 }
 
 export default function RootLayout() {
   return (
-    <NavigationThemeProvider value={DefaultTheme}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <RootLayoutNav />
-          <ToastContainer />
-          <StatusBar style="dark" translucent={false} />
-        </QueryClientProvider>
-      </SafeAreaProvider>
-    </NavigationThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationThemeProvider value={DefaultTheme}>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
+            <RootLayoutNav />
+            <ToastContainer />
+            <StatusBar style="dark" translucent={false} />
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </NavigationThemeProvider>
+    </GestureHandlerRootView>
   );
 }

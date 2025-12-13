@@ -10,14 +10,12 @@ const zustandStorage = storage;
  */
 export interface User {
   id: string;
-  email?: string | null;
   phone: string;
+  email: string;
+  fullName: string;
   role: string;
   isActive: boolean;
-  isVerified?: boolean;
-  isPhoneVerified: boolean; // Xác minh số điện thoại qua SMS
-  createdAt: string;
-  updatedAt: string;
+  isPhoneVerified: boolean;
 }
 
 interface AuthTokens {

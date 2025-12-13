@@ -17,33 +17,31 @@ export default function ProfileAuthPrompt() {
           />
         </View>
         <Text className="text-2xl font-bold text-gray-900">Chào mừng bạn!</Text>
-        <Text className="mt-2 text-base text-gray-600 text-center">
+        <Text className="mt-2 text-base text-gray-600 text-center px-8">
           Đăng nhập hoặc đăng ký để sử dụng đầy đủ các tính năng của ứng dụng
         </Text>
       </View>
 
-      <View className="w-full gap-4">
-        <Button
-          onPress={() => router.push("/(auth)/login")}
-          className="w-full"
-          size="lg"
-        >
-          <Text className="text-center text-base font-semibold text-white">
-            Đăng nhập
-          </Text>
-        </Button>
+      <Button
+        onPress={() => router.push("/(auth)/login")}
+        size="lg"
+        className="w-full"
+      >
+        <Text className="text-center text-base font-semibold text-white">
+          Đăng nhập
+        </Text>
+      </Button>
 
-        <Button
-          onPress={() => router.push("/(auth)/register")}
-          variant="outline"
-          className="w-full"
-          size="lg"
-        >
-          <Text className="text-center text-base font-semibold text-gray-900">
-            Đăng ký ngay
-          </Text>
-        </Button>
-      </View>
+      <Button
+        onPress={() => router.push("/(auth)/register")}
+        variant="outline"
+        size="lg"
+        className="w-full mt-4"
+      >
+        <Text className="text-center text-base font-semibold text-gray-900">
+          Đăng ký ngay
+        </Text>
+      </Button>
     </View>
   );
 }

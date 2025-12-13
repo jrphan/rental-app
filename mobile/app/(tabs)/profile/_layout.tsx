@@ -5,11 +5,11 @@ export default function ProfileLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animation: "slide_from_right",
+        animation: "flip",
       }}
     >
       <Stack.Screen name="index" />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="edit-profile"
         options={{
           presentation: "card",
@@ -43,7 +43,7 @@ export default function ProfileLayout() {
           presentation: "card",
           animation: "slide_from_right",
         }}
-      />
+      /> */}
     </Stack>
   );
 }

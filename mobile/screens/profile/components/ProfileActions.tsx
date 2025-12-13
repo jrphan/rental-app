@@ -1,4 +1,3 @@
-import { Router } from "expo-router";
 import { COLORS } from "@/constants/colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -12,19 +11,12 @@ interface ProfileActionsProps {
   } | null;
   myKyc?: { status?: string; reviewNotes?: string | null } | null;
   isLoadingKyc: boolean;
-  router: Router;
-  submitOwnerApplicationMutation: {
-    mutate: (notes?: string) => void;
-    isPending?: boolean;
-  };
 }
 
 export default function ProfileActions({
   user,
   myKyc,
   isLoadingKyc,
-  router,
-  submitOwnerApplicationMutation,
 }: ProfileActionsProps) {
   return (
     <View className="mb-4">
@@ -150,10 +142,7 @@ export default function ProfileActions({
       )} */}
 
       {user?.phone && !user?.isPhoneVerified && (
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/verify-phone")}
-          className="bg-yellow-50 border-yellow-200 rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border-2"
-        >
+        <TouchableOpacity className="bg-yellow-50 border-yellow-200 rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border-2">
           <View className="flex-row items-center flex-1">
             <MaterialIcons name="phone" size={24} color="#F59E0B" />
             <View className="ml-3 flex-1">
@@ -169,10 +158,7 @@ export default function ProfileActions({
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity
-        onPress={() => router.push("/(tabs)/profile/edit-profile")}
-        className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
-      >
+      <TouchableOpacity className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200">
         <View className="flex-row items-center">
           <MaterialIcons name="edit" size={24} color={COLORS.primary} />
           <Text className="ml-3 text-base font-medium text-gray-900">
@@ -183,10 +169,7 @@ export default function ProfileActions({
       </TouchableOpacity>
 
       {/* Xem danh sách xe của tôi */}
-      <TouchableOpacity
-        onPress={() => router.push("/(tabs)/profile/my-vehicles")}
-        className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
-      >
+      <TouchableOpacity className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200">
         <View className="flex-row items-center">
           <MaterialCommunityIcons
             name="motorbike"
@@ -218,10 +201,7 @@ export default function ProfileActions({
         <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
       </TouchableOpacity> */}
 
-      <TouchableOpacity
-        onPress={() => router.push("/(tabs)/profile/change-password")}
-        className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
-      >
+      <TouchableOpacity className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200">
         <View className="flex-row items-center">
           <MaterialIcons name="lock" size={24} color={COLORS.primary} />
           <Text className="ml-3 text-base font-medium text-gray-900">
@@ -232,10 +212,7 @@ export default function ProfileActions({
       </TouchableOpacity>
 
       <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-200">
-        <TouchableOpacity
-          onPress={() => router.push("/(tabs)/profile/kyc")}
-          className="flex-row items-center justify-between"
-        >
+        <TouchableOpacity className="flex-row items-center justify-between">
           <View className="flex-row items-center">
             <MaterialIcons
               name="verified-user"
