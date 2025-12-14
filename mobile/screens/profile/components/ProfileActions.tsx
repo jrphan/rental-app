@@ -2,6 +2,7 @@ import { COLORS } from "@/constants/colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useRouter } from "expo-router";
 
 interface ProfileActionsProps {
   user: {
@@ -13,14 +14,70 @@ interface ProfileActionsProps {
   isLoadingKyc: boolean;
 }
 
+interface ActionItem {
+  id: string;
+  icon: keyof typeof MaterialIcons.glyphMap | "motorbike";
+  iconType: "MaterialIcons" | "MaterialCommunityIcons";
+  title: string;
+  route?: string;
+  onPress?: () => void;
+  showCondition?: () => boolean;
+}
+
 export default function ProfileActions({
   user,
   myKyc,
   isLoadingKyc,
 }: ProfileActionsProps) {
+  const router = useRouter();
+
+  const actionItems: ActionItem[] = [
+    {
+      id: "edit-profile",
+      icon: "edit",
+      iconType: "MaterialIcons",
+      title: "Chỉnh sửa hồ sơ",
+      route: "/(tabs)/profile/edit-profile",
+    },
+    {
+      id: "my-vehicles",
+      icon: "motorbike",
+      iconType: "MaterialCommunityIcons",
+      title: "Xe của tôi",
+      route: "/(tabs)/profile/my-vehicles",
+    },
+    {
+      id: "change-password",
+      icon: "lock",
+      iconType: "MaterialIcons",
+      title: "Đổi mật khẩu",
+      route: "/(tabs)/profile/change-password",
+    },
+  ];
+
+  const handlePress = (item: ActionItem) => {
+    if (item.onPress) {
+      item.onPress();
+    } else if (item.route) {
+      router.push(item.route as any);
+    }
+  };
+
+  const renderIcon = (item: ActionItem) => {
+    const iconProps = {
+      size: 22,
+      color: COLORS.primary,
+    };
+
+    if (item.iconType === "MaterialCommunityIcons") {
+      return <MaterialCommunityIcons name={item.icon as any} {...iconProps} />;
+    }
+    return <MaterialIcons name={item.icon as any} {...iconProps} />;
+  };
+
   return (
     <View className="mb-4">
-      <Text className="text-lg font-semibold text-gray-900 mb-4">Cài đặt</Text>
+      <Text className="text-xl font-bold text-gray-900 mb-5 px-1">Cài đặt</Text>
 
       {/* Owner Application Section - Show for RENTER or if no application yet */}
       {/* {(user?.role === "RENTER" || !myOwnerApplication) && (
@@ -141,100 +198,109 @@ export default function ProfileActions({
         </View>
       )} */}
 
+      {/* Phone Verification Banner */}
       {user?.phone && !user?.isPhoneVerified && (
-        <TouchableOpacity className="bg-yellow-50 border-yellow-200 rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border-2">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          className="bg-amber-50 border-amber-300 rounded-2xl p-5 mb-4 flex-row items-center justify-between shadow-lg border-2"
+          style={{
+            elevation: 4,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
           <View className="flex-row items-center flex-1">
-            <MaterialIcons name="phone" size={24} color="#F59E0B" />
-            <View className="ml-3 flex-1">
-              <Text className="text-base font-semibold text-gray-900">
+            <View className="bg-amber-200 rounded-full p-3">
+              <MaterialIcons name="phone" size={24} color="#F59E0B" />
+            </View>
+            <View className="ml-4 flex-1">
+              <Text className="text-base font-bold text-gray-900">
                 Xác minh số điện thoại
               </Text>
-              <Text className="text-sm text-gray-600 mt-1">
+              <Text className="text-sm text-amber-800 mt-1">
                 Cần xác minh để sử dụng đầy đủ tính năng
               </Text>
             </View>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+          <MaterialIcons name="chevron-right" size={24} color="#F59E0B" />
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200">
-        <View className="flex-row items-center">
-          <MaterialIcons name="edit" size={24} color={COLORS.primary} />
-          <Text className="ml-3 text-base font-medium text-gray-900">
-            Chỉnh sửa hồ sơ
-          </Text>
-        </View>
-        <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
-      </TouchableOpacity>
+      {/* Action Items */}
+      {actionItems.map((item) => {
+        if (item.showCondition && !item.showCondition()) {
+          return null;
+        }
 
-      {/* Xem danh sách xe của tôi */}
-      <TouchableOpacity className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200">
-        <View className="flex-row items-center">
-          <MaterialCommunityIcons
-            name="motorbike"
-            size={24}
-            color={COLORS.primary}
-          />
-          <Text className="ml-3 text-base font-medium text-gray-900">
-            Xe của tôi
-          </Text>
-        </View>
-        <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
-      </TouchableOpacity>
+        return (
+          <TouchableOpacity
+            key={item.id}
+            activeOpacity={0.7}
+            onPress={() => handlePress(item)}
+            className="bg-white rounded-2xl p-2 mb-3 flex-row items-center justify-between shadow-lg border border-gray-200"
+            style={{
+              elevation: 3,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+            }}
+          >
+            <View className="flex-row items-center flex-1">
+              <View className="bg-orange-100 rounded-xl p-3">
+                {renderIcon(item)}
+              </View>
+              <Text className="ml-4 text-base font-bold text-gray-900">
+                {item.title}
+              </Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
+          </TouchableOpacity>
+        );
+      })}
 
-      {/* Allow any user to create vehicle, not just OWNER */}
-      {/* <TouchableOpacity
-        onPress={() => router.push("/(tabs)/profile/vehicle-create")}
-        className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200"
+      {/* KYC Section */}
+      <View
+        className="bg-white rounded-2xl p-2 mb-3 shadow-lg border border-gray-200"
+        style={{
+          elevation: 3,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        }}
       >
-        <View className="flex-row items-center">
-          <MaterialIcons
-            name="add-circle"
-            size={24}
-            color={COLORS.primary}
-          />
-          <Text className="ml-3 text-base font-medium text-gray-900">
-            Đăng xe mới
-          </Text>
-        </View>
-        <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
-      </TouchableOpacity> */}
-
-      <TouchableOpacity className="bg-white rounded-xl p-4 mb-3 flex-row items-center justify-between shadow-sm border border-gray-200">
-        <View className="flex-row items-center">
-          <MaterialIcons name="lock" size={24} color={COLORS.primary} />
-          <Text className="ml-3 text-base font-medium text-gray-900">
-            Đổi mật khẩu
-          </Text>
-        </View>
-        <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
-      </TouchableOpacity>
-
-      <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-200">
-        <TouchableOpacity className="flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <MaterialIcons
-              name="verified-user"
-              size={24}
-              color={COLORS.primary}
-            />
-            <Text className="ml-3 text-base font-medium text-gray-900">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push("/(tabs)/profile/kyc" as any)}
+          className="flex-row items-center justify-between"
+        >
+          <View className="flex-row items-center flex-1">
+            <View className="bg-orange-100 rounded-xl p-3">
+              <MaterialIcons
+                name="verified-user"
+                size={22}
+                color={COLORS.primary}
+              />
+            </View>
+            <Text className="ml-4 text-base font-bold text-gray-900">
               Xác thực danh tính (KYC)
             </Text>
           </View>
           <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
         </TouchableOpacity>
         {isLoadingKyc ? (
-          <View className="mt-3 pt-3 border-t border-gray-200">
+          <View className="mt-4 pt-4 border-t border-gray-200">
             <ActivityIndicator size="small" color={COLORS.primary} />
           </View>
         ) : myKyc ? (
-          <View className="mt-3 pt-3 border-t border-gray-200">
+          <View className="mt-4 pt-4 border-t border-gray-200">
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <View
-                  className={`w-2 h-2 rounded-full mr-2 ${
+                  className={`w-3.5 h-3.5 rounded-full mr-3 ${
                     myKyc.status === "APPROVED"
                       ? "bg-green-500"
                       : myKyc.status === "REJECTED"
@@ -242,7 +308,7 @@ export default function ProfileActions({
                       : "bg-yellow-500"
                   }`}
                 />
-                <Text className="text-sm font-semibold text-gray-900">
+                <Text className="text-sm font-bold text-gray-900">
                   {myKyc.status === "APPROVED"
                     ? "Đã được duyệt"
                     : myKyc.status === "REJECTED"
@@ -252,9 +318,11 @@ export default function ProfileActions({
               </View>
             </View>
             {myKyc.reviewNotes && (
-              <Text className="text-xs text-gray-600 mt-2" numberOfLines={2}>
-                {myKyc.reviewNotes}
-              </Text>
+              <View className="mt-3 bg-gray-100 rounded-lg p-3 border border-gray-200">
+                <Text className="text-xs text-gray-700 leading-5">
+                  {myKyc.reviewNotes}
+                </Text>
+              </View>
             )}
           </View>
         ) : null}

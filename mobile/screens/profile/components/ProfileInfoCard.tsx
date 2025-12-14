@@ -18,12 +18,21 @@ export default function ProfileInfoCard({
   user,
 }: ProfileInfoCardProps) {
   return (
-    <View className="bg-gray-50 rounded-2xl mb-4 p-4">
+    <View
+      className="bg-white rounded-2xl mb-4 p-4 shadow-lg border border-gray-200"
+      style={{
+        elevation: 3,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      }}
+    >
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-sm text-gray-600">Trạng thái xác thực</Text>
         <View className="flex-row items-center">
           <View
-            className={`w-2 h-2 rounded-full mr-2 ${
+            className={`w-2.5 h-2.5 rounded-full mr-2 ${
               user?.isVerified ? "bg-green-500" : "bg-yellow-500"
             }`}
           />
@@ -37,7 +46,7 @@ export default function ProfileInfoCard({
           <Text className="text-sm text-gray-600">Xác minh số điện thoại</Text>
           <View className="flex-row items-center">
             <View
-              className={`w-2 h-2 rounded-full mr-2 ${
+              className={`w-2.5 h-2.5 rounded-full mr-2 ${
                 user?.isPhoneVerified ? "bg-green-500" : "bg-yellow-500"
               }`}
             />

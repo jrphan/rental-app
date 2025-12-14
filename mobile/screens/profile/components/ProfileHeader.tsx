@@ -17,7 +17,7 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ profile, user }: ProfileHeaderProps) {
   return (
-    <View className="items-center pt-8 pb-6">
+    <View className="items-center pt-8 pb-6 mb-6">
       <View className="w-24 h-24 bg-primary-100 rounded-full items-center justify-center mb-4">
         {profile?.avatar ? (
           <MaterialIcons name="person" size={48} color={COLORS.primary} />
@@ -49,4 +49,3 @@ export default function ProfileHeader({ profile, user }: ProfileHeaderProps) {
     </View>
   );
 }
-
