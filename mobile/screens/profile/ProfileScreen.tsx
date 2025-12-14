@@ -63,10 +63,14 @@ export default function ProfileScreen() {
         translucent={false}
       />
       <SafeAreaView
-        className="flex-1 bg-white"
+        className="flex-1 bg-gray-50"
         edges={["top", "left", "right"]}
       >
-        <ScrollView showsVerticalScrollIndicator={false} className="px-6">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          className="px-6"
+          contentContainerStyle={{ paddingTop: 20 }}
+        >
           <ProfileHeader profile={undefined} user={user} />
           <ProfileInfoCard profile={undefined} user={user} />
           <ProfileActions user={user} myKyc={null} isLoadingKyc={false} />
