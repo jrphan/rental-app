@@ -5,12 +5,24 @@ export const selectGetUserInfo: Prisma.UserSelect = {
   phone: true,
   email: true,
   fullName: true,
-  role: true,
-  isPhoneVerified: true,
   avatar: true,
+  isActive: true,
+  isPhoneVerified: true,
+  role: true,
+  isVendor: true,
+  stripeAccountId: true,
+  stripeStatus: true,
   createdAt: true,
   updatedAt: true,
   deletedAt: true,
+  kyc: {
+    select: {
+      id: true,
+      status: true,
+      reviewedBy: true,
+      reviewedAt: true,
+    },
+  },
 };
 
 export type GetUserInfoResponse = Prisma.UserGetPayload<{

@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/useToast";
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "expo-router";
 import ROUTES from "@/constants/routes";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 export function useRegister() {
   const toast = useToast();
@@ -69,6 +69,14 @@ export function useLogin() {
             role: userData.user.role,
             isActive: userData.user.isActive,
             isPhoneVerified: userData.user.isPhoneVerified,
+            avatar: userData.user.avatar,
+            isVendor: userData.user.isVendor,
+            stripeAccountId: userData.user.stripeAccountId,
+            stripeStatus: userData.user.stripeStatus,
+            createdAt: userData.user.createdAt,
+            updatedAt: userData.user.updatedAt,
+            deletedAt: userData.user.deletedAt,
+            kyc: userData.user.kyc,
           },
           {
             accessToken: userData.accessToken,
@@ -150,95 +158,26 @@ export function useResendOTP() {
   });
 }
 
-export function useSendPhoneOTP() {
-  const toast = useToast();
-  return useMutation<{ message: string }, ApiError, { phone: string }>({
-    mutationFn: ({ phone }) => authApi.sendPhoneOTP(phone),
-    onSuccess: () => {
-      toast.showSuccess("Mã OTP đã được gửi đến số điện thoại của bạn", {
-        title: "Thành công",
-      });
-    },
-    onError: (error: ApiError) => {
-      const errorMessage = error?.message || "Gửi OTP thất bại";
-      toast.showError(errorMessage, { title: "Lỗi gửi OTP" });
-    },
-  });
-}
-
-export function useVerifyPhoneOTP() {
-  const toast = useToast();
-  const router = useRouter();
-  const updateUser = useAuthStore((state) => state.updateUser);
-  const queryClient = useQueryClient();
-
-  return useMutation<
-    { message: string; isPhoneVerified: boolean },
-    ApiError,
-    { phone: string; otpCode: string }
-  >({
-    mutationFn: ({ phone, otpCode }) => authApi.verifyPhoneOTP(phone, otpCode),
-    onSuccess: async (data) => {
-      updateUser({ isPhoneVerified: data.isPhoneVerified });
-
-      try {
-        const updatedUser = await authApi.getMe();
-        updateUser(updatedUser);
-      } catch {
-        // Ignore error, we already updated locally
-      }
-
-      queryClient.invalidateQueries();
-
-      toast.showSuccess("Xác minh số điện thoại thành công!", {
-        title: "Thành công",
-        onPress: () => router.back(),
-        duration: 2000,
-      });
-
-      setTimeout(() => {
-        router.back();
-      }, 1000);
-    },
-    onError: (error: ApiError) => {
-      const errorMessage = error?.message || "Xác minh OTP thất bại";
-      toast.showError(errorMessage, { title: "Lỗi xác minh OTP" });
-    },
-  });
-}
-
-export function useResendPhoneOTP() {
-  const toast = useToast();
-  return useMutation<{ message: string }, ApiError, { phone: string }>({
-    mutationFn: ({ phone }) => authApi.resendPhoneOTP(phone),
-    onSuccess: () => {
-      toast.showSuccess("Đã gửi lại mã OTP đến số điện thoại của bạn", {
-        title: "Thành công",
-      });
-    },
-    onError: (error: ApiError) => {
-      const errorMessage = error?.message || "Gửi lại OTP thất bại";
-      toast.showError(errorMessage, { title: "Lỗi gửi lại OTP" });
-    },
-  });
-}
-
 export function useResetPassword() {
   const toast = useToast();
   const router = useRouter();
 
-  return useMutation<VerifyResetPasswordResponse, ApiError, ResetPasswordInput>({
-    mutationFn: ({ phone, otpCode, newPassword }) =>
-      authApi.resetPassword(phone, otpCode, newPassword),
-    onSuccess: (data) => {
-      toast.showSuccess(data.message, { title: "Đặt lại mật khẩu thành công" });
-      router.replace(ROUTES.LOGIN);
-    },
-    onError: (error) => {
-      const errorMessage = error?.message || "Đặt lại mật khẩu thất bại";
-      toast.showError(errorMessage, { title: "Lỗi" });
-    },
-  });
+  return useMutation<VerifyResetPasswordResponse, ApiError, ResetPasswordInput>(
+    {
+      mutationFn: ({ phone, otpCode, newPassword }) =>
+        authApi.resetPassword(phone, otpCode, newPassword),
+      onSuccess: (data) => {
+        toast.showSuccess(data.message, {
+          title: "Đặt lại mật khẩu thành công",
+        });
+        router.replace(ROUTES.LOGIN);
+      },
+      onError: (error) => {
+        const errorMessage = error?.message || "Đặt lại mật khẩu thất bại";
+        toast.showError(errorMessage, { title: "Lỗi" });
+      },
+    }
+  );
 }
 
 export function useChangePassword() {

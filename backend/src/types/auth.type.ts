@@ -33,6 +33,13 @@ export interface LoginResponse {
   user: LoginUserResponse;
 }
 
+// Dùng riêng cho endpoint refresh token để tránh nhầm lẫn với login
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: LoginUserResponse;
+}
+
 export interface LoginWithNoVerifyPhoneResponse {
   message: string;
   userId: string;

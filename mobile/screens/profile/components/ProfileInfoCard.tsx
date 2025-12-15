@@ -1,16 +1,12 @@
 import { View, Text } from "react-native";
+import { User } from "@/store/auth";
 
 interface ProfileInfoCardProps {
   profile?: {
     dateOfBirth?: string | null;
     gender?: "MALE" | "FEMALE" | string | null;
   } | null;
-  user: {
-    isVerified?: boolean;
-    isPhoneVerified?: boolean;
-    role?: string;
-    phone?: string;
-  } | null;
+  user: User | null;
 }
 
 export default function ProfileInfoCard({
@@ -33,11 +29,11 @@ export default function ProfileInfoCard({
         <View className="flex-row items-center">
           <View
             className={`w-2.5 h-2.5 rounded-full mr-2 ${
-              user?.isVerified ? "bg-green-500" : "bg-yellow-500"
+              user?.isPhoneVerified ? "bg-green-500" : "bg-yellow-500"
             }`}
           />
           <Text className="text-sm font-semibold text-gray-900">
-            {user?.isVerified ? "Đã xác thực" : "Chưa xác thực"}
+            {user?.isPhoneVerified ? "Đã xác thực" : "Chưa xác thực"}
           </Text>
         </View>
       </View>
@@ -59,11 +55,11 @@ export default function ProfileInfoCard({
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-sm text-gray-600">Vai trò</Text>
         <Text className="text-sm font-semibold text-gray-900">
-          {user?.role === "RENTER"
-            ? "Người thuê"
-            : user?.role === "OWNER"
-            ? "Chủ xe"
-            : "User"}
+          {user?.role === "USER"
+            ? "Người dùng"
+            : user?.role === "ADMIN"
+            ? "Quản trị viên"
+            : "Hỗ trợ"}
         </Text>
       </View>
       {profile?.dateOfBirth && (

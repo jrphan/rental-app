@@ -8,6 +8,7 @@ export const ROUTES = {
     FORGOT_PASSWORD: '/auth/forgot-password',
     VERIFY_RESET_PASSWORD: '/auth/verify-reset-password',
     CHANGE_PASSWORD: '/auth/change-password',
+    REFRESH: '/auth/refresh',
   },
   USER: {
     GET_USER_BY_ID: '/user/get-user-by-id',

@@ -20,6 +20,7 @@ import {
   matchesForceLogoutMessage,
 } from "@/lib/force-logout";
 import ROUTES from "@/constants/routes";
+import API_ENDPOINTS from "@/services/api.endpoints";
 
 const baseURL = process.env.EXPO_PUBLIC_API_URL || "";
 
@@ -73,6 +74,7 @@ api.interceptors.request.use((config) => {
   }
 
   // Thêm token vào header nếu có
+  // Note: Nếu token hết hạn, response interceptor sẽ tự động refresh và retry
   const authData = getAuthCache();
   if (authData?.token) {
     config.headers.Authorization = `Bearer ${authData.token}`;
@@ -109,7 +111,7 @@ api.interceptors.response.use(
     const responseData = error.response?.data as any;
     const authData = getAuthCache();
     const requestUrl = originalRequest?.url || "";
-    const isRefreshRequest = requestUrl.includes("/auth/refresh");
+    const isRefreshRequest = requestUrl.includes(API_ENDPOINTS.AUTH.REFRESH);
 
     // Nếu lỗi 401 và chưa retry, thử refresh token
     if (status === 401 && !originalRequest._retry && !isRefreshRequest) {
@@ -120,15 +122,28 @@ api.interceptors.response.use(
           // Lazy import để tránh circular dependency
           const { authApi } = await import("../services/api.auth");
           // Refresh token
-          const tokens = await authApi.refreshToken(authData.refreshToken);
+          const refreshResponse = await authApi.refreshToken(
+            authData.refreshToken
+          );
 
           // Update cache và headers
           if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
+            originalRequest.headers.Authorization = `Bearer ${refreshResponse.accessToken}`;
           }
 
-          // Update store
-          useAuthStore.getState().updateTokens(tokens);
+          // Update store với tokens
+          useAuthStore.getState().updateTokens({
+            accessToken: refreshResponse.accessToken,
+            refreshToken: refreshResponse.refreshToken,
+          });
+
+          // Update user nếu có trong response
+          if (refreshResponse.user) {
+            useAuthStore.getState().updateUser({
+              ...refreshResponse.user,
+              role: refreshResponse.user.role as any, // Backend trả về string, nhưng store cần UserRole
+            });
+          }
 
           // Retry original request
           return api(originalRequest);
@@ -136,6 +151,9 @@ api.interceptors.response.use(
           // Refresh thất bại, logout
           await forceLogoutAndRedirect("refresh_token_failed");
         }
+      } else {
+        // No refresh token, force logout
+        await forceLogoutAndRedirect("no_refresh_token");
       }
     }
 

@@ -10,12 +10,7 @@ import type { Request } from 'express';
 import { UserService } from './user.service';
 import { GetUserInfoResponse } from '@/types/user.type';
 import { AuthGuard } from '@/common/guards/auth.guard';
-
-type AuthenticatedRequest = Request & {
-  user?: {
-    sub: string;
-  };
-};
+import { AuthenticatedRequest } from '@/types/response.type';
 
 @Controller()
 export class UserController {

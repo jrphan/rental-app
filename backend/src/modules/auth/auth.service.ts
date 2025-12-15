@@ -19,6 +19,7 @@ import {
   ForgotPasswordResponse,
   VerifyResetPasswordResponse,
   ChangePasswordResponse,
+  RefreshTokenResponse,
 } from '@/types/auth.type';
 import { UserService } from '@/modules/user/user.service';
 import { SmsService } from '@/modules/sms/sms.service';
@@ -342,6 +343,64 @@ export class AuthService {
       accessToken,
       refreshToken,
       user: userWithoutPassword as LoginUserResponse,
+    };
+  }
+
+  async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token không hợp lệ');
+    }
+
+    let payload: { sub: string; phone: string; role: string };
+    try {
+      payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: ENV.jwtRefreshSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('Refresh token không hợp lệ');
+    }
+
+    const user = await this.prismaService.user.findUnique({
+      where: { id: payload.sub },
+      select: selectLoginUser,
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản đã bị khóa');
+    }
+
+    const newPayload = {
+      sub: user.id,
+      phone: user.phone,
+      role: user.role,
+    };
+
+    const accessTokenOptions: FlexibleSignOptions = {
+      secret: ENV.jwtSecret,
+      expiresIn: ENV.jwtExpiration,
+    };
+    const refreshTokenOptions: FlexibleSignOptions = {
+      secret: ENV.jwtRefreshSecret,
+      expiresIn: ENV.jwtRefreshExpiration,
+    };
+
+    const newAccessToken = await this.jwtService.signAsync(
+      newPayload,
+      accessTokenOptions as SignOptions,
+    );
+    const newRefreshToken = await this.jwtService.signAsync(
+      newPayload,
+      refreshTokenOptions as SignOptions,
+    );
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      user,
     };
   }
 

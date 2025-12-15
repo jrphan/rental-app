@@ -1,3 +1,5 @@
+import { User } from "@/store/auth";
+
 export interface RegisterResponse {
   userId: string;
   message: string;
@@ -14,15 +16,7 @@ export interface ResendOtpResponse {
 export interface LoginResponse {
   message?: string;
   userId?: string;
-  user: {
-    id: string;
-    phone: string;
-    email: string;
-    fullName: string;
-    role: string;
-    isActive: boolean;
-    isPhoneVerified: boolean;
-  };
+  user: User;
   accessToken: string;
   refreshToken: string;
 }

@@ -65,14 +65,6 @@ export const authApi = {
     throw new Error(response.message || "Đăng nhập thất bại");
   },
 
-  async getMe(): Promise<LoginResponse["user"]> {
-    const response = await apiClient.get<LoginResponse["user"]>("/auth/me");
-    if (response.success && response.data && !Array.isArray(response.data)) {
-      return response.data;
-    }
-    throw new Error(response.message || "Lấy thông tin thất bại");
-  },
-
   async changePassword(
     data: Omit<ChangePasswordInput, "confirmPassword">
   ): Promise<void> {
@@ -86,9 +78,12 @@ export const authApi = {
   },
 
   async refreshToken(refreshToken: string): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>("/auth/refresh", {
-      refreshToken,
-    });
+    const response = await apiClient.post<LoginResponse>(
+      API_ENDPOINTS.AUTH.REFRESH,
+      {
+        refreshToken,
+      }
+    );
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data;
     }
@@ -127,42 +122,11 @@ export const authApi = {
     throw new Error(response.message || "Đặt lại mật khẩu thất bại");
   },
 
-  async sendPhoneOTP(phone: string): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>(
-      "/auth/phone/send-otp",
-      { phone }
-    );
+  async getMe(): Promise<LoginResponse["user"]> {
+    const response = await apiClient.get<LoginResponse["user"]>("/auth/me");
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data;
     }
-    throw new Error(response.message || "Gửi OTP thất bại");
-  },
-
-  async verifyPhoneOTP(
-    phone: string,
-    otpCode: string
-  ): Promise<{ message: string; isPhoneVerified: boolean }> {
-    const response = await apiClient.post<{
-      message: string;
-      isPhoneVerified: boolean;
-    }>("/auth/phone/verify-otp", {
-      phone,
-      otpCode,
-    });
-    if (response.success && response.data && !Array.isArray(response.data)) {
-      return response.data;
-    }
-    throw new Error(response.message || "Xác minh OTP thất bại");
-  },
-
-  async resendPhoneOTP(phone: string): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>(
-      "/auth/phone/resend-otp",
-      { phone }
-    );
-    if (response.success && response.data && !Array.isArray(response.data)) {
-      return response.data;
-    }
-    throw new Error(response.message || "Gửi lại OTP thất bại");
+    throw new Error(response.message || "Lấy thông tin thất bại");
   },
 };

@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/constants/colors";
+import { User } from "@/store/auth";
 
 interface ProfileHeaderProps {
   profile?: {
@@ -8,11 +9,7 @@ interface ProfileHeaderProps {
     firstName?: string;
     lastName?: string;
   } | null;
-  user: {
-    email?: string;
-    phone?: string;
-    isPhoneVerified?: boolean;
-  } | null;
+  user: User | null;
 }
 
 export default function ProfileHeader({ profile, user }: ProfileHeaderProps) {

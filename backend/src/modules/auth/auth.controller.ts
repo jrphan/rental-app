@@ -19,6 +19,7 @@ import {
   ResendOtpResponse,
   VerifyOtpResponse,
   VerifyResetPasswordResponse,
+  RefreshTokenResponse,
 } from '@/types/auth.type';
 import { ROUTES } from '@/config/routes';
 import { VerifyOtpDto } from '@/common/dto/Auth/verify-otp.dto';
@@ -27,12 +28,8 @@ import { ForgotPasswordDto } from '@/common/dto/Auth/forgot-password.dto';
 import { VerifyResetPasswordDto } from '@/common/dto/Auth/verify-reset-password.dto';
 import { ChangePasswordDto } from '@/common/dto/Auth/change-password.dto';
 import { AuthGuard } from '@/common/guards/auth.guard';
-
-type AuthenticatedRequest = Request & {
-  user?: {
-    sub: string;
-  };
-};
+import { AuthenticatedRequest } from '@/common';
+import { RefreshTokenDto } from '@/common/dto/Auth/refresh-token.dto';
 
 @Controller()
 export class AuthController {
@@ -88,5 +85,12 @@ export class AuthController {
   @Post(ROUTES.AUTH.RESEND_OTP)
   resendOTP(@Body() resendOtpDto: ResendOtpDto): Promise<ResendOtpResponse> {
     return this.authService.resendOTP(resendOtpDto);
+  }
+
+  @Post(ROUTES.AUTH.REFRESH)
+  refreshToken(
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<RefreshTokenResponse> {
+    return this.authService.refreshToken(refreshTokenDto.refreshToken);
   }
 }
