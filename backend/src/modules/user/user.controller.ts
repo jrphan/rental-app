@@ -16,9 +16,9 @@ import { AuthenticatedRequest } from '@/types/response.type';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get(ROUTES.USER.GET_USER_BY_ID)
+  @Get(ROUTES.USER.GET_USER_INFO)
   @UseGuards(AuthGuard)
-  getUserById(@Req() req: Request): Promise<GetUserInfoResponse> {
+  getUserInfo(@Req() req: Request): Promise<GetUserInfoResponse> {
     const userId = (req as AuthenticatedRequest).user?.sub;
     if (!userId) {
       throw new UnauthorizedException('Người dùng không tồn tại');

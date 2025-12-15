@@ -11,8 +11,10 @@ import { StatusBar, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
-  const { logout, user, isAuthenticated } = useAuthStore();
   const toast = useToast();
+  const { logout, user, isAuthenticated, token } = useAuthStore();
+
+  console.log("user", JSON.stringify(user, null, 2), isAuthenticated, token);
 
   const handleLogout = () => {
     logout();
@@ -36,24 +38,6 @@ export default function ProfileScreen() {
       </>
     );
   }
-
-  // if (isLoading) {
-  //   return (
-  //     <>
-  //       <StatusBar
-  //         barStyle="dark-content"
-  //         backgroundColor="#FFFFFF"
-  //         translucent={false}
-  //       />
-  //       <SafeAreaView
-  //         className="flex-1 bg-white"
-  //         edges={["top", "left", "right"]}
-  //       >
-  //         <ProfileLoading />
-  //       </SafeAreaView>
-  //     </>
-  //   );
-  // }
 
   return (
     <>

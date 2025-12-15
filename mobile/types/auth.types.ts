@@ -1,4 +1,30 @@
-import { User } from "@/store/auth";
+export type UserRole = "USER" | "ADMIN" | "SUPPORT";
+export type KycStatus = "PENDING" | "APPROVED" | "REJECTED" | "NEEDS_UPDATE";
+
+export interface Kyc {
+  id: string;
+  status: KycStatus;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+}
+
+export interface User {
+  id: string;
+  phone: string;
+  email: string | null;
+  fullName: string | null;
+  avatar: string | null;
+  isActive: boolean;
+  isPhoneVerified: boolean;
+  role: UserRole;
+  isVendor: boolean;
+  stripeAccountId: string | null;
+  stripeStatus: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  kyc: Kyc | null;
+}
 
 export interface RegisterResponse {
   userId: string;

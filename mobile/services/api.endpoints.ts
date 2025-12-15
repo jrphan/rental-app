@@ -11,7 +11,7 @@ const API_ENDPOINTS = {
     REFRESH: "/auth/refresh",
   },
   USER: {
-    GET_USER_BY_ID: "/user/get-user-by-id",
+    GET_USER_INFO: "/user/get-user-info",
   },
 };
 

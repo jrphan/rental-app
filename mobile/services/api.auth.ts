@@ -122,8 +122,10 @@ export const authApi = {
     throw new Error(response.message || "Đặt lại mật khẩu thất bại");
   },
 
-  async getMe(): Promise<LoginResponse["user"]> {
-    const response = await apiClient.get<LoginResponse["user"]>("/auth/me");
+  async getUserInfo(): Promise<LoginResponse["user"]> {
+    const response = await apiClient.get<LoginResponse["user"]>(
+      API_ENDPOINTS.USER.GET_USER_INFO
+    );
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data;
     }

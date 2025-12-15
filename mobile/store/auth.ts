@@ -1,43 +1,16 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { storage } from "@/lib/async-storage";
-
-// Custom storage adapter for Zustand using AsyncStorage
-const zustandStorage = storage;
-
-export type UserRole = "USER" | "ADMIN" | "SUPPORT";
-export type KycStatus = "PENDING" | "APPROVED" | "REJECTED" | "NEEDS_UPDATE";
-
-export interface Kyc {
-  id: string;
-  status: KycStatus;
-  reviewedBy: string | null;
-  reviewedAt: string | null;
-}
-
-export interface User {
-  id: string;
-  phone: string;
-  email: string | null;
-  fullName: string | null;
-  avatar: string | null;
-  isActive: boolean;
-  isPhoneVerified: boolean;
-  role: UserRole;
-  isVendor: boolean;
-  stripeAccountId: string | null;
-  stripeStatus: string | null;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-  kyc: Kyc | null;
-}
+import { User } from "@/types/auth.types";
 
 interface AuthTokens {
   accessToken: string;
   refreshToken?: string;
   expiresAt?: number;
 }
+
+// Custom storage adapter for Zustand using AsyncStorage
+const zustandStorage = storage;
 
 interface AuthState {
   user: User | null;
