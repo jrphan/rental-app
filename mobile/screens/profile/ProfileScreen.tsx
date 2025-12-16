@@ -53,7 +53,7 @@ export default function ProfileScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           className="px-6"
-          contentContainerStyle={{ paddingTop: 20 }}
+          contentContainerStyle={{ paddingTop: 20, paddingBottom: 24 }}
         >
           <ProfileHeader user={user} />
           <ProfileInfoCard user={user} />

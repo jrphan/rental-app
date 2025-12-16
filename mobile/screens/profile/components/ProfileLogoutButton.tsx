@@ -16,7 +16,6 @@ export default function ProfileLogoutButton({
 
   return (
     <View
-      className="mb-24"
       style={{
         elevation: 4,
         shadowColor: "#000",
