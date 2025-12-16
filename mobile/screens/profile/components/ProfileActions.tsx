@@ -125,14 +125,7 @@ export default function ProfileActions({
             key={item.id}
             activeOpacity={0.7}
             onPress={() => handlePress(item)}
-            className="bg-white rounded-2xl p-2 mb-3 flex-row items-center justify-between shadow-lg border border-gray-200"
-            style={{
-              elevation: 3,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.1,
-              shadowRadius: 4,
-            }}
+            className="bg-white rounded-2xl p-2 mb-3 flex-row items-center justify-between border border-gray-200"
           >
             <View className="flex-row items-center flex-1">
               <View className="bg-orange-100 rounded-xl p-3">
@@ -148,16 +141,7 @@ export default function ProfileActions({
       })}
 
       {/* KYC Section */}
-      <View
-        className="bg-white rounded-2xl p-2 mb-3 shadow-lg border border-gray-200"
-        style={{
-          elevation: 3,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        }}
-      >
+      <View className="bg-white rounded-2xl p-2 mb-3 border border-gray-200">
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push("/(tabs)/profile/kyc" as any)}

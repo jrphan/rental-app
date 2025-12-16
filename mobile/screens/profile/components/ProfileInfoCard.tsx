@@ -7,16 +7,7 @@ interface ProfileInfoCardProps {
 
 export default function ProfileInfoCard({ user }: ProfileInfoCardProps) {
   return (
-    <View
-      className="bg-white rounded-2xl mb-4 p-4 shadow-lg border border-gray-200"
-      style={{
-        elevation: 3,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      }}
-    >
+    <View className="bg-white rounded-2xl mb-4 p-4 border border-gray-200">
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-sm text-gray-600">Email</Text>
         <Text className="text-sm font-semibold text-gray-900">
