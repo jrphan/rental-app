@@ -1,7 +1,10 @@
 import { Controller } from "react-hook-form";
 import { ActivityIndicator, Text } from "react-native";
+import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
+import GalleryField from "@/components/gallery/GalleryField";
 import { useKycForm } from "@/hooks/forms/profile.forms";
 import { useSubmitKyc } from "@/hooks/auth/auth.mutation";
 
@@ -76,17 +79,14 @@ export default function KycForm() {
       <Controller
         control={form.control}
         name="dob"
-        render={({
-          field: { onChange, onBlur, value },
-          fieldState: { error },
-        }) => (
-          <Input
+        render={({ field: { value, onChange }, fieldState: { error } }) => (
+          <DatePicker
             label="Ngày sinh"
-            placeholder="YYYY-MM-DD"
             value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+            onChange={onChange}
             error={error?.message}
+            mode="date"
+            allowClear={true}
           />
         )}
       />
@@ -130,18 +130,24 @@ export default function KycForm() {
       <Controller
         control={form.control}
         name="licenseType"
-        render={({
-          field: { onChange, onBlur, value },
-          fieldState: { error },
-        }) => (
-          <Input
-            label="Hạng GPLX (A1, A2, ...)"
-            placeholder="VD: A1"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            error={error?.message}
-          />
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <>
+            <Select
+              label="Hạng GPLX (A1, A2, ...)"
+              placeholder="Chọn hạng GPLX"
+              options={[
+                { label: "A1 - Xe máy dưới 175cc", value: "A1" },
+                { label: "A2 - Xe máy trên 175cc", value: "A2" },
+                { label: "A3 - Xe 3 bánh", value: "A3" },
+                { label: "A4 - Máy kéo đến 1000kg", value: "A4" },
+              ]}
+              value={value || undefined}
+              onValueChange={(val) => onChange(val)}
+            />
+            {error?.message ? (
+              <Text className="mt-1 text-xs text-red-500">{error.message}</Text>
+            ) : null}
+          </>
         )}
       />
 
@@ -152,12 +158,12 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <Input
-            label="Ảnh CMND/CCCD mặt trước (URL)"
-            placeholder="Nhập đường dẫn ảnh"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+          <GalleryField
+            label="Ảnh CMND/CCCD mặt trước"
+            folder="kyc-id-card"
+            multiple={false}
+            value={value ?? ""}
+            onChange={onChange}
             error={error?.message}
           />
         )}
@@ -170,12 +176,12 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <Input
-            label="Ảnh CMND/CCCD mặt sau (URL)"
-            placeholder="Nhập đường dẫn ảnh"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+          <GalleryField
+            label="Ảnh CMND/CCCD mặt sau"
+            folder="kyc-id-card"
+            multiple={false}
+            value={value ?? ""}
+            onChange={onChange}
             error={error?.message}
           />
         )}
@@ -188,12 +194,12 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <Input
-            label="Ảnh GPLX mặt trước (URL)"
-            placeholder="Nhập đường dẫn ảnh"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+          <GalleryField
+            label="Ảnh GPLX mặt trước"
+            folder="kyc-license"
+            multiple={false}
+            value={value ?? ""}
+            onChange={onChange}
             error={error?.message}
           />
         )}
@@ -206,12 +212,12 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <Input
-            label="Ảnh GPLX mặt sau (URL)"
-            placeholder="Nhập đường dẫn ảnh"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+          <GalleryField
+            label="Ảnh GPLX mặt sau"
+            folder="kyc-license"
+            multiple={false}
+            value={value ?? ""}
+            onChange={onChange}
             error={error?.message}
           />
         )}
@@ -224,12 +230,12 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <Input
-            label="Ảnh selfie với giấy tờ (URL)"
-            placeholder="Nhập đường dẫn ảnh"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
+          <GalleryField
+            label="Ảnh selfie với giấy tờ"
+            folder="kyc-selfie"
+            multiple={false}
+            value={value ?? ""}
+            onChange={onChange}
             error={error?.message}
           />
         )}
