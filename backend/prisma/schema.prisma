@@ -161,6 +161,7 @@ model User {
   transactions     Transaction[]
 
   otps             Otp[] // <--- Thêm dòng này
+  files            UserFile[]
 
   @@index([phone])
   @@index([email])
@@ -473,4 +474,24 @@ model AuditLog {
   @@index([targetId, targetType])
   @@index([actorId])
   @@map("audit_logs")
+}
+
+// ==================== FILES ====================
+
+model UserFile {
+  id          String   @id @default(cuid())
+  userId      String
+  key         String   // S3 object key
+  url         String   // Public or signed URL base
+  size        Int?
+  contentType String?
+  folder      String?  // Logical folder (e.g. 'kyc', 'avatar', 'vehicles')
+
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([folder])
+  @@map("user_files")
 }

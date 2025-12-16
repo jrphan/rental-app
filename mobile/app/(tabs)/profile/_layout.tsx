@@ -9,41 +9,6 @@ export default function ProfileLayout() {
       }}
     >
       <Stack.Screen name="index" />
-      {/* <Stack.Screen
-        name="edit-profile"
-        options={{
-          presentation: "card",
-          animation: "slide_from_right",
-        }}
-      />
-      <Stack.Screen
-        name="change-password"
-        options={{
-          presentation: "card",
-          animation: "slide_from_right",
-        }}
-      />
-      <Stack.Screen
-        name="kyc"
-        options={{
-          presentation: "card",
-          animation: "slide_from_right",
-        }}
-      />
-      <Stack.Screen
-        name="vehicle-create"
-        options={{
-          presentation: "card",
-          animation: "slide_from_right",
-        }}
-      />
-      <Stack.Screen
-        name="my-vehicles"
-        options={{
-          presentation: "card",
-          animation: "slide_from_right",
-        }}
-      /> */}
     </Stack>
   );
 }

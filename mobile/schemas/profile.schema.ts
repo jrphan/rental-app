@@ -1,38 +1,56 @@
 import { z } from "zod";
 
 /**
- * Schema cho cập nhật profile
+ * Schema đơn giản cho màn Edit Profile (avatar, fullName, email)
  */
-export const updateProfileSchema = z.object({
-  firstName: z.string().min(1, "Họ không được để trống").max(50, "Họ quá dài"),
-  lastName: z.string().min(1, "Tên không được để trống").max(50, "Tên quá dài"),
-  avatar: z.string().url("URL avatar không hợp lệ").optional().or(z.literal("")),
-  dateOfBirth: z.string().optional().or(z.literal("")),
-  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
-  bio: z.string().max(500, "Giới thiệu quá dài").optional().or(z.literal("")),
-  address: z.string().max(200, "Địa chỉ quá dài").optional().or(z.literal("")),
-  cityId: z.string().optional().or(z.literal("")),
-  zipCode: z.string().max(10, "Mã bưu điện quá dài").optional().or(z.literal("")),
-  phone: z
+export const editProfileSchema = z.object({
+  fullName: z.string().min(1, "Vui lòng nhập họ và tên"),
+  email: z
     .string()
-    .regex(/^[0-9]{10,11}$/, "Số điện thoại không hợp lệ")
-    .optional()
-    .or(z.literal("")),
+    .email("Email không hợp lệ")
+    .or(z.literal("")) // cho phép ""
+    .optional(),
+  avatar: z
+    .string()
+    .url("URL avatar không hợp lệ")
+    .or(z.literal("")) // cho phép ""
+    .optional(),
 });
 
-export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type EditProfileInput = z.infer<typeof editProfileSchema>;
 
 /**
- * Schema cho KYC submission
+ * Schema cho form KYC cơ bản (frontend)
+ * Map đơn giản vào các field quan trọng của model Kyc
  */
-export const kycSubmissionSchema = z.object({
-  idNumber: z.string().max(20, "Số CMND/CCCD quá dài").optional().or(z.literal("")),
-  idCardFrontUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
-  idCardBackUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
-  driverLicenseUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
-  selfieUrl: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
-  notes: z.string().max(500, "Ghi chú quá dài").optional().or(z.literal("")),
+export const kycFormSchema = z.object({
+  citizenId: z
+    .string()
+    .max(20, "Số CMND/CCCD quá dài")
+    .optional()
+    .or(z.literal("")),
+  fullNameInId: z
+    .string()
+    .max(100, "Họ tên theo CMND/CCCD quá dài")
+    .optional()
+    .or(z.literal("")),
+  dob: z.string().optional().or(z.literal("")),
+  addressInId: z
+    .string()
+    .max(200, "Địa chỉ trong CMND/CCCD quá dài")
+    .optional()
+    .or(z.literal("")),
+  driverLicense: z
+    .string()
+    .max(50, "Số GPLX quá dài")
+    .optional()
+    .or(z.literal("")),
+  licenseType: z.enum(["A1", "A2", "A3", "A4"]).optional().or(z.literal("")),
+  idCardFront: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
+  idCardBack: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
+  licenseFront: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
+  licenseBack: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
+  selfieImg: z.string().url("URL không hợp lệ").optional().or(z.literal("")),
 });
 
-export type KycSubmissionInput = z.infer<typeof kycSubmissionSchema>;
-
+export type KycFormInput = z.infer<typeof kycFormSchema>;

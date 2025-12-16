@@ -1,3 +1,5 @@
+import type { Request } from 'express';
+
 export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
@@ -24,3 +26,9 @@ export interface PaginatedResponse<T = any> {
   path: string;
   statusCode: number;
 }
+
+export type AuthenticatedRequest = Request & {
+  user?: {
+    sub: string;
+  };
+};

@@ -100,16 +100,6 @@ export interface AuthResponse {
 /**
  * Type cho user data
  */
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  phone?: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 /**
  * Type cho property data (ví dụ cho rental app)
  */

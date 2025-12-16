@@ -2,9 +2,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   updateProfileSchema,
-  kycSubmissionSchema,
+  kycFormSchema,
   UpdateProfileInput,
-  KycSubmissionInput,
+  KycFormInput,
 } from "@/schemas/profile.schema";
 
 /**
@@ -36,16 +36,21 @@ export function useUpdateProfileForm(
 /**
  * Hook cho form KYC submission
  */
-export function useKycSubmissionForm() {
-  const form = useForm<KycSubmissionInput>({
-    resolver: zodResolver(kycSubmissionSchema),
+export function useKycForm(defaultValues?: Partial<KycFormInput>) {
+  const form = useForm<KycFormInput>({
+    resolver: zodResolver(kycFormSchema),
     defaultValues: {
-      idNumber: "",
-      idCardFrontUrl: "",
-      idCardBackUrl: "",
-      driverLicenseUrl: "",
-      selfieUrl: "",
-      notes: "",
+      citizenId: defaultValues?.citizenId || "",
+      fullNameInId: defaultValues?.fullNameInId || "",
+      dob: defaultValues?.dob || "",
+      addressInId: defaultValues?.addressInId || "",
+      driverLicense: defaultValues?.driverLicense || "",
+      licenseType: defaultValues?.licenseType || "",
+      idCardFront: defaultValues?.idCardFront || "",
+      idCardBack: defaultValues?.idCardBack || "",
+      licenseFront: defaultValues?.licenseFront || "",
+      licenseBack: defaultValues?.licenseBack || "",
+      selfieImg: defaultValues?.selfieImg || "",
     },
     mode: "onChange",
   });

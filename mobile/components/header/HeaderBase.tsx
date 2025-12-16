@@ -25,7 +25,7 @@ export default function HeaderBase({
     }
   };
   return (
-    <View className="flex-row items-center justify-between px-4 py-3">
+    <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
       {showBackButton ? (
         <TouchableOpacity onPress={handleBackPress}>
           <MaterialIcons name="arrow-back" size={24} color="#111827" />
@@ -33,7 +33,7 @@ export default function HeaderBase({
       ) : (
         <View style={{ width: 24 }} />
       )}
-      <Text className="text-lg font-bold text-gray-900">{title}</Text>
+      <Text className="text-xl font-bold text-gray-900">{title}</Text>
       {action ? <View>{action}</View> : <View style={{ width: 24 }} />}
     </View>
   );

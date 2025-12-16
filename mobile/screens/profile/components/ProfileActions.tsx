@@ -3,14 +3,11 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
+import { Kyc, User } from "@/types/auth.types";
 
 interface ProfileActionsProps {
-  user: {
-    phone?: string;
-    isPhoneVerified?: boolean;
-    role?: string;
-  } | null;
-  myKyc?: { status?: string; reviewNotes?: string | null } | null;
+  user: User | null;
+  myKyc?: Kyc | null;
   isLoadingKyc: boolean;
 }
 
@@ -40,11 +37,19 @@ export default function ProfileActions({
       route: "/(tabs)/profile/edit-profile",
     },
     {
+      id: "register-vendor",
+      icon: "app-registration",
+      iconType: "MaterialIcons",
+      title: "Đăng ký làm chủ xe",
+      route: "/(tabs)/profile/register-vendor",
+    },
+    {
       id: "my-vehicles",
       icon: "motorbike",
       iconType: "MaterialCommunityIcons",
       title: "Xe của tôi",
       route: "/(tabs)/profile/my-vehicles",
+      showCondition: () => user?.isVendor ?? false,
     },
     {
       id: "change-password",
@@ -78,127 +83,6 @@ export default function ProfileActions({
   return (
     <View className="mb-4">
       <Text className="text-xl font-bold text-gray-900 mb-5 px-1">Cài đặt</Text>
-
-      {/* Owner Application Section - Show for RENTER or if no application yet */}
-      {/* {(user?.role === "RENTER" || !myOwnerApplication) && (
-        <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-200">
-          <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center">
-              <MaterialIcons
-                name="directions-car"
-                size={24}
-                color={COLORS.primary}
-              />
-              <Text className="ml-3 text-base font-medium text-gray-900">
-                Đăng ký làm chủ xe
-              </Text>
-            </View>
-          </View>
-          {isLoadingOwnerApp ? (
-            <View className="py-2">
-              <ActivityIndicator size="small" color={COLORS.primary} />
-            </View>
-          ) : myOwnerApplication ? (
-            <View>
-              <View className="flex-row items-center justify-between mb-2">
-                <View className="flex-row items-center">
-                  <View
-                    className={`w-2 h-2 rounded-full mr-2 ${
-                      myOwnerApplication.status === "PENDING"
-                        ? "bg-yellow-500"
-                        : myOwnerApplication.status === "APPROVED"
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                    }`}
-                  />
-                  <Text className="text-sm font-semibold text-gray-900">
-                    {myOwnerApplication.status === "PENDING"
-                      ? "Đang chờ duyệt"
-                      : myOwnerApplication.status === "APPROVED"
-                        ? "Đã được duyệt"
-                        : "Bị từ chối"}
-                  </Text>
-                </View>
-                {myOwnerApplication.status === "REJECTED" && (
-                  <Button
-                    size="sm"
-                    onPress={() =>
-                      submitOwnerApplicationMutation.mutate(undefined)
-                    }
-                    disabled={submitOwnerApplicationMutation.isPending}
-                  >
-                    <Text className="text-white font-semibold text-xs">
-                      Gửi lại
-                    </Text>
-                  </Button>
-                )}
-              </View>
-              {myOwnerApplication.status === "PENDING" && (
-                <Text className="text-xs text-gray-600 mt-2">
-                  Yêu cầu của bạn đang được xem xét. Bạn sẽ được thông
-                  báo khi có kết quả.
-                </Text>
-              )}
-              {myOwnerApplication.status === "APPROVED" && (
-                <Text className="text-xs text-green-600 mt-2">
-                  Chúc mừng! Bạn đã trở thành chủ xe. Bây giờ bạn có thể
-                  đăng xe cho thuê.
-                </Text>
-              )}
-            </View>
-          ) : (
-            <View>
-              <Text className="text-sm text-gray-600 mb-3">
-                Để trở thành chủ xe, bạn cần:
-              </Text>
-              <View className="mb-3">
-                <View className="flex-row items-start mb-2">
-                  <MaterialIcons
-                    name="check-circle"
-                    size={16}
-                    color="#22c55e"
-                    style={{ marginTop: 2, marginRight: 8 }}
-                  />
-                  <Text className="text-xs text-gray-700 flex-1">
-                    Tạo ít nhất 1 chiếc xe
-                  </Text>
-                </View>
-                <View className="flex-row items-start mb-2">
-                  <MaterialIcons
-                    name="check-circle"
-                    size={16}
-                    color="#22c55e"
-                    style={{ marginTop: 2, marginRight: 8 }}
-                  />
-                  <Text className="text-xs text-gray-700 flex-1">
-                    Gửi xe để admin duyệt
-                  </Text>
-                </View>
-                <View className="flex-row items-start">
-                  <MaterialIcons
-                    name="check-circle"
-                    size={16}
-                    color="#22c55e"
-                    style={{ marginTop: 2, marginRight: 8 }}
-                  />
-                  <Text className="text-xs text-gray-700 flex-1">
-                    Khi có xe đầu tiên được duyệt, yêu cầu làm chủ xe sẽ
-                    tự động được gửi
-                  </Text>
-                </View>
-              </View>
-              <Button
-                onPress={() => router.push("/(tabs)/profile/vehicle-create")}
-                className="mb-2"
-              >
-                <Text className="text-white font-semibold">Tạo xe mới</Text>
-              </Button>
-            </View>
-          )}
-        </View>
-      )} */}
-
-      {/* Phone Verification Banner */}
       {user?.phone && !user?.isPhoneVerified && (
         <TouchableOpacity
           activeOpacity={0.7}
@@ -317,13 +201,6 @@ export default function ProfileActions({
                 </Text>
               </View>
             </View>
-            {myKyc.reviewNotes && (
-              <View className="mt-3 bg-gray-100 rounded-lg p-3 border border-gray-200">
-                <Text className="text-xs text-gray-700 leading-5">
-                  {myKyc.reviewNotes}
-                </Text>
-              </View>
-            )}
           </View>
         ) : null}
       </View>
