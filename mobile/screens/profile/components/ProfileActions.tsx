@@ -82,7 +82,9 @@ export default function ProfileActions({
 
   return (
     <View className="mb-4">
-      <Text className="text-xl font-bold text-gray-900 mb-5 px-1">Cài đặt</Text>
+      <Text className="text-xl font-medium text-gray-900 mb-5 px-1">
+        Cài đặt
+      </Text>
       {user?.phone && !user?.isPhoneVerified && (
         <TouchableOpacity
           activeOpacity={0.7}
@@ -100,7 +102,7 @@ export default function ProfileActions({
               <MaterialIcons name="phone" size={24} color="#F59E0B" />
             </View>
             <View className="ml-4 flex-1">
-              <Text className="text-base font-bold text-gray-900">
+              <Text className="text-base font-medium text-gray-900">
                 Xác minh số điện thoại
               </Text>
               <Text className="text-sm text-amber-800 mt-1">
@@ -136,7 +138,7 @@ export default function ProfileActions({
               <View className="bg-orange-100 rounded-xl p-3">
                 {renderIcon(item)}
               </View>
-              <Text className="ml-4 text-base font-bold text-gray-900">
+              <Text className="ml-4 text-base font-medium text-gray-900">
                 {item.title}
               </Text>
             </View>
@@ -169,7 +171,7 @@ export default function ProfileActions({
                 color={COLORS.primary}
               />
             </View>
-            <Text className="ml-4 text-base font-bold text-gray-900">
+            <Text className="ml-4 text-base font-medium text-gray-900">
               Xác thực danh tính (KYC)
             </Text>
           </View>
@@ -192,7 +194,7 @@ export default function ProfileActions({
                       : "bg-yellow-500"
                   }`}
                 />
-                <Text className="text-sm font-bold text-gray-900">
+                <Text className="text-sm font-medium text-gray-900">
                   {myKyc.status === "APPROVED"
                     ? "Đã được duyệt"
                     : myKyc.status === "REJECTED"
