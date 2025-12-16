@@ -25,7 +25,7 @@ function ProfileHeaderComponent({ user }: ProfileHeaderProps) {
         {user?.avatar ? (
           <Image
             source={{ uri: user.avatar }}
-            className="w-24 h-24 rounded-full"
+            style={{ width: 96, height: 96, borderRadius: 48 }}
           />
         ) : (
           <MaterialIcons name="person" size={48} color={COLORS.primary} />
