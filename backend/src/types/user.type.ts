@@ -28,3 +28,9 @@ export const selectGetUserInfo: Prisma.UserSelect = {
 export type GetUserInfoResponse = Prisma.UserGetPayload<{
   select: typeof selectGetUserInfo;
 }>;
+
+export type UpdateProfileResponse = GetUserInfoResponse;
+
+export interface SubmitKycResponse {
+  message: string;
+}

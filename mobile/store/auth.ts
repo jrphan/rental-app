@@ -134,7 +134,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-      storage: createJSONStorage(() => zustandStorage as any),
+      storage: createJSONStorage(() => zustandStorage),
       onRehydrateStorage: () => (state) => {
         if (state?.user && state?.token) {
           // Check if token is expired before restoring

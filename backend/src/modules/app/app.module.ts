@@ -5,9 +5,10 @@ import { AppController } from '@/modules/app/app.controller';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { LoggerModule } from '@/modules/logger/logger.module';
 import { RedisModule } from '@/modules/redis/redis.module';
+import { FileModule } from '@/modules/file/file.module';
 
 @Module({
-  imports: [PrismaModule, LoggerModule, RedisModule, AuthModule],
+  imports: [PrismaModule, LoggerModule, RedisModule, AuthModule, FileModule],
   controllers: [AppController],
   providers: [AppService],
 })

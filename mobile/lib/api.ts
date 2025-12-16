@@ -73,10 +73,21 @@ api.interceptors.request.use((config) => {
     (config.headers as any)["Content-Type"] = "application/json";
   }
 
-  // Thêm token vào header nếu có
+  // Xác định các endpoint public (không cần token)
+  const url = config.url || "";
+  const isPublicAuthRequest =
+    url.includes(API_ENDPOINTS.AUTH.LOGIN) ||
+    url.includes(API_ENDPOINTS.AUTH.REGISTER) ||
+    url.includes(API_ENDPOINTS.AUTH.FORGOT_PASSWORD) ||
+    url.includes(API_ENDPOINTS.AUTH.VERIFY_RESET_PASSWORD) ||
+    url.includes(API_ENDPOINTS.AUTH.VERIFY_OTP) ||
+    url.includes(API_ENDPOINTS.AUTH.RESEND_OTP) ||
+    url === API_ENDPOINTS.HEALTH;
+
+  // Thêm token vào header nếu có và không phải request public
   // Note: Nếu token hết hạn, response interceptor sẽ tự động refresh và retry
   const authData = getAuthCache();
-  if (authData?.token) {
+  if (authData?.token && !isPublicAuthRequest) {
     config.headers.Authorization = `Bearer ${authData.token}`;
   }
 
@@ -112,9 +123,23 @@ api.interceptors.response.use(
     const authData = getAuthCache();
     const requestUrl = originalRequest?.url || "";
     const isRefreshRequest = requestUrl.includes(API_ENDPOINTS.AUTH.REFRESH);
+    const isPublicAuthRequest =
+      requestUrl.includes(API_ENDPOINTS.AUTH.LOGIN) ||
+      requestUrl.includes(API_ENDPOINTS.AUTH.REGISTER) ||
+      requestUrl.includes(API_ENDPOINTS.AUTH.FORGOT_PASSWORD) ||
+      requestUrl.includes(API_ENDPOINTS.AUTH.VERIFY_RESET_PASSWORD) ||
+      requestUrl.includes(API_ENDPOINTS.AUTH.VERIFY_OTP) ||
+      requestUrl.includes(API_ENDPOINTS.AUTH.RESEND_OTP) ||
+      requestUrl === API_ENDPOINTS.HEALTH;
 
     // Nếu lỗi 401 và chưa retry, thử refresh token
-    if (status === 401 && !originalRequest._retry && !isRefreshRequest) {
+    // Bỏ qua cho các request public (login/register/forgot/verify...) để tránh redirect lại và reset form
+    if (
+      status === 401 &&
+      !originalRequest._retry &&
+      !isRefreshRequest &&
+      !isPublicAuthRequest
+    ) {
       originalRequest._retry = true;
 
       if (authData?.refreshToken) {
@@ -184,6 +209,7 @@ api.interceptors.response.use(
     const shouldForceLogout =
       status === 401 &&
       authData &&
+      !isPublicAuthRequest &&
       (isRefreshRequest || matchesForceLogoutMessage(serverMessage));
 
     if (shouldForceLogout) {

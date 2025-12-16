@@ -131,4 +131,28 @@ export const authApi = {
     }
     throw new Error(response.message || "Lấy thông tin thất bại");
   },
+
+  async updateProfile(
+    data: Partial<Pick<LoginResponse["user"], "fullName" | "email" | "avatar">>
+  ): Promise<LoginResponse["user"]> {
+    const response = await apiClient.put<LoginResponse["user"]>(
+      API_ENDPOINTS.USER.UPDATE_PROFILE,
+      data
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Cập nhật hồ sơ thất bại");
+  },
+
+  async submitKyc(data: any): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      API_ENDPOINTS.USER.SUBMIT_KYC,
+      data
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Gửi KYC thất bại");
+  },
 };

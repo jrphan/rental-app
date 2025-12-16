@@ -20,7 +20,7 @@ export default function ChangePasswordForm() {
   return (
     <>
       <View className="mb-4">
-        <Text className="text-base text-gray-600 mb-6">
+        <Text className="text-base text-gray-700 mb-6">
           Vui lòng nhập mật khẩu cũ và mật khẩu mới để thay đổi mật khẩu của
           bạn.
         </Text>
@@ -40,7 +40,6 @@ export default function ChangePasswordForm() {
               onBlur={onBlur}
               error={error?.message}
               editable={!mutation.isPending}
-              toggleClassName="absolute right-4 top-10"
             />
           )}
         />
@@ -60,7 +59,6 @@ export default function ChangePasswordForm() {
               onBlur={onBlur}
               error={error?.message}
               editable={!mutation.isPending}
-              toggleClassName="absolute right-4 top-10"
             />
           )}
         />
@@ -80,7 +78,6 @@ export default function ChangePasswordForm() {
               onBlur={onBlur}
               error={error?.message}
               editable={!mutation.isPending}
-              toggleClassName="absolute right-4 top-10"
             />
           )}
         />
@@ -89,7 +86,6 @@ export default function ChangePasswordForm() {
       <Button
         onPress={form.handleSubmit(onSubmit)}
         disabled={mutation.isPending}
-        className="mb-24"
         size="lg"
       >
         {mutation.isPending ? (

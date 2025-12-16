@@ -12,9 +12,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const toast = useToast();
-  const { logout, user, isAuthenticated, token } = useAuthStore();
+  const { logout, user, isAuthenticated } = useAuthStore();
 
-  console.log("user", JSON.stringify(user, null, 2), isAuthenticated, token);
+  console.log("user", JSON.stringify(user, null, 2));
 
   const handleLogout = () => {
     logout();
@@ -55,8 +55,8 @@ export default function ProfileScreen() {
           className="px-6"
           contentContainerStyle={{ paddingTop: 20 }}
         >
-          <ProfileHeader profile={undefined} user={user} />
-          <ProfileInfoCard profile={undefined} user={user} />
+          <ProfileHeader user={user} />
+          <ProfileInfoCard user={user} />
           <ProfileActions user={user} myKyc={null} isLoadingKyc={false} />
           <ProfileBio profile={null} />
           <ProfileAddress profile={null} />

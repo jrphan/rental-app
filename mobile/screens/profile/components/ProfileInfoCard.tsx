@@ -1,18 +1,11 @@
 import { View, Text } from "react-native";
-import { User } from "@/store/auth";
+import { User } from "@/types/auth.types";
 
 interface ProfileInfoCardProps {
-  profile?: {
-    dateOfBirth?: string | null;
-    gender?: "MALE" | "FEMALE" | string | null;
-  } | null;
   user: User | null;
 }
 
-export default function ProfileInfoCard({
-  profile,
-  user,
-}: ProfileInfoCardProps) {
+export default function ProfileInfoCard({ user }: ProfileInfoCardProps) {
   return (
     <View
       className="bg-white rounded-2xl mb-4 p-4 shadow-lg border border-gray-200"
@@ -24,6 +17,12 @@ export default function ProfileInfoCard({
         shadowRadius: 4,
       }}
     >
+      <View className="flex-row items-center justify-between mb-3">
+        <Text className="text-sm text-gray-600">Email</Text>
+        <Text className="text-sm font-semibold text-gray-900">
+          {user?.email || "Không có email"}
+        </Text>
+      </View>
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-sm text-gray-600">Trạng thái xác thực</Text>
         <View className="flex-row items-center">
@@ -37,21 +36,6 @@ export default function ProfileInfoCard({
           </Text>
         </View>
       </View>
-      {user?.phone && (
-        <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-sm text-gray-600">Xác minh số điện thoại</Text>
-          <View className="flex-row items-center">
-            <View
-              className={`w-2.5 h-2.5 rounded-full mr-2 ${
-                user?.isPhoneVerified ? "bg-green-500" : "bg-yellow-500"
-              }`}
-            />
-            <Text className="text-sm font-semibold text-gray-900">
-              {user?.isPhoneVerified ? "Đã xác minh" : "Chưa xác minh"}
-            </Text>
-          </View>
-        </View>
-      )}
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-sm text-gray-600">Vai trò</Text>
         <Text className="text-sm font-semibold text-gray-900">
@@ -62,23 +46,11 @@ export default function ProfileInfoCard({
             : "Hỗ trợ"}
         </Text>
       </View>
-      {profile?.dateOfBirth && (
+      {user?.createdAt && (
         <View className="flex-row items-center justify-between mb-3">
-          <Text className="text-sm text-gray-600">Ngày sinh</Text>
+          <Text className="text-sm text-gray-600">Ngày tạo</Text>
           <Text className="text-sm font-semibold text-gray-900">
-            {new Date(profile.dateOfBirth).toLocaleDateString("vi-VN")}
-          </Text>
-        </View>
-      )}
-      {profile?.gender && (
-        <View className="flex-row items-center justify-between">
-          <Text className="text-sm text-gray-600">Giới tính</Text>
-          <Text className="text-sm font-semibold text-gray-900">
-            {profile.gender === "MALE"
-              ? "Nam"
-              : profile.gender === "FEMALE"
-              ? "Nữ"
-              : "Khác"}
+            {new Date(user.createdAt).toLocaleDateString("vi-VN")}
           </Text>
         </View>
       )}
