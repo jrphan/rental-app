@@ -13,13 +13,31 @@ import { formatPrice, getVehicleStatusLabel } from "../utils";
 interface VehicleCardProps {
   vehicle: Vehicle;
   onPress?: (vehicle: Vehicle) => void;
+  variant?: "full" | "compact"; // full: 1 item per row, compact: 1.5 items per row (for horizontal scroll)
 }
 
-export default function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
+export default function VehicleCard({
+  vehicle,
+  onPress,
+  variant = "full",
+}: VehicleCardProps) {
   const { width: windowWidth } = useWindowDimensions();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [cardWidth, setCardWidth] = useState(windowWidth - 32); // Default: windowWidth - padding (16*2)
+
+  // Tính toán card width dựa trên variant
+  const getCardWidth = React.useCallback(() => {
+    if (variant === "compact") {
+      // Compact: chiếm khoảng 70% width để hiển thị 1.5 items
+      // windowWidth - padding container (16*2) - gap (16)
+      return (windowWidth - 48) * 0.7;
+    }
+    // Full: chiếm toàn bộ width trừ padding
+    return windowWidth - 32; // windowWidth - padding (16*2)
+  }, [variant, windowWidth]);
+
+  // Card width cố định, không thay đổi khi layout
+  const cardWidth = React.useMemo(() => getCardWidth(), [getCardWidth]);
 
   // Sắp xếp ảnh: ảnh primary đầu tiên, sau đó các ảnh khác
   const sortedImages = React.useMemo(() => {
@@ -39,18 +57,18 @@ export default function VehicleCard({ vehicle, onPress }: VehicleCardProps) {
     setCurrentIndex(index);
   };
 
-  const handleLayout = (event: any) => {
-    const { width } = event.nativeEvent.layout;
-    setCardWidth(width);
-  };
+  const cardStyle: { width: number; marginRight?: number } =
+    variant === "compact"
+      ? { width: cardWidth, marginRight: 16 }
+      : { width: windowWidth - 32 };
 
   return (
-    <View className="bg-white rounded-xl mb-3 border border-gray-200 overflow-hidden">
+    <View
+      className="bg-white rounded-xl mb-3 border border-gray-200 overflow-hidden"
+      style={cardStyle}
+    >
       {/* Image Carousel */}
-      <View
-        className="w-full h-40 bg-gray-200 relative"
-        onLayout={handleLayout}
-      >
+      <View className="w-full h-40 bg-gray-200 relative">
         {sortedImages.length > 0 ? (
           <>
             <ScrollView

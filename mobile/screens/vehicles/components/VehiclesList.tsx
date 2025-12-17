@@ -7,11 +7,13 @@ import type { Vehicle } from "../types";
 interface VehiclesListProps {
   vehicles: Vehicle[];
   onVehiclePress?: (vehicle: Vehicle) => void;
+  variant?: "full" | "compact"; // full: vertical scroll, compact: horizontal scroll
 }
 
 export default function VehiclesList({
   vehicles,
   onVehiclePress,
+  variant = "full",
 }: VehiclesListProps) {
   if (vehicles.length === 0) {
     return (
@@ -24,6 +26,32 @@ export default function VehiclesList({
     );
   }
 
+  // Horizontal scroll cho compact variant (mặc định)
+  if (variant === "compact") {
+    return (
+      <View className="bg-gray-50">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingVertical: 16,
+          }}
+        >
+          {vehicles.map((vehicle) => (
+            <VehicleCard
+              key={vehicle.id}
+              vehicle={vehicle}
+              onPress={onVehiclePress}
+              variant="compact"
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Vertical scroll cho full variant
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -40,6 +68,7 @@ export default function VehiclesList({
           key={vehicle.id}
           vehicle={vehicle}
           onPress={onVehiclePress}
+          variant={variant}
         />
       ))}
     </ScrollView>
