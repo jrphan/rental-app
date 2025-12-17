@@ -38,7 +38,7 @@ export function AdminHeader() {
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60 px-4">
       <SidebarTrigger className="-ml-1" />
-      <div className="flex flex-1 items-center justify-end gap-4">
+      <div className="flex flex-1 items-center justify-end gap-2">
         {/* User Info */}
         <div className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
           <div className="flex flex-col items-end">
