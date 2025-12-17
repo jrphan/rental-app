@@ -12,8 +12,11 @@ import {
 } from '@/components/ui/sidebar'
 import { Home, ShieldCheck, MonitorCheck, Users } from 'lucide-react'
 import { useNavigate, useLocation } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import ROUTES from '@/constants/routes'
 import { cn } from '@/lib/utils'
+import { adminKycApi } from '@/services/api.admin-kyc'
+import type { AdminKycListResponse, KycStatus } from '@/types/auth.types'
 
 const menuItems = [
   {
@@ -36,6 +39,19 @@ const menuItems = [
 export function AdminSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
+
+  const { data } = useQuery<AdminKycListResponse>({
+    queryKey: ['adminKycSidebarCount', { status: 'PENDING' as KycStatus }],
+    queryFn: () =>
+      adminKycApi.list({
+        status: 'PENDING',
+        page: 1,
+        limit: 1,
+      }),
+    staleTime: 30_000,
+  })
+
+  const pendingKycCount = data?.total ?? 0
 
   return (
     <Sidebar className="border-r border-gray-200 bg-linear-to-b from-gray-50/70 to-white">
@@ -62,6 +78,7 @@ export function AdminSidebar() {
               {menuItems.map((item) => {
                 const Icon = item.icon
                 const isActive = location.pathname === item.href
+                const isKycItem = item.href === ROUTES.KYC
 
                 return (
                   <SidebarMenuItem key={item.href} className="cursor-pointer">
@@ -82,9 +99,16 @@ export function AdminSidebar() {
                       <span className="text-sm font-semibold tracking-tight">
                         {item.title}
                       </span>
-                      {isActive && (
-                        <div className="ml-auto h-1.5 w-1.5 rounded-full bg-orange-500" />
-                      )}
+                      <div className="ml-auto flex items-center gap-2">
+                        {isKycItem && pendingKycCount > 0 && (
+                          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-semibold text-white shadow-sm">
+                            {pendingKycCount > 99 ? '99+' : pendingKycCount}
+                          </span>
+                        )}
+                        {isActive && (
+                          <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                        )}
+                      </div>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )
