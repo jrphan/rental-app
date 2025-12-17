@@ -23,12 +23,12 @@ export function KycDetailPanel({
   isRejecting,
 }: KycDetailPanelProps) {
   return (
-    <div className="rounded-lg bg-white shadow">
+    <div className="rounded-lg bg-white border border-gray-200">
       <div className="border-b px-4 py-3">
         <h2 className="text-sm font-semibold text-gray-800">Chi tiết KYC</h2>
       </div>
 
-      <div className="space-y-4 p-4 text-sm max-h-[calc(100vh-250px)] overflow-auto">
+      <div className="space-y-4 p-4 text-sm max-h-[calc(100vh-170px)] overflow-auto">
         {!selected ? (
           <p className="text-gray-500">
             Chọn một yêu cầu KYC từ danh sách để xem chi tiết và xử lý.
@@ -143,7 +143,7 @@ export function KycDetailPanel({
                   </label>
                   <textarea
                     rows={3}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                    className="bg-white mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-300"
                     placeholder="Nhập lý do chi tiết nếu cần từ chối KYC..."
                     value={rejectReason}
                     onChange={(e) => onRejectReasonChange(e.target.value)}
@@ -196,7 +196,7 @@ function DetailRow({
   return (
     <div className="flex items-start justify-between gap-3 text-xs">
       <span className="text-gray-500">{label}</span>
-      <span className="max-w-[60%] break-words text-right text-gray-900">
+      <span className="max-w-[60%] whitespace-pre-wrap text-right text-gray-900">
         {value || '—'}
       </span>
     </div>

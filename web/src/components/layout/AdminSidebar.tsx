@@ -89,7 +89,7 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-gray-200 bg-white/80 px-4 py-3">
-        <div className="rounded-lg flex gap-2 items-center bg-linear-to-r from-orange-50 to-orange-100 px-3 py-2.5">
+        <div className="rounded-lg flex items-center justify-center gap-2 bg-linear-to-r from-orange-50 to-orange-100 px-3 py-2.5">
           <p className="text-xs font-semibold uppercase tracking-wide text-orange-900">
             Phiên bản
           </p>
