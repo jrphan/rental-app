@@ -16,6 +16,7 @@ export const ROUTES = {
     SUBMIT_KYC: '/user/kyc',
   },
   ADMIN: {
+    LIST_USERS: '/admin/users',
     LIST_KYC: '/admin/kyc',
     GET_KYC_DETAIL: '/admin/kyc/:id',
     APPROVE_KYC: '/admin/kyc/:id/approve',

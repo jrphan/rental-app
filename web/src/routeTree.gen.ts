@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectRouteImport } from './routes/_protect'
 import { Route as ProtectIndexRouteImport } from './routes/_protect/index'
+import { Route as ProtectUsersRouteImport } from './routes/_protect/users'
 import { Route as ProtectKycRouteImport } from './routes/_protect/kyc'
 
 const LoginRoute = LoginRouteImport.update({
@@ -28,6 +29,11 @@ const ProtectIndexRoute = ProtectIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ProtectRoute,
 } as any)
+const ProtectUsersRoute = ProtectUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => ProtectRoute,
+} as any)
 const ProtectKycRoute = ProtectKycRouteImport.update({
   id: '/kyc',
   path: '/kyc',
@@ -37,11 +43,13 @@ const ProtectKycRoute = ProtectKycRouteImport.update({
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/kyc': typeof ProtectKycRoute
+  '/users': typeof ProtectUsersRoute
   '/': typeof ProtectIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/kyc': typeof ProtectKycRoute
+  '/users': typeof ProtectUsersRoute
   '/': typeof ProtectIndexRoute
 }
 export interface FileRoutesById {
@@ -49,14 +57,21 @@ export interface FileRoutesById {
   '/_protect': typeof ProtectRouteWithChildren
   '/login': typeof LoginRoute
   '/_protect/kyc': typeof ProtectKycRoute
+  '/_protect/users': typeof ProtectUsersRoute
   '/_protect/': typeof ProtectIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/login' | '/kyc' | '/'
+  fullPaths: '/login' | '/kyc' | '/users' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/kyc' | '/'
-  id: '__root__' | '/_protect' | '/login' | '/_protect/kyc' | '/_protect/'
+  to: '/login' | '/kyc' | '/users' | '/'
+  id:
+    | '__root__'
+    | '/_protect'
+    | '/login'
+    | '/_protect/kyc'
+    | '/_protect/users'
+    | '/_protect/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -87,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectIndexRouteImport
       parentRoute: typeof ProtectRoute
     }
+    '/_protect/users': {
+      id: '/_protect/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof ProtectUsersRouteImport
+      parentRoute: typeof ProtectRoute
+    }
     '/_protect/kyc': {
       id: '/_protect/kyc'
       path: '/kyc'
@@ -99,11 +121,13 @@ declare module '@tanstack/react-router' {
 
 interface ProtectRouteChildren {
   ProtectKycRoute: typeof ProtectKycRoute
+  ProtectUsersRoute: typeof ProtectUsersRoute
   ProtectIndexRoute: typeof ProtectIndexRoute
 }
 
 const ProtectRouteChildren: ProtectRouteChildren = {
   ProtectKycRoute: ProtectKycRoute,
+  ProtectUsersRoute: ProtectUsersRoute,
   ProtectIndexRoute: ProtectIndexRoute,
 }
 

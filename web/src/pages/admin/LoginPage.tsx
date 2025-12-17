@@ -49,11 +49,6 @@ export function LoginPage() {
 
         {/* Login Form */}
         <LoginForm />
-
-        {/* Footer */}
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>© 2024 Hệ thống quản trị. Tất cả quyền được bảo lưu.</p>
-        </div>
       </div>
     </div>
   )

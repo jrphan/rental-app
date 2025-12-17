@@ -7,6 +7,8 @@ import {
   selectGetUserInfo,
   UpdateProfileResponse,
   SubmitKycResponse,
+  AdminUserListResponse,
+  selectAdminUser,
   AdminKycListResponse,
   AdminKycDetailResponse,
   AdminKycActionResponse,
@@ -217,6 +219,64 @@ export class UserService {
     }
 
     return { message: 'KYC đã được gửi, vui lòng chờ duyệt' };
+  }
+
+  // Admin
+  async listUsers(
+    reviewerId: string,
+    filters: {
+      role?: UserRole;
+      isActive?: boolean;
+      isPhoneVerified?: boolean;
+      kycStatus?: KycStatus;
+      search?: string;
+    },
+    page = 1,
+    limit = 20,
+  ): Promise<AdminUserListResponse> {
+    await this.assertAdminOrSupport(reviewerId);
+
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      role: filters.role,
+      isActive: filters.isActive,
+      isPhoneVerified: filters.isPhoneVerified,
+    };
+
+    if (filters.kycStatus) {
+      where.kyc = {
+        status: filters.kycStatus,
+      };
+    }
+
+    if (filters.search) {
+      const keyword = filters.search.trim();
+      if (keyword) {
+        where.OR = [
+          { phone: { contains: keyword, mode: 'insensitive' } },
+          { email: { contains: keyword, mode: 'insensitive' } },
+          { fullName: { contains: keyword, mode: 'insensitive' } },
+        ];
+      }
+    }
+
+    const [items, total] = await this.prismaService.$transaction([
+      this.prismaService.user.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: selectAdminUser,
+      }),
+      this.prismaService.user.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+    };
   }
 
   async listKyc(

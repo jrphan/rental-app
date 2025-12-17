@@ -16,6 +16,7 @@ const API_ENDPOINTS = {
     SUBMIT_KYC: '/user/kyc',
   },
   ADMIN: {
+    LIST_USERS: '/admin/users',
     LIST_KYC: '/admin/kyc',
     GET_KYC_DETAIL: (id: string) => `/admin/kyc/${id}`,
     APPROVE_KYC: (id: string) => `/admin/kyc/${id}/approve`,

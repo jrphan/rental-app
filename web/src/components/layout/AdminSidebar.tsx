@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar'
-import { Home, ShieldCheck, MonitorCheck } from 'lucide-react'
+import { Home, ShieldCheck, MonitorCheck, Users } from 'lucide-react'
 import { useNavigate, useLocation } from '@tanstack/react-router'
 import ROUTES from '@/constants/routes'
 import { cn } from '@/lib/utils'
@@ -25,6 +25,11 @@ const menuItems = [
     title: 'Duyệt KYC',
     icon: ShieldCheck,
     href: ROUTES.KYC,
+  },
+  {
+    title: 'Quản lý người dùng',
+    icon: Users,
+    href: ROUTES.USERS,
   },
 ]
 

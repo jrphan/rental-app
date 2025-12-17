@@ -40,6 +40,15 @@ export interface AdminKycListResponse {
 
 export type AdminKycDetail = AdminKycItem
 
+export interface AdminUserItem extends User {}
+
+export interface AdminUserListResponse {
+  items: AdminUserItem[]
+  total: number
+  page: number
+  limit: number
+}
+
 export interface User {
   id: string
   phone: string
