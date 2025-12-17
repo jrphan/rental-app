@@ -9,13 +9,6 @@ export default function VehiclesLayout() {
       }}
     >
       <Stack.Screen name="index" />
-      {/* <Stack.Screen
-        name="[id]"
-        options={{
-          presentation: "card",
-          animation: "slide_from_right",
-        }}
-      /> */}
     </Stack>
   );
 }
