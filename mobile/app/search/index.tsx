@@ -1,14 +1,16 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, View, FlatList, TouchableOpacity, RefreshControl } from "react-native";
+import { Text, View, FlatList, TouchableOpacity, RefreshControl, FlatListProps } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { vehiclesApi } from "@/lib/api.vehicles";
 import { VehicleCard } from "@/components/vehicle/vehicle-card";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { SearchForm } from "@/components/search/search-form";
 import { distanceKm } from "@/lib/geocode";
 import { FilterModal } from "@/components/search/filter-modal";
+import { VehicleMap, Cluster } from "@/components/map/vehicle-map";
+import MiniVehicleCard from "@/components/vehicle/mini-card";
 
 export default function SearchScreen() {
 	const router = useRouter();
@@ -148,6 +150,61 @@ export default function SearchScreen() {
 		return vehicles;
 	}, [vehicles, targetLat, targetLng, filter.sort]);
 
+	const [showMap, setShowMap] = useState(false);
+	const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
+
+	// group vehicles into clusters (simple grid rounding)
+	const clusters: Cluster[] = useMemo(() => {
+		const map = new Map<string, Cluster>();
+		vehicles.forEach((v: any) => {
+			const lat = typeof v.latitude === "number" ? v.latitude : undefined;
+			const lng = typeof v.longitude === "number" ? v.longitude : undefined;
+			if (lat === undefined || lng === undefined) return;
+			// compute approximate distance to target (if provided)
+			const dist =
+				typeof targetLat === "number" && typeof targetLng === "number"
+					? distanceKm(targetLat, targetLng, lat, lng)
+					: undefined;
+			// attach distance to vehicle object for mini-cards
+			v.distanceKm = dist;
+			const key = `${Math.round(lat * 1000) / 1000}_${Math.round(lng * 1000) / 1000}`;
+			if (!map.has(key)) {
+				map.set(key, { id: key, latitude: lat, longitude: lng, count: 0, vehicles: [] });
+			}
+			const c = map.get(key)!;
+			c.vehicles.push(v);
+			c.count = c.vehicles.length;
+			// keep centroid approx as first item's coords (fine for small grid)
+			c.latitude = c.vehicles[0].latitude;
+			c.longitude = c.vehicles[0].longitude;
+		});
+		return Array.from(map.values());
+	}, [vehicles]);
+
+	const selectedCluster = useMemo(
+		() => clusters.find((c) => c.id === selectedClusterId) || null,
+		[clusters, selectedClusterId]
+	);
+
+	const initialRegion = useMemo(() => {
+		if (targetLat !== undefined && targetLng !== undefined) {
+			return { latitude: targetLat, longitude: targetLng, latitudeDelta: 0.05, longitudeDelta: 0.05 };
+		}
+		if (
+			vehicles.length > 0 &&
+			typeof vehicles[0].latitude === "number" &&
+			typeof vehicles[0].longitude === "number"
+		) {
+			return {
+				latitude: vehicles[0].latitude,
+				longitude: vehicles[0].longitude,
+				latitudeDelta: 0.05,
+				longitudeDelta: 0.05,
+			};
+		}
+		return undefined;
+	}, [targetLat, targetLng, vehicles]);
+
 	return (
 		<SafeAreaView className="flex-1 bg-gray-50" edges={["top", "left", "right"]}>
 			<View className="flex-1">
@@ -185,36 +242,98 @@ export default function SearchScreen() {
 						</Text>
 					</View>
 				) : (
-					<FlatList
-						data={itemsWithDistance}
-						keyExtractor={(item) => item.id}
-						ListHeaderComponent={
-							<>
-								<View className="pt-4">
-									<SearchForm
-										initialLocation={location}
-										initialStartDate={startDate}
-										initialEndDate={endDate}
-										onSearch={handleSearch}
-									/>
-								</View>
-								{/* Results Header */}
-								<View className="px-6 py-3 bg-white border-b border-gray-200">
+					<>
+						{!showMap ? (
+							<FlatList
+								data={itemsWithDistance}
+								keyExtractor={(item) => item.id}
+								ListHeaderComponent={
+									<>
+										<View className="pt-4">
+											<SearchForm
+												initialLocation={location}
+												initialStartDate={startDate}
+												initialEndDate={endDate}
+												onSearch={handleSearch}
+											/>
+										</View>
+										{/* Results Header + Toggle */}
+										<View className="px-6 py-3 bg-white border-b border-gray-200 flex-row items-center justify-between">
+											<Text className="text-base font-semibold text-gray-900">
+												{data?.total ? `${data.total} xe được tìm thấy` : "Đang tìm kiếm..."}
+											</Text>
+											<TouchableOpacity
+												onPress={() => {
+													setShowMap(true);
+													// clear selected cluster on open
+													setSelectedClusterId(null);
+												}}
+												className="flex-row items-center bg-white px-3 py-2 rounded-full"
+											>
+												<MaterialIcons name="map" size={18} color="#111827" />
+												<Text className="ml-2 text-sm font-medium text-gray-900">Bản đồ</Text>
+											</TouchableOpacity>
+										</View>
+									</>
+								}
+								renderItem={({ item }) => (
+									<View className="px-6">
+										<VehicleCard vehicle={item} distanceKm={item.distanceKm} />
+									</View>
+								)}
+								contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}
+								refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+								showsVerticalScrollIndicator={false}
+							/>
+						) : (
+							<View style={{ flex: 1 }}>
+								{/* Map header (search form stays on top inside ListHeader in list mode; keep a compact header here) */}
+								<View className="px-6 py-3 bg-white border-b border-gray-200 flex-row items-center justify-between">
 									<Text className="text-base font-semibold text-gray-900">
 										{data?.total ? `${data.total} xe được tìm thấy` : "Đang tìm kiếm..."}
 									</Text>
+									<TouchableOpacity
+										onPress={() => {
+											setShowMap(false);
+											setSelectedClusterId(null);
+										}}
+										className="flex-row items-center bg-white px-3 py-2 rounded-full"
+									>
+										<MaterialIcons name="list" size={18} color="#111827" />
+										<Text className="ml-2 text-sm font-medium text-gray-900">Danh sách</Text>
+									</TouchableOpacity>
 								</View>
-							</>
-						}
-						renderItem={({ item }) => (
-							<View className="px-6">
-								<VehicleCard vehicle={item} distanceKm={item.distanceKm} />
+
+								{/* Map */}
+								<View style={{ flex: 1 }}>
+									<VehicleMap
+										clusters={clusters}
+										initialRegion={initialRegion}
+										selectedClusterId={selectedClusterId ?? undefined}
+										onSelectCluster={(id) =>
+											setSelectedClusterId((prev) => (prev === id ? null : id))
+										}
+									/>
+								</View>
+
+								{/* Bottom mini vehicle scroller when a cluster selected */}
+								{selectedCluster && selectedCluster.vehicles.length > 0 && (
+									<View className="absolute bottom-24 left-0 right-0">
+										<FlatList
+											data={selectedCluster.vehicles}
+											horizontal
+											keyExtractor={(it) => it.id}
+											contentContainerStyle={{ paddingHorizontal: 12 }}
+											showsHorizontalScrollIndicator={false}
+											renderItem={({ item }) => (
+												<MiniVehicleCard vehicle={item} distanceKm={item.distanceKm} />
+											)}
+										/>
+									</View>
+								)}
 							</View>
 						)}
-						contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }}
-						refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-						showsVerticalScrollIndicator={false}
-					/>
+					</>
 				)}
 			</View>
 

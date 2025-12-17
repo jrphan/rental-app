@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "expo-location": "^19.0.7",
-    "react-native-google-places-autocomplete": "^2.6.1"
+    "react-native-google-places-autocomplete": "^2.6.1",
+    "react-native-maps": "1.20.1"
   }
 }
