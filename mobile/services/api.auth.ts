@@ -122,16 +122,6 @@ export const authApi = {
     throw new Error(response.message || "Đặt lại mật khẩu thất bại");
   },
 
-  async getUserInfo(): Promise<LoginResponse["user"]> {
-    const response = await apiClient.get<LoginResponse["user"]>(
-      API_ENDPOINTS.USER.GET_USER_INFO
-    );
-    if (response.success && response.data && !Array.isArray(response.data)) {
-      return response.data;
-    }
-    throw new Error(response.message || "Lấy thông tin thất bại");
-  },
-
   async updateProfile(
     data: Partial<Pick<LoginResponse["user"], "fullName" | "email" | "avatar">>
   ): Promise<LoginResponse["user"]> {

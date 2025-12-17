@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { User } from "@/types/auth.types";
-import { useUpdateProfile } from "@/hooks/auth/auth.mutation";
+import { useUpdateProfile } from "@/hooks/user/user.mutation";
 import { editProfileSchema, EditProfileInput } from "@/schemas/profile.schema";
 import GalleryField from "@/components/gallery/GalleryField";
 

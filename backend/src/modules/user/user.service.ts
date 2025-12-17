@@ -8,13 +8,25 @@ import {
   UpdateProfileResponse,
   SubmitKycResponse,
 } from '@/types/user.type';
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  AuditAction,
+  AuditTargetType,
+  KycStatus,
+  Prisma,
+  User,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prismaService: PrismaService) {}
+  private readonly logger = new Logger(UserService.name);
+
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
     const { password, ...rest } = createUserDto;
@@ -69,6 +81,22 @@ export class UserService {
       select: selectGetUserInfo,
     });
 
+    this.auditLogService
+      .log({
+        actorId: userId,
+        action: AuditAction.UPDATE,
+        targetId: userId,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          oldValue: JSON.stringify(user),
+          newValue: JSON.stringify(updatedUser),
+          action: 'update_profile',
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
+      });
+
     return updatedUser;
   }
 
@@ -86,41 +114,81 @@ export class UserService {
     }
 
     if (user.kyc) {
+      const payload: Prisma.KycUpdateInput = {
+        citizenId: dto.citizenId ?? undefined,
+        fullNameInId: dto.fullNameInId ?? undefined,
+        dob: dto.dob ? new Date(dto.dob) : undefined,
+        addressInId: dto.addressInId ?? undefined,
+        driverLicense: dto.driverLicense ?? undefined,
+        licenseType: dto.licenseType ?? undefined,
+        idCardFront: dto.idCardFront ?? undefined,
+        idCardBack: dto.idCardBack ?? undefined,
+        licenseFront: dto.licenseFront ?? undefined,
+        licenseBack: dto.licenseBack ?? undefined,
+        selfieImg: dto.selfieImg ?? undefined,
+        status: KycStatus.PENDING,
+        rejectionReason: null,
+      };
+
       await this.prismaService.kyc.update({
         where: { userId },
-        data: {
-          citizenId: dto.citizenId ?? undefined,
-          fullNameInId: dto.fullNameInId ?? undefined,
-          dob: dto.dob ? new Date(dto.dob) : undefined,
-          addressInId: dto.addressInId ?? undefined,
-          driverLicense: dto.driverLicense ?? undefined,
-          licenseType: dto.licenseType ?? undefined,
-          idCardFront: dto.idCardFront ?? undefined,
-          idCardBack: dto.idCardBack ?? undefined,
-          licenseFront: dto.licenseFront ?? undefined,
-          licenseBack: dto.licenseBack ?? undefined,
-          selfieImg: dto.selfieImg ?? undefined,
-          status: 'PENDING',
-          rejectionReason: null,
-        },
+        data: payload,
       });
+
+      this.auditLogService
+        .log({
+          actorId: userId,
+          action: AuditAction.UPDATE,
+          targetId: userId,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            oldValue: JSON.stringify(user.kyc),
+            newValue: JSON.stringify({
+              ...user.kyc,
+              ...payload,
+            }),
+            action: 'update_kyc',
+          },
+        })
+        .catch(error => {
+          console.error('Failed to log audit:', error);
+        });
     } else {
+      const payload = {
+        userId,
+        citizenId: dto.citizenId ?? undefined,
+        fullNameInId: dto.fullNameInId ?? undefined,
+        dob: dto.dob ? new Date(dto.dob) : undefined,
+        addressInId: dto.addressInId ?? undefined,
+        driverLicense: dto.driverLicense ?? undefined,
+        licenseType: dto.licenseType ?? undefined,
+        idCardFront: dto.idCardFront ?? undefined,
+        idCardBack: dto.idCardBack ?? undefined,
+        licenseFront: dto.licenseFront ?? undefined,
+        licenseBack: dto.licenseBack ?? undefined,
+        selfieImg: dto.selfieImg ?? undefined,
+      };
+
       await this.prismaService.kyc.create({
-        data: {
-          userId,
-          citizenId: dto.citizenId ?? undefined,
-          fullNameInId: dto.fullNameInId ?? undefined,
-          dob: dto.dob ? new Date(dto.dob) : undefined,
-          addressInId: dto.addressInId ?? undefined,
-          driverLicense: dto.driverLicense ?? undefined,
-          licenseType: dto.licenseType ?? undefined,
-          idCardFront: dto.idCardFront ?? undefined,
-          idCardBack: dto.idCardBack ?? undefined,
-          licenseFront: dto.licenseFront ?? undefined,
-          licenseBack: dto.licenseBack ?? undefined,
-          selfieImg: dto.selfieImg ?? undefined,
-        },
+        data: payload,
       });
+
+      this.auditLogService
+        .log({
+          actorId: userId,
+          action: AuditAction.CREATE,
+          targetId: userId,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            newValue: JSON.stringify({
+              ...payload,
+            }),
+            action: 'submit_kyc',
+          },
+        })
+        .catch(error => {
+          console.error('Failed to log audit:', error);
+        });
     }
 
     return { message: 'KYC đã được gửi, vui lòng chờ duyệt' };

@@ -3,11 +3,19 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { Kyc, User } from "@/types/auth.types";
+import { User } from "@/types/auth.types";
+import {
+  KYC_STATUS,
+  getKycStatusLabel,
+  getKycStatusColor,
+  getKycStatusBgColor,
+  getKycStatusBorderColor,
+  getKycStatusIconColor,
+  getKycStatusIcon,
+} from "@/constants/kyc.constants";
 
 interface ProfileActionsProps {
   user: User | null;
-  myKyc?: Kyc | null;
   isLoadingKyc: boolean;
 }
 
@@ -23,7 +31,6 @@ interface ActionItem {
 
 export default function ProfileActions({
   user,
-  myKyc,
   isLoadingKyc,
 }: ProfileActionsProps) {
   const router = useRouter();
@@ -69,15 +76,76 @@ export default function ProfileActions({
   };
 
   const renderIcon = (item: ActionItem) => {
-    const iconProps = {
-      size: 22,
-      color: COLORS.primary,
-    };
+    const iconProps = { size: 22, color: COLORS.primary };
+    const IconComponent =
+      item.iconType === "MaterialCommunityIcons"
+        ? MaterialCommunityIcons
+        : MaterialIcons;
+    return <IconComponent name={item.icon as any} {...iconProps} />;
+  };
 
-    if (item.iconType === "MaterialCommunityIcons") {
-      return <MaterialCommunityIcons name={item.icon as any} {...iconProps} />;
+  const renderKycStatus = () => {
+    if (isLoadingKyc) {
+      return (
+        <View className="mt-4 pt-4 border-t border-gray-200">
+          <ActivityIndicator size="small" color={COLORS.primary} />
+        </View>
+      );
     }
-    return <MaterialIcons name={item.icon as any} {...iconProps} />;
+
+    if (!user?.kyc) return null;
+
+    const { status, rejectionReason } = user.kyc;
+    const bgColor = getKycStatusBgColor(status);
+    const borderColor = getKycStatusBorderColor(status);
+    const iconColor = getKycStatusIconColor(status);
+    const iconName = getKycStatusIcon(status);
+    const showRejection =
+      (status === KYC_STATUS.REJECTED || status === KYC_STATUS.NEEDS_UPDATE) &&
+      rejectionReason;
+
+    return (
+      <View className="pt-4 border-t border-gray-200">
+        <View
+          className={`${bgColor} ${borderColor} rounded-xl p-3 border w-fit`}
+        >
+          <View className="flex-row items-center">
+            <View
+              className="rounded-full py-1 px-2 mr-2"
+              style={{ backgroundColor: `${iconColor}20` }}
+            >
+              <MaterialIcons
+                name={iconName as any}
+                size={16}
+                color={iconColor}
+              />
+            </View>
+            <View className="flex-1">
+              <View className="flex-row items-center mb-1">
+                <View
+                  className={`w-2 h-2 rounded-full ${getKycStatusColor(
+                    status
+                  )}`}
+                />
+                <Text className="text-base font-semibold text-gray-900">
+                  {getKycStatusLabel(status)}
+                </Text>
+              </View>
+              {showRejection && (
+                <View className="mt-2 p-2 bg-white rounded-lg border border-gray-200">
+                  <Text className="text-xs font-medium text-gray-700 mb-1">
+                    Lý do:
+                  </Text>
+                  <Text className="text-xs text-gray-600 leading-4">
+                    {rejectionReason}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -115,12 +183,9 @@ export default function ProfileActions({
       )}
 
       {/* Action Items */}
-      {actionItems.map((item) => {
-        if (item.showCondition && !item.showCondition()) {
-          return null;
-        }
-
-        return (
+      {actionItems
+        .filter((item) => !item.showCondition || item.showCondition())
+        .map((item) => (
           <TouchableOpacity
             key={item.id}
             activeOpacity={0.7}
@@ -137,8 +202,7 @@ export default function ProfileActions({
             </View>
             <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
           </TouchableOpacity>
-        );
-      })}
+        ))}
 
       {/* KYC Section */}
       <View className="bg-white rounded-2xl p-2 mb-3 border border-gray-200">
@@ -161,34 +225,7 @@ export default function ProfileActions({
           </View>
           <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
         </TouchableOpacity>
-        {isLoadingKyc ? (
-          <View className="mt-4 pt-4 border-t border-gray-200">
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          </View>
-        ) : myKyc ? (
-          <View className="mt-4 pt-4 border-t border-gray-200">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center">
-                <View
-                  className={`w-3.5 h-3.5 rounded-full mr-3 ${
-                    myKyc.status === "APPROVED"
-                      ? "bg-green-500"
-                      : myKyc.status === "REJECTED"
-                      ? "bg-red-500"
-                      : "bg-yellow-500"
-                  }`}
-                />
-                <Text className="text-sm font-medium text-gray-900">
-                  {myKyc.status === "APPROVED"
-                    ? "Đã được duyệt"
-                    : myKyc.status === "REJECTED"
-                    ? "Bị từ chối"
-                    : "Đang chờ duyệt"}
-                </Text>
-              </View>
-            </View>
-          </View>
-        ) : null}
+        {renderKycStatus()}
       </View>
     </View>
   );

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -42,6 +43,8 @@ type FlexibleSignOptions = Omit<SignOptions, 'expiresIn'> & {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly userService: UserService,
     private readonly smsService: SmsService,
@@ -68,17 +71,21 @@ export class AuthService {
     });
 
     if (!user) {
-      void this.auditLogService.log({
-        actorId: userId,
-        action: AuditAction.UPDATE,
-        targetId: userId,
-        targetType: AuditTargetType.USER,
-        metadata: {
-          result: 'failure',
-          reason: 'user_not_found',
-          action: 'change_password',
-        },
-      });
+      this.auditLogService
+        .log({
+          actorId: userId,
+          action: AuditAction.UPDATE,
+          targetId: userId,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'user_not_found',
+            action: 'change_password',
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new BadRequestException('Người dùng không tồn tại');
     }
 
@@ -88,17 +95,21 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      void this.auditLogService.log({
-        actorId: userId,
-        action: AuditAction.UPDATE,
-        targetId: userId,
-        targetType: AuditTargetType.USER,
-        metadata: {
-          result: 'failure',
-          reason: 'invalid_old_password',
-          action: 'change_password',
-        },
-      });
+      this.auditLogService
+        .log({
+          actorId: userId,
+          action: AuditAction.UPDATE,
+          targetId: userId,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'invalid_old_password',
+            action: 'change_password',
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new BadRequestException('Mật khẩu cũ không đúng');
     }
 
@@ -113,18 +124,26 @@ export class AuthService {
       },
     });
 
-    void this.loggerService.log(
-      `User ${user.id} changed password successfully`,
-      { userId: user.id },
-      { category: LOG_CATEGORY.AUTH },
-    );
-    void this.auditLogService.log({
-      actorId: user.id,
-      action: AuditAction.UPDATE,
-      targetId: user.id,
-      targetType: AuditTargetType.USER,
-      metadata: { result: 'success', action: 'change_password' },
-    });
+    this.loggerService
+      .log(
+        `User ${user.id} changed password successfully`,
+        { userId: user.id },
+        { category: LOG_CATEGORY.AUTH },
+      )
+      .catch(error => {
+        this.logger.error('Failed to log', error);
+      });
+    this.auditLogService
+      .log({
+        actorId: user.id,
+        action: AuditAction.UPDATE,
+        targetId: user.id,
+        targetType: AuditTargetType.USER,
+        metadata: { result: 'success', action: 'change_password' },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
+      });
 
     return {
       message: 'Mật khẩu đã được đổi thành công',
@@ -143,17 +162,21 @@ export class AuthService {
     });
 
     if (userCheck) {
-      void this.auditLogService.log({
-        actorId: null,
-        action: AuditAction.CREATE,
-        targetId: userCheck.id,
-        targetType: AuditTargetType.USER,
-        metadata: {
-          result: 'failure',
-          reason: 'phone_exists',
-          phone: registerUserDto.phone,
-        },
-      });
+      this.auditLogService
+        .log({
+          actorId: null,
+          action: AuditAction.CREATE,
+          targetId: userCheck.id,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'phone_exists',
+            phone: registerUserDto.phone,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new BadRequestException('Số điện thoại đã tồn tại');
     }
 
@@ -162,26 +185,38 @@ export class AuthService {
     try {
       await this.sendOTP(user.id, registerUserDto.phone, OtpType.REGISTER);
     } catch (error) {
-      void this.loggerService.error(
-        `Failed to send OTP after registration for user ${user.id}`,
-        error,
-        { category: LOG_CATEGORY.AUTH },
-      );
+      this.loggerService
+        .error(
+          `Failed to send OTP after registration for user ${user.id}`,
+          error,
+          { category: LOG_CATEGORY.AUTH },
+        )
+        .catch(err => {
+          this.logger.error('Failed to log error', err);
+        });
       throw new BadRequestException(error || 'Failed to send OTP');
     }
 
-    void this.loggerService.log(
-      `User ${user.id} registered successfully`,
-      { userId: user.id },
-      { category: LOG_CATEGORY.AUTH },
-    );
-    void this.auditLogService.log({
-      actorId: user.id,
-      action: AuditAction.CREATE,
-      targetId: user.id,
-      targetType: AuditTargetType.USER,
-      metadata: { result: 'success', phone: registerUserDto.phone },
-    });
+    this.loggerService
+      .log(
+        `User ${user.id} registered successfully`,
+        { userId: user.id },
+        { category: LOG_CATEGORY.AUTH },
+      )
+      .catch(error => {
+        this.logger.error('Failed to log', error);
+      });
+    this.auditLogService
+      .log({
+        actorId: user.id,
+        action: AuditAction.CREATE,
+        targetId: user.id,
+        targetType: AuditTargetType.USER,
+        metadata: { result: 'success', phone: registerUserDto.phone },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
+      });
 
     return {
       userId: user.id,
@@ -203,43 +238,55 @@ export class AuthService {
     });
 
     if (!user) {
-      void this.auditLogService.log({
-        action: AuditAction.LOGIN,
-        targetType: AuditTargetType.SYSTEM,
-        metadata: {
-          result: 'failure',
-          reason: 'user_not_found',
-          phone: loginDto.phone,
-        },
-      });
+      this.auditLogService
+        .log({
+          action: AuditAction.LOGIN,
+          targetType: AuditTargetType.SYSTEM,
+          metadata: {
+            result: 'failure',
+            reason: 'user_not_found',
+            phone: loginDto.phone,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
     if (!user.isActive) {
-      void this.auditLogService.log({
-        actorId: user.id,
-        action: AuditAction.LOGIN,
-        targetType: AuditTargetType.SYSTEM,
-        metadata: {
-          result: 'failure',
-          reason: 'user_inactive',
-          userId: user.id,
-        },
-      });
+      this.auditLogService
+        .log({
+          actorId: user.id,
+          action: AuditAction.LOGIN,
+          targetType: AuditTargetType.SYSTEM,
+          metadata: {
+            result: 'failure',
+            reason: 'user_inactive',
+            userId: user.id,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new UnauthorizedException('Tài khoản đã bị khóa');
     }
 
     if (!user.password) {
-      void this.auditLogService.log({
-        actorId: user.id,
-        action: AuditAction.LOGIN,
-        targetType: AuditTargetType.SYSTEM,
-        metadata: {
-          result: 'failure',
-          reason: 'missing_password',
-          userId: user.id,
-        },
-      });
+      this.auditLogService
+        .log({
+          actorId: user.id,
+          action: AuditAction.LOGIN,
+          targetType: AuditTargetType.SYSTEM,
+          metadata: {
+            result: 'failure',
+            reason: 'missing_password',
+            userId: user.id,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
@@ -249,16 +296,20 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      void this.auditLogService.log({
-        actorId: user.id,
-        action: AuditAction.LOGIN,
-        targetType: AuditTargetType.SYSTEM,
-        metadata: {
-          result: 'failure',
-          reason: 'invalid_password',
-          userId: user.id,
-        },
-      });
+      this.auditLogService
+        .log({
+          actorId: user.id,
+          action: AuditAction.LOGIN,
+          targetType: AuditTargetType.SYSTEM,
+          metadata: {
+            result: 'failure',
+            reason: 'invalid_password',
+            userId: user.id,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
@@ -266,21 +317,27 @@ export class AuthService {
       try {
         await this.sendOTP(user.id, user.phone, OtpType.REGISTER);
       } catch (error) {
-        void this.loggerService.error(
-          `Failed to send OTP after login for user ${user.id}`,
-          error,
-          { category: LOG_CATEGORY.AUTH },
-        );
+        this.loggerService
+          .error(`Failed to send OTP after login for user ${user.id}`, error, {
+            category: LOG_CATEGORY.AUTH,
+          })
+          .catch(err => {
+            this.logger.error('Failed to log error', err);
+          });
         throw new BadRequestException(error || 'Failed to send OTP');
       }
 
-      void this.auditLogService.log({
-        actorId: user.id,
-        action: AuditAction.LOGIN,
-        targetId: user.id,
-        targetType: AuditTargetType.USER,
-        metadata: { result: 'pending_phone_verification', phone: user.phone },
-      });
+      this.auditLogService
+        .log({
+          actorId: user.id,
+          action: AuditAction.LOGIN,
+          targetId: user.id,
+          targetType: AuditTargetType.USER,
+          metadata: { result: 'pending_phone_verification', phone: user.phone },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
 
       return {
         message: 'Mã OTP đã được gửi đến số điện thoại của bạn',
@@ -315,26 +372,36 @@ export class AuthService {
         refreshTokenOptions as SignOptions,
       );
     } catch (error) {
-      void this.loggerService.error(
-        `Failed to generate tokens for user ${user.id}`,
-        error,
-        { category: LOG_CATEGORY.AUTH },
-      );
+      this.loggerService
+        .error(`Failed to generate tokens for user ${user.id}`, error, {
+          category: LOG_CATEGORY.AUTH,
+        })
+        .catch(err => {
+          this.logger.error('Failed to log error', err);
+        });
       throw new Error('Failed to generate tokens');
     }
 
-    void this.loggerService.log(
-      `User ${user.id} logged in successfully`,
-      { userId: user.id, phone: user.phone },
-      { category: LOG_CATEGORY.AUTH },
-    );
-    void this.auditLogService.log({
-      actorId: user.id,
-      action: AuditAction.LOGIN,
-      targetId: user.id,
-      targetType: AuditTargetType.USER,
-      metadata: { result: 'success', phone: user.phone },
-    });
+    this.loggerService
+      .log(
+        `User ${user.id} logged in successfully`,
+        { userId: user.id, phone: user.phone },
+        { category: LOG_CATEGORY.AUTH },
+      )
+      .catch(error => {
+        this.logger.error('Failed to log', error);
+      });
+    this.auditLogService
+      .log({
+        actorId: user.id,
+        action: AuditAction.LOGIN,
+        targetId: user.id,
+        targetType: AuditTargetType.USER,
+        metadata: { result: 'success', phone: user.phone },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
+      });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...userWithoutPassword } = user;
@@ -418,53 +485,69 @@ export class AuthService {
     });
 
     if (!userCheck) {
-      void this.auditLogService.log({
-        action: AuditAction.UPDATE,
-        targetType: AuditTargetType.USER,
-        metadata: {
-          result: 'failure',
-          reason: 'user_not_found',
-          action: 'forgot_password',
-          phone: forgotPasswordDto.phone,
-        },
-      });
+      this.auditLogService
+        .log({
+          action: AuditAction.UPDATE,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'user_not_found',
+            action: 'forgot_password',
+            phone: forgotPasswordDto.phone,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new BadRequestException('Số điện thoại không tồn tại');
     }
 
     try {
       await this.sendOTP(userCheck.id, userCheck.phone, OtpType.RESET_PASSWORD);
     } catch (error) {
-      void this.loggerService.error(
-        `Failed to send OTP after forgot password for user ${userCheck.id}`,
-        error,
-        { category: LOG_CATEGORY.AUTH },
-      );
-      void this.auditLogService.log({
+      this.loggerService
+        .error(
+          `Failed to send OTP after forgot password for user ${userCheck.id}`,
+          error,
+          { category: LOG_CATEGORY.AUTH },
+        )
+        .catch(err => {
+          this.logger.error('Failed to log error', err);
+        });
+      this.auditLogService
+        .log({
+          actorId: userCheck.id,
+          action: AuditAction.UPDATE,
+          targetId: userCheck.id,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'send_otp_failed',
+            action: 'forgot_password',
+          },
+        })
+        .catch(err => {
+          this.logger.error('Failed to log audit', err);
+        });
+
+      throw new BadRequestException(error || 'Failed to send OTP');
+    }
+
+    this.auditLogService
+      .log({
         actorId: userCheck.id,
         action: AuditAction.UPDATE,
         targetId: userCheck.id,
         targetType: AuditTargetType.USER,
         metadata: {
-          result: 'failure',
-          reason: 'send_otp_failed',
+          result: 'success',
           action: 'forgot_password',
+          phone: userCheck.phone,
         },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
       });
-
-      throw new BadRequestException(error || 'Failed to send OTP');
-    }
-
-    void this.auditLogService.log({
-      actorId: userCheck.id,
-      action: AuditAction.UPDATE,
-      targetId: userCheck.id,
-      targetType: AuditTargetType.USER,
-      metadata: {
-        result: 'success',
-        action: 'forgot_password',
-        phone: userCheck.phone,
-      },
-    });
 
     return { message: 'Mã OTP đã được gửi đến số điện thoại của bạn' };
   }
@@ -483,16 +566,20 @@ export class AuthService {
     });
 
     if (!user) {
-      void this.auditLogService.log({
-        action: AuditAction.UPDATE,
-        targetType: AuditTargetType.USER,
-        metadata: {
-          result: 'failure',
-          reason: 'user_not_found',
-          action: 'verify_reset_password',
-          phone: verifyResetPasswordDto.phone,
-        },
-      });
+      this.auditLogService
+        .log({
+          action: AuditAction.UPDATE,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'user_not_found',
+            action: 'verify_reset_password',
+            phone: verifyResetPasswordDto.phone,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new BadRequestException('Số điện thoại không tồn tại');
     }
 
@@ -509,18 +596,22 @@ export class AuthService {
     });
 
     if (!otp) {
-      void this.auditLogService.log({
-        actorId: user.id,
-        action: AuditAction.UPDATE,
-        targetId: user.id,
-        targetType: AuditTargetType.USER,
-        metadata: {
-          result: 'failure',
-          reason: 'otp_invalid',
-          action: 'verify_reset_password',
-          phone: verifyResetPasswordDto.phone,
-        },
-      });
+      this.auditLogService
+        .log({
+          actorId: user.id,
+          action: AuditAction.UPDATE,
+          targetId: user.id,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'otp_invalid',
+            action: 'verify_reset_password',
+            phone: verifyResetPasswordDto.phone,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new BadRequestException('Mã OTP không hợp lệ');
     }
 
@@ -551,36 +642,48 @@ export class AuthService {
         });
       });
     } catch (error) {
-      void this.loggerService.error(
-        `Failed to verify reset password for user ${user.id} with error: ${error}`,
-        error,
-        { category: LOG_CATEGORY.AUTH },
-      );
-      void this.auditLogService.log({
+      this.loggerService
+        .error(
+          `Failed to verify reset password for user ${user.id} with error: ${error}`,
+          error,
+          { category: LOG_CATEGORY.AUTH },
+        )
+        .catch(err => {
+          this.logger.error('Failed to log error', err);
+        });
+      this.auditLogService
+        .log({
+          actorId: user.id,
+          action: AuditAction.UPDATE,
+          targetId: user.id,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'transaction_error',
+            action: 'verify_reset_password',
+          },
+        })
+        .catch(err => {
+          this.logger.error('Failed to log audit', err);
+        });
+      throw new BadRequestException(error || 'Failed to verify reset password');
+    }
+
+    this.auditLogService
+      .log({
         actorId: user.id,
         action: AuditAction.UPDATE,
         targetId: user.id,
         targetType: AuditTargetType.USER,
         metadata: {
-          result: 'failure',
-          reason: 'transaction_error',
+          result: 'success',
           action: 'verify_reset_password',
+          phone: verifyResetPasswordDto.phone,
         },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
       });
-      throw new BadRequestException(error || 'Failed to verify reset password');
-    }
-
-    void this.auditLogService.log({
-      actorId: user.id,
-      action: AuditAction.UPDATE,
-      targetId: user.id,
-      targetType: AuditTargetType.USER,
-      metadata: {
-        result: 'success',
-        action: 'verify_reset_password',
-        phone: verifyResetPasswordDto.phone,
-      },
-    });
 
     return {
       message: 'Mật khẩu đã được đặt lại thành công',
@@ -601,17 +704,21 @@ export class AuthService {
     });
 
     if (!otp) {
-      void this.auditLogService.log({
-        actorId: verifyOtpDto.userId,
-        action: AuditAction.UPDATE,
-        targetId: verifyOtpDto.userId,
-        targetType: AuditTargetType.USER,
-        metadata: {
-          result: 'failure',
-          reason: 'otp_invalid',
-          action: 'verify_register_otp',
-        },
-      });
+      this.auditLogService
+        .log({
+          actorId: verifyOtpDto.userId,
+          action: AuditAction.UPDATE,
+          targetId: verifyOtpDto.userId,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'otp_invalid',
+            action: 'verify_register_otp',
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new BadRequestException('Mã OTP không hợp lệ');
     }
 
@@ -635,35 +742,47 @@ export class AuthService {
         });
       });
     } catch (error) {
-      void this.loggerService.error(
-        `Failed to verify OTP for user ${verifyOtpDto.userId} with error: ${error}`,
-        error,
-        { category: LOG_CATEGORY.AUTH },
-      );
-      void this.auditLogService.log({
+      this.loggerService
+        .error(
+          `Failed to verify OTP for user ${verifyOtpDto.userId} with error: ${error}`,
+          error,
+          { category: LOG_CATEGORY.AUTH },
+        )
+        .catch(err => {
+          this.logger.error('Failed to log error', err);
+        });
+      this.auditLogService
+        .log({
+          actorId: verifyOtpDto.userId,
+          action: AuditAction.UPDATE,
+          targetId: verifyOtpDto.userId,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'transaction_error',
+            action: 'verify_register_otp',
+          },
+        })
+        .catch(err => {
+          this.logger.error('Failed to log audit', err);
+        });
+      throw new BadRequestException(error || 'Failed to verify OTP');
+    }
+
+    this.auditLogService
+      .log({
         actorId: verifyOtpDto.userId,
         action: AuditAction.UPDATE,
         targetId: verifyOtpDto.userId,
         targetType: AuditTargetType.USER,
         metadata: {
-          result: 'failure',
-          reason: 'transaction_error',
+          result: 'success',
           action: 'verify_register_otp',
         },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
       });
-      throw new BadRequestException(error || 'Failed to verify OTP');
-    }
-
-    void this.auditLogService.log({
-      actorId: verifyOtpDto.userId,
-      action: AuditAction.UPDATE,
-      targetId: verifyOtpDto.userId,
-      targetType: AuditTargetType.USER,
-      metadata: {
-        result: 'success',
-        action: 'verify_register_otp',
-      },
-    });
 
     return {
       message: 'Mã OTP đã được xác thực thành công',
@@ -683,16 +802,20 @@ export class AuthService {
     });
 
     if (!user) {
-      void this.auditLogService.log({
-        action: AuditAction.UPDATE,
-        targetType: AuditTargetType.USER,
-        metadata: {
-          result: 'failure',
-          reason: 'user_not_found_or_verified',
-          action: 'resend_register_otp',
-          userId: resendOtpDto.userId,
-        },
-      });
+      this.auditLogService
+        .log({
+          action: AuditAction.UPDATE,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            result: 'failure',
+            reason: 'user_not_found_or_verified',
+            action: 'resend_register_otp',
+            userId: resendOtpDto.userId,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to log audit', error);
+        });
       throw new BadRequestException(
         'Người dùng không tồn tại hoặc đã xác thực số điện thoại',
       );
@@ -701,30 +824,40 @@ export class AuthService {
     try {
       await this.sendOTP(user.id, user.phone, OtpType.REGISTER);
     } catch (error) {
-      void this.loggerService.error(
-        `Failed to send OTP after resend for user ${user.id}`,
-        error,
-        { category: LOG_CATEGORY.AUTH },
-      );
+      this.loggerService
+        .error(`Failed to send OTP after resend for user ${user.id}`, error, {
+          category: LOG_CATEGORY.AUTH,
+        })
+        .catch(err => {
+          this.logger.error('Failed to log error', err);
+        });
       throw new BadRequestException(error || 'Failed to send OTP');
     }
 
-    void this.loggerService.log(
-      `OTP resent to ${user.phone} for user ${user.id}`,
-      { userId: user.id, phone: user.phone },
-      { category: LOG_CATEGORY.AUTH },
-    );
-    void this.auditLogService.log({
-      actorId: user.id,
-      action: AuditAction.UPDATE,
-      targetId: user.id,
-      targetType: AuditTargetType.USER,
-      metadata: {
-        result: 'success',
-        action: 'resend_register_otp',
-        phone: user.phone,
-      },
-    });
+    this.loggerService
+      .log(
+        `OTP resent to ${user.phone} for user ${user.id}`,
+        { userId: user.id, phone: user.phone },
+        { category: LOG_CATEGORY.AUTH },
+      )
+      .catch(error => {
+        this.logger.error('Failed to log', error);
+      });
+    this.auditLogService
+      .log({
+        actorId: user.id,
+        action: AuditAction.UPDATE,
+        targetId: user.id,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          result: 'success',
+          action: 'resend_register_otp',
+          phone: user.phone,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
+      });
 
     return {
       message: 'Mã OTP đã được gửi đến số điện thoại của bạn',
@@ -768,10 +901,14 @@ export class AuthService {
     });
 
     await this.smsService.sendOTP(phone, otpCode);
-    void this.loggerService.log(
-      `OTP sent to ${phone} for user ${userId}`,
-      { userId, phone, type },
-      { category: LOG_CATEGORY.AUTH },
-    );
+    this.loggerService
+      .log(
+        `OTP sent to ${phone} for user ${userId}`,
+        { userId, phone, type },
+        { category: LOG_CATEGORY.AUTH },
+      )
+      .catch(error => {
+        this.logger.error('Failed to log', error);
+      });
   }
 }

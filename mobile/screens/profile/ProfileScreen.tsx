@@ -57,7 +57,7 @@ export default function ProfileScreen() {
         >
           <ProfileHeader user={user} />
           <ProfileInfoCard user={user} />
-          <ProfileActions user={user} myKyc={null} isLoadingKyc={false} />
+          <ProfileActions user={user} isLoadingKyc={false} />
           <ProfileBio profile={null} />
           <ProfileAddress profile={null} />
           <ProfileLogoutButton onLogout={handleLogout} />
