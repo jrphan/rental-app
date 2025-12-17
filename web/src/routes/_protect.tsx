@@ -7,7 +7,7 @@ import { AdminSidebar } from '@/components/layout/AdminSidebar'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 
-export const Route = createFileRoute('/admin/_protect')({
+export const Route = createFileRoute('/_protect')({
   component: ProtectedLayoutComponent,
 })
 
@@ -28,6 +28,23 @@ function ProtectedLayoutComponent() {
       try {
         const stored = localStorage.getItem('auth-storage')
         if (stored) {
+          // Nếu trong localStorage đã có state (sau khi login),
+          // chủ động nạp lại vào Zustand để tránh case F5 bị mất phiên.
+          try {
+            const parsed = JSON.parse(stored)
+            const state = parsed?.state
+            if (state?.user && state?.token) {
+              // Dùng login để đồng bộ đầy đủ cache + isAuthenticated
+              useAuthStore.getState().login(state.user, {
+                accessToken: state.token,
+                refreshToken: state.refreshToken ?? undefined,
+                expiresAt: state.expiresAt ?? undefined,
+              })
+            }
+          } catch {
+            // ignore parse error
+          }
+
           // Store has data, wait a bit for Zustand to hydrate it
           setTimeout(() => {
             setIsHydrated(true)

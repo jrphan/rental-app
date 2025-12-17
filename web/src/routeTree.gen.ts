@@ -9,118 +9,110 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminLoginRouteImport } from './routes/admin/login'
-import { Route as AdminProtectRouteImport } from './routes/admin/_protect'
-import { Route as AdminProtectIndexRouteImport } from './routes/admin/_protect/index'
-import { Route as AdminProtectKycRouteImport } from './routes/admin/_protect/kyc'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProtectRouteImport } from './routes/_protect'
+import { Route as ProtectIndexRouteImport } from './routes/_protect/index'
+import { Route as ProtectKycRouteImport } from './routes/_protect/kyc'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
+const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminProtectRoute = AdminProtectRouteImport.update({
+const ProtectRoute = ProtectRouteImport.update({
   id: '/_protect',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminProtectIndexRoute = AdminProtectIndexRouteImport.update({
+const ProtectIndexRoute = ProtectIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminProtectRoute,
+  getParentRoute: () => ProtectRoute,
 } as any)
-const AdminProtectKycRoute = AdminProtectKycRouteImport.update({
+const ProtectKycRoute = ProtectKycRouteImport.update({
   id: '/kyc',
   path: '/kyc',
-  getParentRoute: () => AdminProtectRoute,
+  getParentRoute: () => ProtectRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/admin': typeof AdminProtectRouteWithChildren
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/kyc': typeof AdminProtectKycRoute
-  '/admin/': typeof AdminProtectIndexRoute
+  '/login': typeof LoginRoute
+  '/kyc': typeof ProtectKycRoute
+  '/': typeof ProtectIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/kyc': typeof AdminProtectKycRoute
-  '/admin': typeof AdminProtectIndexRoute
+  '/login': typeof LoginRoute
+  '/kyc': typeof ProtectKycRoute
+  '/': typeof ProtectIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/admin/_protect': typeof AdminProtectRouteWithChildren
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/_protect/kyc': typeof AdminProtectKycRoute
-  '/admin/_protect/': typeof AdminProtectIndexRoute
+  '/_protect': typeof ProtectRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_protect/kyc': typeof ProtectKycRoute
+  '/_protect/': typeof ProtectIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/admin/login' | '/admin/kyc' | '/admin/'
+  fullPaths: '/login' | '/kyc' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin/login' | '/admin/kyc' | '/admin'
-  id:
-    | '__root__'
-    | '/'
-    | '/admin/_protect'
-    | '/admin/login'
-    | '/admin/_protect/kyc'
-    | '/admin/_protect/'
+  to: '/login' | '/kyc' | '/'
+  id: '__root__' | '/_protect' | '/login' | '/_protect/kyc' | '/_protect/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  ProtectRoute: typeof ProtectRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/_protect': {
-      id: '/admin/_protect'
+    '/_protect': {
+      id: '/_protect'
       path: ''
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminProtectRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: ''
+      preLoaderRoute: typeof ProtectRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/_protect/': {
-      id: '/admin/_protect/'
+    '/_protect/': {
+      id: '/_protect/'
       path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminProtectIndexRouteImport
-      parentRoute: typeof AdminProtectRoute
+      fullPath: '/'
+      preLoaderRoute: typeof ProtectIndexRouteImport
+      parentRoute: typeof ProtectRoute
     }
-    '/admin/_protect/kyc': {
-      id: '/admin/_protect/kyc'
+    '/_protect/kyc': {
+      id: '/_protect/kyc'
       path: '/kyc'
-      fullPath: '/admin/kyc'
-      preLoaderRoute: typeof AdminProtectKycRouteImport
-      parentRoute: typeof AdminProtectRoute
+      fullPath: '/kyc'
+      preLoaderRoute: typeof ProtectKycRouteImport
+      parentRoute: typeof ProtectRoute
     }
   }
 }
 
+interface ProtectRouteChildren {
+  ProtectKycRoute: typeof ProtectKycRoute
+  ProtectIndexRoute: typeof ProtectIndexRoute
+}
+
+const ProtectRouteChildren: ProtectRouteChildren = {
+  ProtectKycRoute: ProtectKycRoute,
+  ProtectIndexRoute: ProtectIndexRoute,
+}
+
+const ProtectRouteWithChildren =
+  ProtectRoute._addFileChildren(ProtectRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  ProtectRoute: ProtectRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

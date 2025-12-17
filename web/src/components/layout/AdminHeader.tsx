@@ -36,7 +36,7 @@ export function AdminHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 border-b bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60 px-4 shadow-sm">
+    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 bg-white/95 backdrop-blur supports-backdrop-filter:bg-white/60 px-4">
       <SidebarTrigger className="-ml-1" />
       <div className="flex flex-1 items-center justify-end gap-4">
         {/* User Info */}

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useAuthStore } from '@/store/auth'
 
-export const Route = createFileRoute('/admin/_protect/')({
+export const Route = createFileRoute('/_protect/')({
   component: AdminDashboard,
 })
 
@@ -35,18 +35,14 @@ function AdminDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Vai trò</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {user?.role}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{user?.role}</p>
             </div>
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Tổng quan
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Tổng quan</h2>
         <p className="text-gray-600">
           Đây là trang dashboard. Bạn có thể bắt đầu quản lý hệ thống từ đây.
         </p>
