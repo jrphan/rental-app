@@ -1,4 +1,4 @@
-export const ROUTES = {
+const API_ENDPOINTS = {
   HEALTH: '/',
   AUTH: {
     LOGIN: '/auth/login',
@@ -17,9 +17,9 @@ export const ROUTES = {
   },
   ADMIN: {
     LIST_KYC: '/admin/kyc',
-    GET_KYC_DETAIL: '/admin/kyc/:id',
-    APPROVE_KYC: '/admin/kyc/:id/approve',
-    REJECT_KYC: '/admin/kyc/:id/reject',
+    GET_KYC_DETAIL: (id: string) => `/admin/kyc/${id}`,
+    APPROVE_KYC: (id: string) => `/admin/kyc/${id}/approve`,
+    REJECT_KYC: (id: string) => `/admin/kyc/${id}/reject`,
   },
   FILES: {
     UPLOAD: '/files/upload',
@@ -27,4 +27,6 @@ export const ROUTES = {
     LIST_MY_FILES: '/files/me',
     DELETE_FILE: '/files/:id',
   },
-};
+}
+
+export default API_ENDPOINTS
