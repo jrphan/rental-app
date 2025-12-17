@@ -7,14 +7,53 @@ import {
   selectGetUserInfo,
   UpdateProfileResponse,
   SubmitKycResponse,
+  AdminUserListResponse,
+  selectAdminUser,
+  AdminKycListResponse,
+  AdminKycDetailResponse,
+  AdminKycActionResponse,
+  selectAdminKyc,
 } from '@/types/user.type';
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '@prisma/client';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
+import {
+  AuditAction,
+  AuditTargetType,
+  KycStatus,
+  Prisma,
+  User,
+  UserRole,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prismaService: PrismaService) {}
+  private readonly logger = new Logger(UserService.name);
+
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
+
+  private async assertAdminOrSupport(userId: string): Promise<void> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPPORT) {
+      throw new ForbiddenException('Bạn không có quyền truy cập');
+    }
+  }
 
   async createUser(createUserDto: CreateUserDto): Promise<User> {
     const { password, ...rest } = createUserDto;
@@ -69,6 +108,22 @@ export class UserService {
       select: selectGetUserInfo,
     });
 
+    this.auditLogService
+      .log({
+        actorId: userId,
+        action: AuditAction.UPDATE,
+        targetId: userId,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          oldValue: JSON.stringify(user),
+          newValue: JSON.stringify(updatedUser),
+          action: 'update_profile',
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
+      });
+
     return updatedUser;
   }
 
@@ -86,43 +141,277 @@ export class UserService {
     }
 
     if (user.kyc) {
+      const payload: Prisma.KycUpdateInput = {
+        citizenId: dto.citizenId ?? undefined,
+        fullNameInId: dto.fullNameInId ?? undefined,
+        dob: dto.dob ? new Date(dto.dob) : undefined,
+        addressInId: dto.addressInId ?? undefined,
+        driverLicense: dto.driverLicense ?? undefined,
+        licenseType: dto.licenseType ?? undefined,
+        idCardFront: dto.idCardFront ?? undefined,
+        idCardBack: dto.idCardBack ?? undefined,
+        licenseFront: dto.licenseFront ?? undefined,
+        licenseBack: dto.licenseBack ?? undefined,
+        selfieImg: dto.selfieImg ?? undefined,
+        status: KycStatus.PENDING,
+        rejectionReason: null,
+      };
+
       await this.prismaService.kyc.update({
         where: { userId },
-        data: {
-          citizenId: dto.citizenId ?? undefined,
-          fullNameInId: dto.fullNameInId ?? undefined,
-          dob: dto.dob ? new Date(dto.dob) : undefined,
-          addressInId: dto.addressInId ?? undefined,
-          driverLicense: dto.driverLicense ?? undefined,
-          licenseType: dto.licenseType ?? undefined,
-          idCardFront: dto.idCardFront ?? undefined,
-          idCardBack: dto.idCardBack ?? undefined,
-          licenseFront: dto.licenseFront ?? undefined,
-          licenseBack: dto.licenseBack ?? undefined,
-          selfieImg: dto.selfieImg ?? undefined,
-          status: 'PENDING',
-          rejectionReason: null,
-        },
+        data: payload,
       });
+
+      this.auditLogService
+        .log({
+          actorId: userId,
+          action: AuditAction.UPDATE,
+          targetId: userId,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            oldValue: JSON.stringify(user.kyc),
+            newValue: JSON.stringify({
+              ...user.kyc,
+              ...payload,
+            }),
+            action: 'update_kyc',
+          },
+        })
+        .catch(error => {
+          console.error('Failed to log audit:', error);
+        });
     } else {
+      const payload = {
+        userId,
+        citizenId: dto.citizenId ?? undefined,
+        fullNameInId: dto.fullNameInId ?? undefined,
+        dob: dto.dob ? new Date(dto.dob) : undefined,
+        addressInId: dto.addressInId ?? undefined,
+        driverLicense: dto.driverLicense ?? undefined,
+        licenseType: dto.licenseType ?? undefined,
+        idCardFront: dto.idCardFront ?? undefined,
+        idCardBack: dto.idCardBack ?? undefined,
+        licenseFront: dto.licenseFront ?? undefined,
+        licenseBack: dto.licenseBack ?? undefined,
+        selfieImg: dto.selfieImg ?? undefined,
+      };
+
       await this.prismaService.kyc.create({
-        data: {
-          userId,
-          citizenId: dto.citizenId ?? undefined,
-          fullNameInId: dto.fullNameInId ?? undefined,
-          dob: dto.dob ? new Date(dto.dob) : undefined,
-          addressInId: dto.addressInId ?? undefined,
-          driverLicense: dto.driverLicense ?? undefined,
-          licenseType: dto.licenseType ?? undefined,
-          idCardFront: dto.idCardFront ?? undefined,
-          idCardBack: dto.idCardBack ?? undefined,
-          licenseFront: dto.licenseFront ?? undefined,
-          licenseBack: dto.licenseBack ?? undefined,
-          selfieImg: dto.selfieImg ?? undefined,
-        },
+        data: payload,
       });
+
+      this.auditLogService
+        .log({
+          actorId: userId,
+          action: AuditAction.CREATE,
+          targetId: userId,
+          targetType: AuditTargetType.USER,
+          metadata: {
+            newValue: JSON.stringify({
+              ...payload,
+            }),
+            action: 'submit_kyc',
+          },
+        })
+        .catch(error => {
+          console.error('Failed to log audit:', error);
+        });
     }
 
     return { message: 'KYC đã được gửi, vui lòng chờ duyệt' };
+  }
+
+  // Admin
+  async listUsers(
+    reviewerId: string,
+    filters: {
+      role?: UserRole;
+      isActive?: boolean;
+      isPhoneVerified?: boolean;
+      kycStatus?: KycStatus;
+      search?: string;
+    },
+    page = 1,
+    limit = 20,
+  ): Promise<AdminUserListResponse> {
+    await this.assertAdminOrSupport(reviewerId);
+
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      role: filters.role,
+      isActive: filters.isActive,
+      isPhoneVerified: filters.isPhoneVerified,
+    };
+
+    if (filters.kycStatus) {
+      where.kyc = {
+        status: filters.kycStatus,
+      };
+    }
+
+    if (filters.search) {
+      const keyword = filters.search.trim();
+      if (keyword) {
+        where.OR = [
+          { phone: { contains: keyword, mode: 'insensitive' } },
+          { email: { contains: keyword, mode: 'insensitive' } },
+          { fullName: { contains: keyword, mode: 'insensitive' } },
+        ];
+      }
+    }
+
+    const [items, total] = await this.prismaService.$transaction([
+      this.prismaService.user.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: selectAdminUser,
+      }),
+      this.prismaService.user.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async listKyc(
+    reviewerId: string,
+    status?: KycStatus,
+    page = 1,
+    limit = 20,
+  ): Promise<AdminKycListResponse> {
+    await this.assertAdminOrSupport(reviewerId);
+
+    const where: Prisma.KycWhereInput = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    const [items, total] = await this.prismaService.$transaction([
+      this.prismaService.kyc.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: selectAdminKyc,
+      }),
+      this.prismaService.kyc.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getKycDetail(
+    reviewerId: string,
+    id: string,
+  ): Promise<AdminKycDetailResponse> {
+    await this.assertAdminOrSupport(reviewerId);
+
+    const kyc = await this.prismaService.kyc.findUnique({
+      where: { id },
+      select: selectAdminKyc,
+    });
+
+    if (!kyc) {
+      throw new NotFoundException('KYC record not found');
+    }
+
+    return kyc;
+  }
+
+  async approveKyc(
+    id: string,
+    reviewerId: string,
+  ): Promise<AdminKycActionResponse> {
+    await this.assertAdminOrSupport(reviewerId);
+    const kyc = await this.prismaService.kyc.findUnique({
+      where: { id },
+    });
+
+    if (!kyc) {
+      throw new NotFoundException('KYC record not found');
+    }
+
+    const updated = await this.prismaService.kyc.update({
+      where: { id },
+      data: {
+        status: KycStatus.APPROVED,
+        rejectionReason: null,
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    await this.auditLogService
+      .log({
+        actorId: reviewerId,
+        action: AuditAction.UPDATE,
+        targetId: kyc.userId,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          oldValue: JSON.stringify(kyc),
+          newValue: JSON.stringify(updated),
+          action: 'approve_kyc',
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log KYC approval audit', error);
+      });
+
+    return { message: 'KYC đã được phê duyệt' };
+  }
+
+  async rejectKyc(
+    id: string,
+    reviewerId: string,
+    reason: string,
+  ): Promise<AdminKycActionResponse> {
+    await this.assertAdminOrSupport(reviewerId);
+    const kyc = await this.prismaService.kyc.findUnique({
+      where: { id },
+    });
+
+    if (!kyc) {
+      throw new NotFoundException('KYC record not found');
+    }
+
+    const updated = await this.prismaService.kyc.update({
+      where: { id },
+      data: {
+        status: KycStatus.REJECTED,
+        rejectionReason: reason,
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    await this.auditLogService
+      .log({
+        actorId: reviewerId,
+        action: AuditAction.UPDATE,
+        targetId: kyc.userId,
+        targetType: AuditTargetType.USER,
+        metadata: {
+          oldValue: JSON.stringify(kyc),
+          newValue: JSON.stringify(updated),
+          action: 'reject_kyc',
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log KYC rejection audit', error);
+      });
+
+    return { message: 'KYC đã bị từ chối' };
   }
 }

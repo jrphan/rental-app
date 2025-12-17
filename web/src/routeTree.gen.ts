@@ -8,261 +8,135 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from '@tanstack/react-router'
-
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VehiclesRouteImport } from './routes/vehicles'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminLoginRouteImport } from './routes/admin/login'
-import { Route as AdminLayoutRouteImport } from './routes/admin/_layout'
-import { Route as AdminLayoutVehiclesRouteImport } from './routes/admin/_layout/vehicles'
-import { Route as AdminLayoutOwnersRouteImport } from './routes/admin/_layout/owners'
-import { Route as AdminLayoutNotificationsRouteImport } from './routes/admin/_layout/notifications'
-import { Route as AdminLayoutKycRouteImport } from './routes/admin/_layout/kyc'
-import { Route as AdminLayoutDashboardRouteImport } from './routes/admin/_layout/dashboard'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProtectRouteImport } from './routes/_protect'
+import { Route as ProtectIndexRouteImport } from './routes/_protect/index'
+import { Route as ProtectUsersRouteImport } from './routes/_protect/users'
+import { Route as ProtectKycRouteImport } from './routes/_protect/kyc'
 
-const AdminRouteImport = createFileRoute('/admin')()
-
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VehiclesRoute = VehiclesRouteImport.update({
-  id: '/vehicles',
-  path: '/vehicles',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
+const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminLayoutRoute = AdminLayoutRouteImport.update({
-  id: '/_layout',
-  getParentRoute: () => AdminRoute,
+const ProtectRoute = ProtectRouteImport.update({
+  id: '/_protect',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminLayoutVehiclesRoute = AdminLayoutVehiclesRouteImport.update({
-  id: '/vehicles',
-  path: '/vehicles',
-  getParentRoute: () => AdminLayoutRoute,
+const ProtectIndexRoute = ProtectIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProtectRoute,
 } as any)
-const AdminLayoutOwnersRoute = AdminLayoutOwnersRouteImport.update({
-  id: '/owners',
-  path: '/owners',
-  getParentRoute: () => AdminLayoutRoute,
+const ProtectUsersRoute = ProtectUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => ProtectRoute,
 } as any)
-const AdminLayoutNotificationsRoute =
-  AdminLayoutNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AdminLayoutRoute,
-  } as any)
-const AdminLayoutKycRoute = AdminLayoutKycRouteImport.update({
+const ProtectKycRoute = ProtectKycRouteImport.update({
   id: '/kyc',
   path: '/kyc',
-  getParentRoute: () => AdminLayoutRoute,
-} as any)
-const AdminLayoutDashboardRoute = AdminLayoutDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AdminLayoutRoute,
+  getParentRoute: () => ProtectRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/vehicles': typeof VehiclesRoute
-  '/admin': typeof AdminLayoutRouteWithChildren
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/dashboard': typeof AdminLayoutDashboardRoute
-  '/admin/kyc': typeof AdminLayoutKycRoute
-  '/admin/notifications': typeof AdminLayoutNotificationsRoute
-  '/admin/owners': typeof AdminLayoutOwnersRoute
-  '/admin/vehicles': typeof AdminLayoutVehiclesRoute
+  '/login': typeof LoginRoute
+  '/kyc': typeof ProtectKycRoute
+  '/users': typeof ProtectUsersRoute
+  '/': typeof ProtectIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/vehicles': typeof VehiclesRoute
-  '/admin': typeof AdminLayoutRouteWithChildren
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/dashboard': typeof AdminLayoutDashboardRoute
-  '/admin/kyc': typeof AdminLayoutKycRoute
-  '/admin/notifications': typeof AdminLayoutNotificationsRoute
-  '/admin/owners': typeof AdminLayoutOwnersRoute
-  '/admin/vehicles': typeof AdminLayoutVehiclesRoute
+  '/login': typeof LoginRoute
+  '/kyc': typeof ProtectKycRoute
+  '/users': typeof ProtectUsersRoute
+  '/': typeof ProtectIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/vehicles': typeof VehiclesRoute
-  '/admin': typeof AdminRouteWithChildren
-  '/admin/_layout': typeof AdminLayoutRouteWithChildren
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/_layout/dashboard': typeof AdminLayoutDashboardRoute
-  '/admin/_layout/kyc': typeof AdminLayoutKycRoute
-  '/admin/_layout/notifications': typeof AdminLayoutNotificationsRoute
-  '/admin/_layout/owners': typeof AdminLayoutOwnersRoute
-  '/admin/_layout/vehicles': typeof AdminLayoutVehiclesRoute
+  '/_protect': typeof ProtectRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_protect/kyc': typeof ProtectKycRoute
+  '/_protect/users': typeof ProtectUsersRoute
+  '/_protect/': typeof ProtectIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/vehicles'
-    | '/admin'
-    | '/admin/login'
-    | '/admin/dashboard'
-    | '/admin/kyc'
-    | '/admin/notifications'
-    | '/admin/owners'
-    | '/admin/vehicles'
+  fullPaths: '/login' | '/kyc' | '/users' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/vehicles'
-    | '/admin'
-    | '/admin/login'
-    | '/admin/dashboard'
-    | '/admin/kyc'
-    | '/admin/notifications'
-    | '/admin/owners'
-    | '/admin/vehicles'
+  to: '/login' | '/kyc' | '/users' | '/'
   id:
     | '__root__'
-    | '/'
-    | '/vehicles'
-    | '/admin'
-    | '/admin/_layout'
-    | '/admin/login'
-    | '/admin/_layout/dashboard'
-    | '/admin/_layout/kyc'
-    | '/admin/_layout/notifications'
-    | '/admin/_layout/owners'
-    | '/admin/_layout/vehicles'
+    | '/_protect'
+    | '/login'
+    | '/_protect/kyc'
+    | '/_protect/users'
+    | '/_protect/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  VehiclesRoute: typeof VehiclesRoute
-  AdminRoute: typeof AdminRouteWithChildren
+  ProtectRoute: typeof ProtectRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/vehicles': {
-      id: '/vehicles'
-      path: '/vehicles'
-      fullPath: '/vehicles'
-      preLoaderRoute: typeof VehiclesRouteImport
+    '/_protect': {
+      id: '/_protect'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof ProtectRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_protect/': {
+      id: '/_protect/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ProtectIndexRouteImport
+      parentRoute: typeof ProtectRoute
     }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof AdminRoute
+    '/_protect/users': {
+      id: '/_protect/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof ProtectUsersRouteImport
+      parentRoute: typeof ProtectRoute
     }
-    '/admin/_layout': {
-      id: '/admin/_layout'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminLayoutRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/_layout/vehicles': {
-      id: '/admin/_layout/vehicles'
-      path: '/vehicles'
-      fullPath: '/admin/vehicles'
-      preLoaderRoute: typeof AdminLayoutVehiclesRouteImport
-      parentRoute: typeof AdminLayoutRoute
-    }
-    '/admin/_layout/owners': {
-      id: '/admin/_layout/owners'
-      path: '/owners'
-      fullPath: '/admin/owners'
-      preLoaderRoute: typeof AdminLayoutOwnersRouteImport
-      parentRoute: typeof AdminLayoutRoute
-    }
-    '/admin/_layout/notifications': {
-      id: '/admin/_layout/notifications'
-      path: '/notifications'
-      fullPath: '/admin/notifications'
-      preLoaderRoute: typeof AdminLayoutNotificationsRouteImport
-      parentRoute: typeof AdminLayoutRoute
-    }
-    '/admin/_layout/kyc': {
-      id: '/admin/_layout/kyc'
+    '/_protect/kyc': {
+      id: '/_protect/kyc'
       path: '/kyc'
-      fullPath: '/admin/kyc'
-      preLoaderRoute: typeof AdminLayoutKycRouteImport
-      parentRoute: typeof AdminLayoutRoute
-    }
-    '/admin/_layout/dashboard': {
-      id: '/admin/_layout/dashboard'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AdminLayoutDashboardRouteImport
-      parentRoute: typeof AdminLayoutRoute
+      fullPath: '/kyc'
+      preLoaderRoute: typeof ProtectKycRouteImport
+      parentRoute: typeof ProtectRoute
     }
   }
 }
 
-interface AdminLayoutRouteChildren {
-  AdminLayoutDashboardRoute: typeof AdminLayoutDashboardRoute
-  AdminLayoutKycRoute: typeof AdminLayoutKycRoute
-  AdminLayoutNotificationsRoute: typeof AdminLayoutNotificationsRoute
-  AdminLayoutOwnersRoute: typeof AdminLayoutOwnersRoute
-  AdminLayoutVehiclesRoute: typeof AdminLayoutVehiclesRoute
+interface ProtectRouteChildren {
+  ProtectKycRoute: typeof ProtectKycRoute
+  ProtectUsersRoute: typeof ProtectUsersRoute
+  ProtectIndexRoute: typeof ProtectIndexRoute
 }
 
-const AdminLayoutRouteChildren: AdminLayoutRouteChildren = {
-  AdminLayoutDashboardRoute: AdminLayoutDashboardRoute,
-  AdminLayoutKycRoute: AdminLayoutKycRoute,
-  AdminLayoutNotificationsRoute: AdminLayoutNotificationsRoute,
-  AdminLayoutOwnersRoute: AdminLayoutOwnersRoute,
-  AdminLayoutVehiclesRoute: AdminLayoutVehiclesRoute,
+const ProtectRouteChildren: ProtectRouteChildren = {
+  ProtectKycRoute: ProtectKycRoute,
+  ProtectUsersRoute: ProtectUsersRoute,
+  ProtectIndexRoute: ProtectIndexRoute,
 }
 
-const AdminLayoutRouteWithChildren = AdminLayoutRoute._addFileChildren(
-  AdminLayoutRouteChildren,
-)
-
-interface AdminRouteChildren {
-  AdminLayoutRoute: typeof AdminLayoutRouteWithChildren
-  AdminLoginRoute: typeof AdminLoginRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminLayoutRoute: AdminLayoutRouteWithChildren,
-  AdminLoginRoute: AdminLoginRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+const ProtectRouteWithChildren =
+  ProtectRoute._addFileChildren(ProtectRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  VehiclesRoute: VehiclesRoute,
-  AdminRoute: AdminRouteWithChildren,
+  ProtectRoute: ProtectRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

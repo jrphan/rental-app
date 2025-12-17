@@ -1,5 +1,5 @@
 import { Controller } from "react-hook-form";
-import { ActivityIndicator, Text } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,67 @@ import { DatePicker } from "@/components/ui/date-picker";
 import GalleryField from "@/components/gallery/GalleryField";
 import { useKycForm } from "@/hooks/forms/profile.forms";
 import { useSubmitKyc } from "@/hooks/auth/auth.mutation";
+import { useAuthStore } from "@/store/auth";
+import { KYC_STATUS } from "@/constants/kyc.constants";
+import { apiUser } from "@/services/api.user";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { LicenseType } from "@/schemas/profile.schema";
 
 export default function KycForm() {
+  const { user, updateUser } = useAuthStore();
+  const queryClient = useQueryClient();
+
   const form = useKycForm();
   const mutation = useSubmitKyc();
 
-  const onSubmit = (values: any) => {
+  // Lấy dữ liệu KYC hiện có để fill form
+  const kycData = user?.kyc;
+
+  // Format date từ ISO string sang format YYYY-MM-DD cho DatePicker
+  const formatDateForForm = (dateString: string | null | undefined): string => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "";
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    } catch {
+      return "";
+    }
+  };
+
+  // Fill form với dữ liệu KYC hiện có khi component mount hoặc kyc data thay đổi
+  useEffect(() => {
+    if (kycData) {
+      form.reset({
+        citizenId: kycData.citizenId || "",
+        fullNameInId: kycData.fullNameInId || "",
+        dob: formatDateForForm(kycData.dob),
+        addressInId: kycData.addressInId || "",
+        driverLicense: kycData.driverLicense || "",
+        licenseType: (kycData.licenseType as LicenseType) || "",
+        idCardFront: kycData.idCardFront || "",
+        idCardBack: kycData.idCardBack || "",
+        licenseFront: kycData.licenseFront || "",
+        licenseBack: kycData.licenseBack || "",
+        selfieImg: kycData.selfieImg || "",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kycData?.id]); // Reset form khi kyc id thay đổi
+
+  const kyc = user?.kyc;
+  const isFormDisabled =
+    kyc?.status === KYC_STATUS.APPROVED || kyc?.status === KYC_STATUS.PENDING;
+  const canSubmit =
+    !kyc ||
+    kyc.status === KYC_STATUS.REJECTED ||
+    kyc.status === KYC_STATUS.NEEDS_UPDATE;
+
+  const onSubmit = async (values: any) => {
     // Chuẩn hóa: convert "" -> undefined để backend không validate sai
     const normalize = (v: string | undefined) =>
       v && v.trim().length > 0 ? v.trim() : undefined;
@@ -31,14 +86,40 @@ export default function KycForm() {
       selfieImg: normalize(values.selfieImg),
     };
 
-    mutation.mutate(payload);
+    try {
+      await mutation.mutateAsync(payload);
+      // Sau khi submit thành công, lấy thông tin user mới nhất và sync store
+      try {
+        const updatedUser = await apiUser.getUserInfo();
+        updateUser(updatedUser);
+        // Invalidate query để refresh data
+        queryClient.invalidateQueries({ queryKey: ["user", "sync"] });
+      } catch (error) {
+        console.error("Failed to sync user info after KYC submission:", error);
+      }
+    } catch (error) {
+      // Error đã được handle trong useSubmitKyc hook
+      console.error("KYC submission error:", error);
+    }
   };
 
   return (
     <>
-      <Text className="text-base text-gray-600 mb-4">
-        Vui lòng cung cấp thông tin và hình ảnh giấy tờ để xác thực danh tính.
-      </Text>
+      {!isFormDisabled && (
+        <Text className="text-base text-gray-600 mb-4">
+          Vui lòng cung cấp thông tin và hình ảnh giấy tờ để xác thực danh tính.
+        </Text>
+      )}
+
+      {isFormDisabled && (
+        <View className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+          <Text className="text-sm text-gray-600">
+            {kyc?.status === KYC_STATUS.APPROVED
+              ? "Hồ sơ KYC của bạn đã được duyệt. Bạn không thể chỉnh sửa thông tin."
+              : "Hồ sơ KYC của bạn đang được xem xét. Vui lòng chờ phản hồi từ hệ thống."}
+          </Text>
+        </View>
+      )}
 
       <Controller
         control={form.control}
@@ -54,6 +135,7 @@ export default function KycForm() {
             onChangeText={onChange}
             onBlur={onBlur}
             error={error?.message}
+            editable={!isFormDisabled}
           />
         )}
       />
@@ -72,6 +154,7 @@ export default function KycForm() {
             onChangeText={onChange}
             onBlur={onBlur}
             error={error?.message}
+            editable={!isFormDisabled}
           />
         )}
       />
@@ -80,14 +163,19 @@ export default function KycForm() {
         control={form.control}
         name="dob"
         render={({ field: { value, onChange }, fieldState: { error } }) => (
-          <DatePicker
-            label="Ngày sinh"
-            value={value}
-            onChange={onChange}
-            error={error?.message}
-            mode="date"
-            allowClear={true}
-          />
+          <View
+            pointerEvents={isFormDisabled ? "none" : "auto"}
+            style={{ opacity: isFormDisabled ? 0.6 : 1 }}
+          >
+            <DatePicker
+              label="Ngày sinh"
+              value={value}
+              onChange={onChange}
+              error={error?.message}
+              mode="date"
+              allowClear={true}
+            />
+          </View>
         )}
       />
 
@@ -105,6 +193,7 @@ export default function KycForm() {
             onChangeText={onChange}
             onBlur={onBlur}
             error={error?.message}
+            editable={!isFormDisabled}
           />
         )}
       />
@@ -123,6 +212,7 @@ export default function KycForm() {
             onChangeText={onChange}
             onBlur={onBlur}
             error={error?.message}
+            editable={!isFormDisabled}
           />
         )}
       />
@@ -143,6 +233,7 @@ export default function KycForm() {
               ]}
               value={value || undefined}
               onValueChange={(val) => onChange(val)}
+              disabled={isFormDisabled}
             />
             {error?.message ? (
               <Text className="mt-1 text-xs text-red-500">{error.message}</Text>
@@ -158,14 +249,19 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <GalleryField
-            label="Ảnh CMND/CCCD mặt trước"
-            folder="kyc-id-card"
-            multiple={false}
-            value={value ?? ""}
-            onChange={onChange}
-            error={error?.message}
-          />
+          <View
+            pointerEvents={isFormDisabled ? "none" : "auto"}
+            style={{ opacity: isFormDisabled ? 0.6 : 1 }}
+          >
+            <GalleryField
+              label="Ảnh CMND/CCCD mặt trước"
+              folder="kyc-id-card"
+              multiple={false}
+              value={value ?? ""}
+              onChange={onChange}
+              error={error?.message}
+            />
+          </View>
         )}
       />
 
@@ -176,14 +272,19 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <GalleryField
-            label="Ảnh CMND/CCCD mặt sau"
-            folder="kyc-id-card"
-            multiple={false}
-            value={value ?? ""}
-            onChange={onChange}
-            error={error?.message}
-          />
+          <View
+            pointerEvents={isFormDisabled ? "none" : "auto"}
+            style={{ opacity: isFormDisabled ? 0.6 : 1 }}
+          >
+            <GalleryField
+              label="Ảnh CMND/CCCD mặt sau"
+              folder="kyc-id-card"
+              multiple={false}
+              value={value ?? ""}
+              onChange={onChange}
+              error={error?.message}
+            />
+          </View>
         )}
       />
 
@@ -194,14 +295,19 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <GalleryField
-            label="Ảnh GPLX mặt trước"
-            folder="kyc-license"
-            multiple={false}
-            value={value ?? ""}
-            onChange={onChange}
-            error={error?.message}
-          />
+          <View
+            pointerEvents={isFormDisabled ? "none" : "auto"}
+            style={{ opacity: isFormDisabled ? 0.6 : 1 }}
+          >
+            <GalleryField
+              label="Ảnh GPLX mặt trước"
+              folder="kyc-license"
+              multiple={false}
+              value={value ?? ""}
+              onChange={onChange}
+              error={error?.message}
+            />
+          </View>
         )}
       />
 
@@ -212,14 +318,19 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <GalleryField
-            label="Ảnh GPLX mặt sau"
-            folder="kyc-license"
-            multiple={false}
-            value={value ?? ""}
-            onChange={onChange}
-            error={error?.message}
-          />
+          <View
+            pointerEvents={isFormDisabled ? "none" : "auto"}
+            style={{ opacity: isFormDisabled ? 0.6 : 1 }}
+          >
+            <GalleryField
+              label="Ảnh GPLX mặt sau"
+              folder="kyc-license"
+              multiple={false}
+              value={value ?? ""}
+              onChange={onChange}
+              error={error?.message}
+            />
+          </View>
         )}
       />
 
@@ -230,29 +341,39 @@ export default function KycForm() {
           field: { onChange, onBlur, value },
           fieldState: { error },
         }) => (
-          <GalleryField
-            label="Ảnh selfie với giấy tờ"
-            folder="kyc-selfie"
-            multiple={false}
-            value={value ?? ""}
-            onChange={onChange}
-            error={error?.message}
-          />
+          <View
+            pointerEvents={isFormDisabled ? "none" : "auto"}
+            style={{ opacity: isFormDisabled ? 0.6 : 1 }}
+          >
+            <GalleryField
+              label="Ảnh selfie với giấy tờ"
+              folder="kyc-selfie"
+              multiple={false}
+              value={value ?? ""}
+              onChange={onChange}
+              error={error?.message}
+            />
+          </View>
         )}
       />
 
-      <Button
-        onPress={form.handleSubmit(onSubmit)}
-        disabled={mutation.isPending}
-        className="mt-4"
-        size="lg"
-      >
-        {mutation.isPending ? (
-          <ActivityIndicator color="#FFF" />
-        ) : (
-          "Gửi xác thực KYC"
-        )}
-      </Button>
+      {canSubmit && (
+        <Button
+          onPress={form.handleSubmit(onSubmit)}
+          disabled={mutation.isPending || isFormDisabled}
+          className="mt-4"
+          size="lg"
+        >
+          {mutation.isPending ? (
+            <ActivityIndicator color="#FFF" />
+          ) : kyc?.status === KYC_STATUS.REJECTED ||
+            kyc?.status === KYC_STATUS.NEEDS_UPDATE ? (
+            "Cập nhật và gửi lại"
+          ) : (
+            "Gửi xác thực KYC"
+          )}
+        </Button>
+      )}
     </>
   );
 }

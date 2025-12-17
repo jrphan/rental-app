@@ -3,7 +3,19 @@ export type KycStatus = "PENDING" | "APPROVED" | "REJECTED" | "NEEDS_UPDATE";
 
 export interface Kyc {
   id: string;
+  citizenId: string | null;
+  fullNameInId: string | null;
+  dob: string | null;
+  addressInId: string | null;
+  driverLicense: string | null;
+  licenseType: string | null;
+  idCardFront: string | null;
+  idCardBack: string | null;
+  licenseFront: string | null;
+  licenseBack: string | null;
+  selfieImg: string | null;
   status: KycStatus;
+  rejectionReason: string | null;
   reviewedBy: string | null;
   reviewedAt: string | null;
 }

@@ -15,6 +15,13 @@ export const ROUTES = {
     UPDATE_PROFILE: '/user/update-profile',
     SUBMIT_KYC: '/user/kyc',
   },
+  ADMIN: {
+    LIST_USERS: '/admin/users',
+    LIST_KYC: '/admin/kyc',
+    GET_KYC_DETAIL: '/admin/kyc/:id',
+    APPROVE_KYC: '/admin/kyc/:id/approve',
+    REJECT_KYC: '/admin/kyc/:id/reject',
+  },
   FILES: {
     UPLOAD: '/files/upload',
     UPLOAD_MULTIPLE: '/files/upload-multiple',

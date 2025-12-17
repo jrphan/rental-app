@@ -1,5 +1,11 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { View, TouchableOpacity, Text, ViewStyle } from "react-native";
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  ViewStyle,
+  ScrollView,
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -59,7 +65,7 @@ const variantStyles = {
     inactiveText: "",
   },
   inline: {
-    container: "flex-row gap-2 bg-transparent flex-wrap",
+    container: "flex-row gap-2 bg-transparent py-2 px-2",
     tab: "w-fit px-4 py-2 items-center rounded-full border border-gray-200",
     activeTab: "bg-primary-500 border-primary-500",
     activeText: "",
@@ -147,49 +153,78 @@ export function Tabs({
   const activeTabConfig = tabs.find((tab) => tab.value === activeTab);
   const activeContent = activeTabConfig?.content;
 
+  // Render tabs container - ScrollView cho inline variant, View cho các variant khác
+  const renderTabsContainer = () => {
+    const tabsContent = tabs.map((tab) => {
+      const isActive = activeTab === tab.value;
+      const tabStyle = getActiveTabStyle(isActive);
+      const textColor = getActiveTextColor(isActive);
+
+      return (
+        <TouchableOpacity
+          key={tab.value}
+          className={cn(
+            baseStyles.tab,
+            isActive && baseStyles.activeTab,
+            isActive && activeTabClassName,
+            tabClassName
+          )}
+          style={tabStyle}
+          onPress={() => handleTabPress(tab.value, tab.route)}
+          activeOpacity={0.7}
+        >
+          <Text
+            className={cn(
+              variant === "inline" ? "text-sm" : "text-base",
+              "font-semibold",
+              isActive ? activeTextClassName : inactiveTextClassName
+            )}
+            style={{ color: textColor }}
+          >
+            {tab.label}
+          </Text>
+        </TouchableOpacity>
+      );
+    });
+
+    if (variant === "inline") {
+      return (
+        <View className={cn("bg-white", className)} style={{ flexShrink: 0 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className={baseStyles.container}
+            contentContainerStyle={{
+              gap: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 12,
+            }}
+          >
+            {tabsContent}
+          </ScrollView>
+        </View>
+      );
+    }
+
+    return (
+      <View className={cn(baseStyles.container, className)}>{tabsContent}</View>
+    );
+  };
+
+  // Nếu không có content, chỉ render tabs container
+  if (!activeContent) {
+    return <View>{renderTabsContainer()}</View>;
+  }
+
   return (
     <View className="flex-1">
-      <View className={cn(baseStyles.container, className)}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.value;
-          const tabStyle = getActiveTabStyle(isActive);
-          const textColor = getActiveTextColor(isActive);
-
-          return (
-            <TouchableOpacity
-              key={tab.value}
-              className={cn(
-                baseStyles.tab,
-                isActive && baseStyles.activeTab,
-                isActive && activeTabClassName,
-                tabClassName
-              )}
-              style={tabStyle}
-              onPress={() => handleTabPress(tab.value, tab.route)}
-              activeOpacity={0.7}
-            >
-              <Text
-                className={cn(
-                  variant === "inline" ? "text-sm" : "text-base",
-                  "font-semibold",
-                  isActive ? activeTextClassName : inactiveTextClassName
-                )}
-                style={{ color: textColor }}
-              >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {activeContent && (
-        <Animated.View
-          className={cn("flex-1", contentClassName)}
-          style={contentAnimatedStyle}
-        >
-          {activeContent}
-        </Animated.View>
-      )}
+      {renderTabsContainer()}
+      <Animated.View
+        className={cn("flex-1", contentClassName)}
+        style={contentAnimatedStyle}
+      >
+        {activeContent}
+      </Animated.View>
     </View>
   );
 }

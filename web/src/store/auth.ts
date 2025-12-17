@@ -1,125 +1,179 @@
-import { Store } from '@tanstack/store'
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { User } from '@/types/auth.types'
 
-interface User {
-  id: string
-  email: string
-  phone?: string
-  role: string
-  isActive: boolean
-  isVerified: boolean
-  createdAt: string
-  updatedAt: string
+interface AuthTokens {
+  accessToken: string
+  refreshToken?: string
+  expiresAt?: number
 }
 
 interface AuthState {
   user: User | null
-  accessToken: string | null
+  token: string | null
   refreshToken: string | null
+  expiresAt: number | null
   isAuthenticated: boolean
-  isLoading: boolean
+  login: (user: User, tokens: AuthTokens) => void
+  logout: () => void
+  updateUser: (user: Partial<User>) => void
+  updateTokens: (tokens: AuthTokens) => void
+  clearCache: () => void
 }
 
-const initialState: AuthState = {
+// Cache để đồng bộ với storage
+let authCache: {
+  user: User | null
+  token: string | null
+  refreshToken: string | null
+  expiresAt: number | null
+} = {
   user: null,
-  accessToken: null,
+  token: null,
   refreshToken: null,
-  isAuthenticated: false,
-  isLoading: true,
+  expiresAt: null,
 }
 
-// Load auth state from localStorage on init
-const loadAuthState = (): AuthState => {
-  if (typeof window === 'undefined') {
-    return initialState
-  }
-
-  try {
-    const userStr = localStorage.getItem('user')
-    const accessToken = localStorage.getItem('accessToken')
-    const refreshToken = localStorage.getItem('refreshToken')
-
-    if (userStr && accessToken) {
-      const user = JSON.parse(userStr)
-      return {
-        user,
-        accessToken,
-        refreshToken,
-        isAuthenticated: true,
-        isLoading: true, // Set to true initially, will be set to false after verification
-      }
-    }
-  } catch (error) {
-    console.error('Error loading auth state:', error)
-  }
-
-  return { ...initialState, isLoading: false }
-}
-
-export const authStore = new Store<AuthState>(loadAuthState())
-
-// Actions
-export const authActions = {
-  login: (user: User, tokens: { accessToken: string; refreshToken?: string }) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('user', JSON.stringify(user))
-      localStorage.setItem('accessToken', tokens.accessToken)
-      if (tokens.refreshToken) {
-        localStorage.setItem('refreshToken', tokens.refreshToken)
-      }
-    }
-
-    authStore.setState({
-      user,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken || null,
-      isAuthenticated: true,
-      isLoading: false,
-    })
-  },
-
-  logout: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('user')
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
-    }
-
-    authStore.setState({
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
       user: null,
-      accessToken: null,
+      token: null,
       refreshToken: null,
+      expiresAt: null,
       isAuthenticated: false,
-      isLoading: false,
-    })
-  },
+      login: (user: User, tokens: AuthTokens) => {
+        // Extract expiresAt from token if not provided
+        let expiresAt = tokens.expiresAt || null
+        if (!expiresAt && tokens.accessToken) {
+          try {
+            const payload = JSON.parse(atob(tokens.accessToken.split('.')[1]))
+            expiresAt = payload.exp ? payload.exp * 1000 : null
+          } catch {
+            // Ignore parse errors
+          }
+        }
 
-  updateUser: (user: Partial<User>) => {
-    const currentState = authStore.state
-    if (currentState.user) {
-      const updatedUser = { ...currentState.user, ...user }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-      }
-      authStore.setState({
-        ...currentState,
-        user: updatedUser,
-      })
-    }
-  },
+        authCache = {
+          user,
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken || null,
+          expiresAt,
+        }
+        set({
+          user,
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken || null,
+          expiresAt,
+          isAuthenticated: true,
+        })
+      },
+      logout: () => {
+        authCache = {
+          user: null,
+          token: null,
+          refreshToken: null,
+          expiresAt: null,
+        }
+        set({
+          user: null,
+          token: null,
+          refreshToken: null,
+          expiresAt: null,
+          isAuthenticated: false,
+        })
+      },
+      updateUser: (userUpdates: Partial<User>) => {
+        set((state: AuthState) => {
+          const updatedUser = state.user
+            ? { ...state.user, ...userUpdates }
+            : null
+          // Đồng bộ authCache khi update user
+          if (updatedUser) {
+            authCache = { ...authCache, user: updatedUser }
+          }
+          return { user: updatedUser }
+        })
+      },
+      updateTokens: (tokens: AuthTokens) => {
+        // Extract expiresAt from token if not provided
+        let expiresAt = tokens.expiresAt || null
+        if (!expiresAt && tokens.accessToken) {
+          try {
+            const payload = JSON.parse(atob(tokens.accessToken.split('.')[1]))
+            expiresAt = payload.exp ? payload.exp * 1000 : null
+          } catch {
+            // Ignore parse errors
+          }
+        }
 
-  updateTokens: (tokens: { accessToken: string; refreshToken?: string }) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('accessToken', tokens.accessToken)
-      if (tokens.refreshToken) {
-        localStorage.setItem('refreshToken', tokens.refreshToken)
-      }
-    }
+        authCache = {
+          ...authCache,
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken || authCache.refreshToken,
+          expiresAt: expiresAt || authCache.expiresAt,
+        }
+        set({
+          token: tokens.accessToken,
+          refreshToken: tokens.refreshToken || null,
+          expiresAt,
+        })
+      },
+      clearCache: () => {
+        authCache = {
+          user: null,
+          token: null,
+          refreshToken: null,
+          expiresAt: null,
+        }
+      },
+    }),
+    {
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state: AuthState | undefined) => {
+        if (state?.user && state?.token) {
+          // Check if token is expired before restoring
+          const isExpired = isTokenExpired(state.token)
+          if (isExpired) {
+            // Token expired, clear auth state
+            authCache = {
+              user: null,
+              token: null,
+              refreshToken: null,
+              expiresAt: null,
+            }
+            return {
+              user: null,
+              token: null,
+              refreshToken: null,
+              expiresAt: null,
+              isAuthenticated: false,
+            }
+          }
 
-    authStore.setState((state) => ({
-      ...state,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken || state.refreshToken,
-    }))
-  },
+          authCache = {
+            user: state.user,
+            token: state.token,
+            refreshToken: state.refreshToken || null,
+            expiresAt: state.expiresAt || null,
+          }
+        }
+      },
+    },
+  ),
+)
+
+// Export cache để sử dụng trong API interceptor
+export const getAuthCache = () => authCache
+
+// Helper để check token có hết hạn không
+export const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    const exp = payload.exp * 1000 // Convert to milliseconds
+    return Date.now() >= exp
+  } catch {
+    return true
+  }
 }
-

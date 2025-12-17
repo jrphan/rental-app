@@ -1,4 +1,8 @@
 import { z } from "zod";
+
+export const licenseTypeSchema = z.enum(["A1", "A2", "A3", "A4"]);
+export type LicenseType = z.infer<typeof licenseTypeSchema>;
+
 /**
  * Schema đơn giản cho màn Edit Profile (avatar, fullName, email)
  */
@@ -40,7 +44,7 @@ export const kycFormSchema = z.object({
     .max(50, "Số GPLX quá dài")
     .optional()
     .or(z.literal("")),
-  licenseType: z.enum(["A1", "A2", "A3", "A4"]).optional().or(z.literal("")),
+  licenseType: licenseTypeSchema.optional().or(z.literal("")),
   idCardFront: z.string().url("URL không hợp lệ"),
   idCardBack: z.string().url("URL không hợp lệ"),
   licenseFront: z.string().url("URL không hợp lệ"),
