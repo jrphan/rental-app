@@ -15,12 +15,21 @@ export const ROUTES = {
     UPDATE_PROFILE: '/user/update-profile',
     SUBMIT_KYC: '/user/kyc',
   },
+  VEHICLE: {
+    CREATE: '/vehicle/create',
+    LIST_MY_VEHICLES: '/vehicle/my-vehicles',
+    GET_MY_VEHICLE_DETAIL: '/vehicle/my-vehicles/:id',
+  },
   ADMIN: {
     LIST_USERS: '/admin/users',
     LIST_KYC: '/admin/kyc',
     GET_KYC_DETAIL: '/admin/kyc/:id',
     APPROVE_KYC: '/admin/kyc/:id/approve',
     REJECT_KYC: '/admin/kyc/:id/reject',
+    LIST_VEHICLES: '/admin/vehicles',
+    GET_VEHICLE_DETAIL: '/admin/vehicles/:id',
+    APPROVE_VEHICLE: '/admin/vehicles/:id/approve',
+    REJECT_VEHICLE: '/admin/vehicles/:id/reject',
   },
   FILES: {
     UPLOAD: '/files/upload',

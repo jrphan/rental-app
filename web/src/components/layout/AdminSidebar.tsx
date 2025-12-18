@@ -10,13 +10,18 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar'
-import { Home, ShieldCheck, MonitorCheck, Users } from 'lucide-react'
+import { Home, ShieldCheck, MonitorCheck, Users, Car } from 'lucide-react'
 import { useNavigate, useLocation } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import ROUTES from '@/constants/routes'
 import { cn } from '@/lib/utils'
 import { adminKycApi } from '@/services/api.admin-kyc'
+import { adminVehicleApi } from '@/services/api.admin-vehicle'
 import type { AdminKycListResponse, KycStatus } from '@/types/auth.types'
+import type {
+  AdminVehicleListResponse,
+  VehicleStatus,
+} from '@/services/api.admin-vehicle'
 
 const menuItems = [
   {
@@ -30,6 +35,11 @@ const menuItems = [
     href: ROUTES.KYC,
   },
   {
+    title: 'Duyệt xe',
+    icon: Car,
+    href: ROUTES.VEHICLES,
+  },
+  {
     title: 'Quản lý người dùng',
     icon: Users,
     href: ROUTES.USERS,
@@ -40,7 +50,7 @@ export function AdminSidebar() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const { data } = useQuery<AdminKycListResponse>({
+  const { data: kycData } = useQuery<AdminKycListResponse>({
     queryKey: ['adminKycSidebarCount', { status: 'PENDING' as KycStatus }],
     queryFn: () =>
       adminKycApi.list({
@@ -51,7 +61,22 @@ export function AdminSidebar() {
     staleTime: 30_000,
   })
 
-  const pendingKycCount = data?.total ?? 0
+  const { data: vehicleData } = useQuery<AdminVehicleListResponse>({
+    queryKey: [
+      'adminVehicleSidebarCount',
+      { status: 'PENDING' as VehicleStatus },
+    ],
+    queryFn: () =>
+      adminVehicleApi.list({
+        status: 'PENDING',
+        page: 1,
+        limit: 1,
+      }),
+    staleTime: 30_000,
+  })
+
+  const pendingKycCount = kycData?.total ?? 0
+  const pendingVehicleCount = vehicleData?.total ?? 0
 
   return (
     <Sidebar className="border-r border-gray-200 bg-linear-to-b from-gray-50/70 to-white">
@@ -79,6 +104,12 @@ export function AdminSidebar() {
                 const Icon = item.icon
                 const isActive = location.pathname === item.href
                 const isKycItem = item.href === ROUTES.KYC
+                const isVehicleItem = item.href === ROUTES.VEHICLES
+                const pendingCount = isKycItem
+                  ? pendingKycCount
+                  : isVehicleItem
+                    ? pendingVehicleCount
+                    : 0
 
                 return (
                   <SidebarMenuItem key={item.href} className="cursor-pointer">
@@ -100,9 +131,9 @@ export function AdminSidebar() {
                         {item.title}
                       </span>
                       <div className="ml-auto flex items-center gap-2">
-                        {isKycItem && pendingKycCount > 0 && (
+                        {(isKycItem || isVehicleItem) && pendingCount > 0 && (
                           <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-semibold text-white shadow-sm">
-                            {pendingKycCount > 99 ? '99+' : pendingKycCount}
+                            {pendingCount > 99 ? '99+' : pendingCount}
                           </span>
                         )}
                         {isActive && (

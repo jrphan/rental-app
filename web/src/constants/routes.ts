@@ -3,6 +3,7 @@ interface RoutesType {
   HOME: string
   KYC: string
   USERS: string
+  VEHICLES: string
 }
 
 const ROUTES = {
@@ -13,6 +14,7 @@ const ROUTES = {
   HOME: '/',
   KYC: '/kyc',
   USERS: '/users',
+  VEHICLES: '/vehicles',
 } satisfies RoutesType
 
 export default ROUTES

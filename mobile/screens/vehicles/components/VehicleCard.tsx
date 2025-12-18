@@ -42,12 +42,32 @@ export default function VehicleCard({
   // Sắp xếp ảnh: ảnh primary đầu tiên, sau đó các ảnh khác
   const sortedImages = React.useMemo(() => {
     if (!vehicle.images || vehicle.images.length === 0) {
+      console.log("VehicleCard: No images", vehicle.id, vehicle.images);
       return [];
     }
-    const primary = vehicle.images.find((img) => img.isPrimary);
-    const others = vehicle.images.filter((img) => !img.isPrimary);
-    return primary ? [primary, ...others] : vehicle.images;
-  }, [vehicle.images]);
+    // Filter out images without URL
+    const validImages = vehicle.images.filter(
+      (img) => img.url && img.url.trim() !== ""
+    );
+    if (validImages.length === 0) {
+      console.log(
+        "VehicleCard: No valid images with URL",
+        vehicle.id,
+        vehicle.images
+      );
+      return [];
+    }
+    const primary = validImages.find((img) => img.isPrimary);
+    const others = validImages.filter((img) => !img.isPrimary);
+    const result = primary ? [primary, ...others] : validImages;
+    console.log(
+      "VehicleCard: Sorted images",
+      vehicle.id,
+      result.length,
+      result
+    );
+    return result;
+  }, [vehicle.images, vehicle.id]);
 
   const hasMultipleImages = sortedImages.length > 1;
 
@@ -83,13 +103,26 @@ export default function VehicleCard({
               snapToAlignment="start"
             >
               {sortedImages.map((img, index) => (
-                <Image
+                <View
                   key={img.id || index}
-                  source={{ uri: img.url }}
-                  className="h-full"
-                  style={{ width: cardWidth }}
-                  resizeMode="cover"
-                />
+                  style={{ width: cardWidth, height: 180 }}
+                >
+                  {img.url ? (
+                    <Image
+                      source={{ uri: img.url }}
+                      style={{ width: cardWidth, height: 180 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="w-full h-full items-center justify-center bg-gray-200">
+                      <MaterialIcons
+                        name="directions-bike"
+                        size={48}
+                        color="#9CA3AF"
+                      />
+                    </View>
+                  )}
+                </View>
               ))}
             </ScrollView>
 

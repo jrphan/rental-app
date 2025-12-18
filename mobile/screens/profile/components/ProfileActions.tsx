@@ -13,6 +13,8 @@ import {
   getKycStatusIconColor,
   getKycStatusIcon,
 } from "@/constants/kyc.constants";
+import { useQuery } from "@tanstack/react-query";
+import { apiVehicle } from "@/services/api.vehicle";
 
 interface ProfileActionsProps {
   user: User | null;
@@ -35,6 +37,21 @@ export default function ProfileActions({
 }: ProfileActionsProps) {
   const router = useRouter();
 
+  // Fetch pending vehicles if user is eligible but not yet a vendor
+  const { data: pendingVehicles, isLoading: isLoadingPendingVehicles } =
+    useQuery({
+      queryKey: ["myVehicles", "PENDING"],
+      queryFn: () => apiVehicle.getMyVehicles("PENDING"),
+      enabled:
+        !!user &&
+        !user.isVendor &&
+        user.isActive &&
+        user.isPhoneVerified &&
+        user.kyc?.status === "APPROVED",
+    });
+
+  const pendingVehicle = pendingVehicles?.items?.[0]; // Get first pending vehicle
+
   const actionItems: ActionItem[] = [
     {
       id: "edit-profile",
@@ -47,15 +64,20 @@ export default function ProfileActions({
       id: "register-vendor",
       icon: "app-registration",
       iconType: "MaterialIcons",
-      title: "Đăng ký làm chủ xe",
-      route: "/(tabs)/profile/register-vendor",
+      title: pendingVehicle
+        ? "Xem đăng ký xe đang chờ duyệt"
+        : "Đăng ký làm chủ xe",
+      route: pendingVehicle
+        ? `/(tabs)/profile/register-vendor?vehicleId=${pendingVehicle.id}`
+        : "/(tabs)/profile/register-vendor",
+      showCondition: () => !user?.isVendor,
     },
     {
       id: "my-vehicles",
       icon: "motorbike",
       iconType: "MaterialCommunityIcons",
       title: "Xe của tôi",
-      route: "/(tabs)/profile/my-vehicles",
+      route: "/(tabs)/vehicles",
       showCondition: () => user?.isVendor ?? false,
     },
     {
@@ -193,12 +215,27 @@ export default function ProfileActions({
             className="bg-white rounded-2xl p-2 mb-3 flex-row items-center justify-between border border-gray-200"
           >
             <View className="flex-row items-center flex-1">
-              <View className="bg-orange-100 rounded-xl p-3">
-                {renderIcon(item)}
+              <View className="rounded-xl p-3">{renderIcon(item)}</View>
+              <View className="ml-4 flex-1">
+                <Text className="text-base font-medium text-gray-900">
+                  {item.title}
+                </Text>
+                {item.id === "register-vendor" && pendingVehicle && (
+                  <View className="mt-1 flex-row items-center">
+                    <View className="w-2 h-2 rounded-full bg-amber-500 mr-2" />
+                    <Text className="text-xs text-amber-700">
+                      Đang chờ duyệt
+                    </Text>
+                  </View>
+                )}
+                {item.id === "register-vendor" && isLoadingPendingVehicles && (
+                  <ActivityIndicator
+                    size="small"
+                    color={COLORS.primary}
+                    style={{ marginTop: 4 }}
+                  />
+                )}
               </View>
-              <Text className="ml-4 text-base font-medium text-gray-900">
-                {item.title}
-              </Text>
             </View>
             <MaterialIcons name="chevron-right" size={24} color="#9CA3AF" />
           </TouchableOpacity>
@@ -212,7 +249,7 @@ export default function ProfileActions({
           className="flex-row items-center justify-between"
         >
           <View className="flex-row items-center flex-1">
-            <View className="bg-orange-100 rounded-xl p-3">
+            <View className="rounded-xl p-3">
               <MaterialIcons
                 name="verified-user"
                 size={22}

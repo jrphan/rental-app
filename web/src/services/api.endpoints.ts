@@ -21,6 +21,10 @@ const API_ENDPOINTS = {
     GET_KYC_DETAIL: (id: string) => `/admin/kyc/${id}`,
     APPROVE_KYC: (id: string) => `/admin/kyc/${id}/approve`,
     REJECT_KYC: (id: string) => `/admin/kyc/${id}/reject`,
+    LIST_VEHICLES: '/admin/vehicles',
+    GET_VEHICLE_DETAIL: (id: string) => `/admin/vehicles/${id}`,
+    APPROVE_VEHICLE: (id: string) => `/admin/vehicles/${id}/approve`,
+    REJECT_VEHICLE: (id: string) => `/admin/vehicles/${id}/reject`,
   },
   FILES: {
     UPLOAD: '/files/upload',

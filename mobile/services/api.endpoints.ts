@@ -15,6 +15,11 @@ const API_ENDPOINTS = {
     UPDATE_PROFILE: "/user/update-profile",
     SUBMIT_KYC: "/user/kyc",
   },
+  VEHICLE: {
+    CREATE: "/vehicle/create",
+    LIST_MY_VEHICLES: "/vehicle/my-vehicles",
+    GET_MY_VEHICLE_DETAIL: "/vehicle/my-vehicles/:id",
+  },
   FILES: {
     UPLOAD: "/files/upload",
     UPLOAD_MULTIPLE: "/files/upload-multiple",

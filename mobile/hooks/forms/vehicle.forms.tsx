@@ -1,9 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  vehicleSchema,
-  VehicleInput,
-} from "@/schemas/vehicle.schema";
+import { vehicleSchema, VehicleInput } from "@/schemas/vehicle.schema";
 
 /**
  * Hook cho form tạo/cập nhật xe
@@ -14,13 +11,22 @@ export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
     defaultValues: {
       brand: defaultValues?.brand || "",
       model: defaultValues?.model || "",
-      year: defaultValues?.year || "2020",
+      year: defaultValues?.year || "",
       color: defaultValues?.color || "",
       licensePlate: defaultValues?.licensePlate || "",
-      fuelType: defaultValues?.fuelType || "PETROL",
-      transmission: defaultValues?.transmission || "MANUAL",
-      dailyRate: defaultValues?.dailyRate || "200000",
-      depositAmount: defaultValues?.depositAmount || "1000000",
+      engineSize: defaultValues?.engineSize || "110",
+      requiredLicense: defaultValues?.requiredLicense || "A1",
+      address: defaultValues?.address || "",
+      district: defaultValues?.district || "",
+      city: defaultValues?.city || "",
+      lat: defaultValues?.lat || "",
+      lng: defaultValues?.lng || "",
+      pricePerDay: defaultValues?.pricePerDay || "",
+      depositAmount: defaultValues?.depositAmount || "",
+      description: defaultValues?.description || "",
+      cavetFront: defaultValues?.cavetFront || "",
+      cavetBack: defaultValues?.cavetBack || "",
+      instantBook: defaultValues?.instantBook || false,
       imageUrls: defaultValues?.imageUrls || [],
     },
     mode: "onChange",
@@ -28,4 +34,3 @@ export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
 
   return form;
 }
-
