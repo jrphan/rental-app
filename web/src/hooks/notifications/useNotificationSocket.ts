@@ -151,6 +151,10 @@ export function useNotificationSocket(
             )
             // Invalidate all vehicle-related queries
             queryClient.invalidateQueries({ queryKey: ['myVehicles'] })
+            // Invalidate admin vehicle sidebar count
+            queryClient.invalidateQueries({
+              queryKey: ['adminVehicleSidebarCount'],
+            })
             // Also invalidate specific vehicle queries if vehicleId is available
             if (notification.data?.vehicleId) {
               queryClient.invalidateQueries({
@@ -178,6 +182,10 @@ export function useNotificationSocket(
             // Invalidate user queries to refetch user info with updated KYC status
             queryClient.invalidateQueries({ queryKey: ['user'] })
             queryClient.invalidateQueries({ queryKey: ['user', 'sync'] })
+            // Invalidate admin KYC sidebar count
+            queryClient.invalidateQueries({
+              queryKey: ['adminKycSidebarCount'],
+            })
           }
 
           // Call custom handler if provided
