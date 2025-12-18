@@ -79,7 +79,7 @@ export function UsersListTable({
                   search: e.target.value,
                 })
               }
-              className="h-9 text-xs"
+              className="h-9 w-64 text-xs"
             />
             <Select
               value={filters.role ?? 'all'}
