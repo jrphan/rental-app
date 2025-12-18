@@ -7,11 +7,13 @@ import type { NotificationItem as NotificationItemType } from "../types";
 interface NotificationsListProps {
   data: NotificationItemType[];
   onItemAction?: (action: string, item: NotificationItemType) => void;
+  onRefresh?: () => void;
 }
 
 export default function NotificationsList({
   data,
   onItemAction,
+  onRefresh,
 }: NotificationsListProps) {
   return (
     <View className="flex-1 bg-gray-50">

@@ -11,6 +11,10 @@ export const getNotificationIcon = (type: string) => {
       return "payment";
     case "system":
       return "info";
+    case "success":
+      return "check-circle";
+    case "warning":
+      return "warning";
     default:
       return "notifications";
   }
@@ -26,6 +30,10 @@ export const getNotificationColor = (type: string) => {
       return "#10B981";
     case "system":
       return "#6B7280";
+    case "success":
+      return "#10B981";
+    case "warning":
+      return "#ef4444";
     default:
       return COLORS.primary;
   }

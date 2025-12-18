@@ -19,6 +19,7 @@ import {
 } from '@/types/vehicle.type';
 import { VehicleStatus, UserRole, KycStatus, Prisma } from '@prisma/client';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { NotificationService } from '@/modules/notification/notification.service';
 import { AuditAction, AuditTargetType } from '@prisma/client';
 
 @Injectable()
@@ -28,6 +29,7 @@ export class VehicleService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private async assertAdminOrSupport(userId: string): Promise<void> {
@@ -232,6 +234,17 @@ export class VehicleService {
         this.logger.error('Failed to log vehicle approval audit', error);
       });
 
+    // Send notification to vehicle owner
+    await this.notificationService
+      .notifyVehicleApproved(vehicle.ownerId, vehicle.id, {
+        brand: vehicle.brand,
+        model: vehicle.model,
+        licensePlate: vehicle.licensePlate,
+      })
+      .catch(error => {
+        this.logger.error('Failed to send vehicle approval notification', error);
+      });
+
     return { message: 'Xe đã được phê duyệt' };
   }
 
@@ -272,6 +285,17 @@ export class VehicleService {
       })
       .catch(error => {
         this.logger.error('Failed to log vehicle rejection audit', error);
+      });
+
+    // Send notification to vehicle owner
+    await this.notificationService
+      .notifyVehicleRejected(vehicle.ownerId, vehicle.id, reason, {
+        brand: vehicle.brand,
+        model: vehicle.model,
+        licensePlate: vehicle.licensePlate,
+      })
+      .catch(error => {
+        this.logger.error('Failed to send vehicle rejection notification', error);
       });
 
     return { message: 'Xe đã bị từ chối' };

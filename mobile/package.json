@@ -6,7 +6,7 @@
     "start": "expo start --clear --tunnel",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "bash ./scripts/expo-wrapper.sh start --android",
-    "ios": "expo start --ios",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "get-ip": "node ./scripts/get-ip.js"
@@ -52,6 +52,7 @@
     "react-native-screens": "~4.16.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
+    "socket.io-client": "^4.8.1",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },

@@ -1,8 +1,13 @@
 import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Platform, View } from "react-native";
+import { Platform, View, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "@/constants/colors";
+import { useQuery } from "@tanstack/react-query";
+import { apiNotification } from "@/services/api.notification";
+import { useNotificationSocket } from "@/hooks/notifications/useNotificationSocket";
+import { useAuthStore } from "@/store/auth";
+import { useState, useEffect } from "react";
 
 type TabItem = {
   name: "index" | "vehicles" | "messages" | "profile";
@@ -13,6 +18,32 @@ type TabItem = {
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuthStore();
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  // Fetch unread count from API (initial load only, updates via WebSocket)
+  const { data: unreadCountData } = useQuery({
+    queryKey: ["notificationUnreadCount"],
+    queryFn: () => apiNotification.getUnreadCount(),
+    enabled: isAuthenticated,
+  });
+
+  // Update unread count from API response
+  useEffect(() => {
+    if (unreadCountData?.count !== undefined) {
+      setUnreadCount(unreadCountData.count);
+    }
+  }, [unreadCountData]);
+
+  // Setup WebSocket for real-time unread count updates
+  const { isConnected } = useNotificationSocket({
+    enabled: isAuthenticated,
+    onUnreadCountUpdate: (count) => {
+      setUnreadCount(count);
+    },
+  });
+
+  console.log("isConnected", isConnected);
 
   const primaryColor = COLORS.primary;
   const inactiveColor = COLORS.inactive;
@@ -101,13 +132,13 @@ export default function TabLayout() {
           size={focused ? 26 : 24}
           color={color}
         />
-        {/* {typeof unreadCount === "number" && unreadCount > 0 && (
+        {typeof unreadCount === "number" && unreadCount > 0 && (
           <View className="absolute -top-1 -right-2 min-w-5 h-5 px-1.5 items-center justify-center rounded-full border-2 border-white bg-primary-600">
             <Text className="text-white text-[10px] font-bold">
               {unreadCount > 99 ? "99+" : String(unreadCount)}
             </Text>
           </View>
-        )} */}
+        )}
       </View>
     );
   };

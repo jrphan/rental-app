@@ -8,9 +8,10 @@ import { RedisModule } from '@/modules/redis/redis.module';
 import { FileModule } from '@/modules/file/file.module';
 import { UserModule } from '@/modules/user/user.module';
 import { VehicleModule } from '@/modules/vehicle/vehicle.module';
+import { NotificationModule } from '@/modules/notification/notification.module';
 
 @Module({
-  imports: [PrismaModule, LoggerModule, RedisModule, AuthModule, FileModule, UserModule, VehicleModule],
+  imports: [PrismaModule, LoggerModule, RedisModule, AuthModule, FileModule, UserModule, VehicleModule, NotificationModule],
   controllers: [AppController],
   providers: [AppService],
 })

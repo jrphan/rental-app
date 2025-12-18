@@ -10,13 +10,21 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from '@/components/ui/sidebar'
-import { Home, ShieldCheck, MonitorCheck, Users, Car } from 'lucide-react'
+import {
+  Home,
+  ShieldCheck,
+  MonitorCheck,
+  Users,
+  Bell,
+  Bike,
+} from 'lucide-react'
 import { useNavigate, useLocation } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import ROUTES from '@/constants/routes'
 import { cn } from '@/lib/utils'
 import { adminKycApi } from '@/services/api.admin-kyc'
 import { adminVehicleApi } from '@/services/api.admin-vehicle'
+import { apiNotification } from '@/services/api.notification'
 import type { AdminKycListResponse, KycStatus } from '@/types/auth.types'
 import type {
   AdminVehicleListResponse,
@@ -30,13 +38,18 @@ const menuItems = [
     href: ROUTES.HOME,
   },
   {
+    title: 'Thông báo',
+    icon: Bell,
+    href: ROUTES.NOTIFICATIONS,
+  },
+  {
     title: 'Duyệt KYC',
     icon: ShieldCheck,
     href: ROUTES.KYC,
   },
   {
     title: 'Duyệt xe',
-    icon: Car,
+    icon: Bike,
     href: ROUTES.VEHICLES,
   },
   {
@@ -75,8 +88,15 @@ export function AdminSidebar() {
     staleTime: 30_000,
   })
 
+  const { data: notificationCountData } = useQuery({
+    queryKey: ['notificationUnreadCount'],
+    queryFn: () => apiNotification.getUnreadCount(),
+    staleTime: 30_000,
+  })
+
   const pendingKycCount = kycData?.total ?? 0
   const pendingVehicleCount = vehicleData?.total ?? 0
+  const unreadNotificationCount = notificationCountData?.count ?? 0
 
   return (
     <Sidebar className="border-r border-gray-200 bg-linear-to-b from-gray-50/70 to-white">
@@ -105,11 +125,14 @@ export function AdminSidebar() {
                 const isActive = location.pathname === item.href
                 const isKycItem = item.href === ROUTES.KYC
                 const isVehicleItem = item.href === ROUTES.VEHICLES
+                const isNotificationItem = item.href === ROUTES.NOTIFICATIONS
                 const pendingCount = isKycItem
                   ? pendingKycCount
                   : isVehicleItem
                     ? pendingVehicleCount
-                    : 0
+                    : isNotificationItem
+                      ? unreadNotificationCount
+                      : 0
 
                 return (
                   <SidebarMenuItem key={item.href} className="cursor-pointer">
@@ -131,11 +154,12 @@ export function AdminSidebar() {
                         {item.title}
                       </span>
                       <div className="ml-auto flex items-center gap-2">
-                        {(isKycItem || isVehicleItem) && pendingCount > 0 && (
-                          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-semibold text-white shadow-sm">
-                            {pendingCount > 99 ? '99+' : pendingCount}
-                          </span>
-                        )}
+                        {(isKycItem || isVehicleItem || isNotificationItem) &&
+                          pendingCount > 0 && (
+                            <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-semibold text-white shadow-sm">
+                              {pendingCount > 99 ? '99+' : pendingCount}
+                            </span>
+                          )}
                         {isActive && (
                           <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                         )}

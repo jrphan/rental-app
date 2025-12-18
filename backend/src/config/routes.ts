@@ -14,6 +14,11 @@ export const ROUTES = {
     GET_USER_INFO: '/user/get-user-info',
     UPDATE_PROFILE: '/user/update-profile',
     SUBMIT_KYC: '/user/kyc',
+    GET_NOTIFICATIONS: '/user/notifications',
+    GET_UNREAD_NOTIFICATION_COUNT: '/user/notifications/unread-count',
+    MARK_NOTIFICATION_AS_READ: '/user/notifications/:id/read',
+    MARK_ALL_NOTIFICATIONS_AS_READ: '/user/notifications/read-all',
+    REGISTER_DEVICE_TOKEN: '/user/device-token',
   },
   VEHICLE: {
     CREATE: '/vehicle/create',

@@ -30,6 +30,7 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { NotificationService } from '@/modules/notification/notification.service';
 
 @Injectable()
 export class UserService {
@@ -38,6 +39,7 @@ export class UserService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private async assertAdminOrSupport(userId: string): Promise<void> {
@@ -369,6 +371,13 @@ export class UserService {
         this.logger.error('Failed to log KYC approval audit', error);
       });
 
+    // Send notification to user
+    await this.notificationService
+      .notifyKycApproved(kyc.userId)
+      .catch(error => {
+        this.logger.error('Failed to send KYC approval notification', error);
+      });
+
     return { message: 'KYC đã được phê duyệt' };
   }
 
@@ -410,6 +419,13 @@ export class UserService {
       })
       .catch(error => {
         this.logger.error('Failed to log KYC rejection audit', error);
+      });
+
+    // Send notification to user
+    await this.notificationService
+      .notifyKycRejected(kyc.userId, reason)
+      .catch(error => {
+        this.logger.error('Failed to send KYC rejection notification', error);
       });
 
     return { message: 'KYC đã bị từ chối' };
