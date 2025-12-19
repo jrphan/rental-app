@@ -24,6 +24,7 @@ export const ROUTES = {
     CREATE: '/vehicle/create',
     LIST_MY_VEHICLES: '/vehicle/my-vehicles',
     GET_MY_VEHICLE_DETAIL: '/vehicle/my-vehicles/:id',
+    UPDATE_VEHICLE_STATUS: '/vehicle/my-vehicles/:id/status',
   },
   ADMIN: {
     LIST_USERS: '/admin/users',

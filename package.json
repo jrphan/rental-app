@@ -36,6 +36,7 @@
     "clean:web": "cd web && rm -rf node_modules dist"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "metro-minify-terser": "^0.83.3"
   }
 }

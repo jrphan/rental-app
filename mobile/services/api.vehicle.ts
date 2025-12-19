@@ -38,6 +38,21 @@ export interface UserVehicleListResponse {
   total: number;
 }
 
+export interface ChangeVehicleStatusRequest {
+  status:
+    | "DRAFT"
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "MAINTENANCE"
+    | "HIDDEN";
+}
+
+export interface ChangeVehicleStatusResponse {
+  message: string;
+  vehicle: Vehicle;
+}
+
 export const apiVehicle = {
   async create(data: CreateVehicleRequest): Promise<CreateVehicleResponse> {
     const response = await apiClient.post<CreateVehicleResponse>(
@@ -72,5 +87,19 @@ export const apiVehicle = {
       return response.data;
     }
     throw new Error(response.message || "Lấy thông tin xe thất bại");
+  },
+
+  async updateVehicleStatus(
+    id: string,
+    data: ChangeVehicleStatusRequest
+  ): Promise<ChangeVehicleStatusResponse> {
+    const response = await apiClient.patch<ChangeVehicleStatusResponse>(
+      API_ENDPOINTS.VEHICLE.UPDATE_VEHICLE_STATUS.replace(":id", id),
+      data
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Thay đổi trạng thái xe thất bại");
   },
 };

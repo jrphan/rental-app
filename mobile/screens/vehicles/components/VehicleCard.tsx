@@ -5,10 +5,12 @@ import {
   Image,
   ScrollView,
   useWindowDimensions,
+  TouchableOpacity,
 } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { Vehicle } from "../types";
 import { formatPrice, getVehicleStatusLabel } from "../utils";
+import ChangeVehicleStatusModal from "./ChangeVehicleStatusModal";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -24,6 +26,7 @@ export default function VehicleCard({
   const { width: windowWidth } = useWindowDimensions();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
   // Tính toán card width dựa trên variant
   const getCardWidth = React.useCallback(() => {
@@ -60,12 +63,6 @@ export default function VehicleCard({
     const primary = validImages.find((img) => img.isPrimary);
     const others = validImages.filter((img) => !img.isPrimary);
     const result = primary ? [primary, ...others] : validImages;
-    console.log(
-      "VehicleCard: Sorted images",
-      vehicle.id,
-      result.length,
-      result
-    );
     return result;
   }, [vehicle.images, vehicle.id]);
 
@@ -90,7 +87,7 @@ export default function VehicleCard({
       {/* Image Carousel */}
       <View className="w-full h-40 bg-gray-200 relative">
         {sortedImages.length > 0 ? (
-          <>
+          <View className="relative" style={{ width: cardWidth, height: 200 }}>
             <ScrollView
               ref={scrollViewRef}
               horizontal
@@ -105,12 +102,12 @@ export default function VehicleCard({
               {sortedImages.map((img, index) => (
                 <View
                   key={img.id || index}
-                  style={{ width: cardWidth, height: 180 }}
+                  style={{ width: cardWidth, height: 200 }}
                 >
                   {img.url ? (
                     <Image
                       source={{ uri: img.url }}
-                      style={{ width: cardWidth, height: 180 }}
+                      style={{ width: cardWidth, height: 200 }}
                       resizeMode="cover"
                     />
                   ) : (
@@ -125,10 +122,9 @@ export default function VehicleCard({
                 </View>
               ))}
             </ScrollView>
-
             {/* Pagination Dots */}
             {hasMultipleImages && (
-              <View className="absolute bottom-2 left-0 right-0 flex-row justify-center items-center">
+              <View className="absolute pt-4 top-2 left-0 right-0 flex-row justify-center items-center h-[100px]">
                 {sortedImages.map((_, index) => (
                   <View
                     key={index}
@@ -141,7 +137,7 @@ export default function VehicleCard({
                 ))}
               </View>
             )}
-          </>
+          </View>
         ) : (
           <View className="w-full h-full items-center justify-center">
             <MaterialIcons name="directions-bike" size={48} color="#9CA3AF" />
@@ -153,10 +149,18 @@ export default function VehicleCard({
           <Text className="text-lg font-semibold text-gray-900">
             {vehicle.brand} {vehicle.model}
           </Text>
-          <View className="bg-green-100 px-2 py-1 rounded">
-            <Text className="text-xs font-medium text-green-700">
-              {getVehicleStatusLabel(vehicle.status)}
-            </Text>
+          <View className="flex-row items-center gap-2">
+            <TouchableOpacity
+              onPress={() => setShowStatusModal(true)}
+              className="p-1"
+            >
+              <MaterialIcons name="edit" size={18} color="#6B7280" />
+            </TouchableOpacity>
+            <View className="bg-green-100 px-2 py-1 rounded">
+              <Text className="text-xs font-medium text-green-700">
+                {getVehicleStatusLabel(vehicle.status)}
+              </Text>
+            </View>
           </View>
         </View>
         <View className="flex-row items-center mb-2">
@@ -189,6 +193,12 @@ export default function VehicleCard({
           </Text>
         </View>
       </View>
+
+      <ChangeVehicleStatusModal
+        visible={showStatusModal}
+        vehicle={vehicle}
+        onClose={() => setShowStatusModal(false)}
+      />
     </View>
   );
 }

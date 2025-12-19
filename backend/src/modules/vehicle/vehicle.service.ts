@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateVehicleDto } from '@/common/dto/Vehicle/create-vehicle.dto';
+import { ChangeVehicleStatusDto } from '@/common/dto/Vehicle/change-vehicle-status.dto';
 import {
   CreateVehicleResponse,
   selectVehicle,
@@ -17,7 +18,13 @@ import {
   UserVehicleListResponse,
   VehicleResponse,
 } from '@/types/vehicle.type';
-import { VehicleStatus, UserRole, KycStatus, Prisma } from '@prisma/client';
+import {
+  VehicleStatus,
+  UserRole,
+  KycStatus,
+  Prisma,
+  RentalStatus,
+} from '@prisma/client';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { NotificationService } from '@/modules/notification/notification.service';
 import { AuditAction, AuditTargetType } from '@prisma/client';
@@ -242,7 +249,10 @@ export class VehicleService {
         licensePlate: vehicle.licensePlate,
       })
       .catch(error => {
-        this.logger.error('Failed to send vehicle approval notification', error);
+        this.logger.error(
+          'Failed to send vehicle approval notification',
+          error,
+        );
       });
 
     return { message: 'Xe đã được phê duyệt' };
@@ -295,7 +305,10 @@ export class VehicleService {
         licensePlate: vehicle.licensePlate,
       })
       .catch(error => {
-        this.logger.error('Failed to send vehicle rejection notification', error);
+        this.logger.error(
+          'Failed to send vehicle rejection notification',
+          error,
+        );
       });
 
     return { message: 'Xe đã bị từ chối' };
@@ -347,5 +360,132 @@ export class VehicleService {
     }
 
     return vehicle;
+  }
+
+  async updateVehicleStatus(
+    userId: string,
+    vehicleId: string,
+    changeStatusDto: ChangeVehicleStatusDto,
+  ): Promise<{ message: string; vehicle: VehicleResponse }> {
+    // Find vehicle and verify ownership
+    const vehicle = await this.prismaService.vehicle.findFirst({
+      where: {
+        id: vehicleId,
+        ownerId: userId,
+        deletedAt: null,
+      },
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException(
+        'Xe không tồn tại hoặc bạn không có quyền truy cập',
+      );
+    }
+
+    const newStatus = changeStatusDto.status;
+
+    // If status is the same, return early
+    if (vehicle.status === newStatus) {
+      const vehicleResponse = await this.prismaService.vehicle.findUnique({
+        where: { id: vehicleId },
+        select: selectVehicle,
+      });
+      return {
+        message: 'Trạng thái xe không thay đổi',
+        vehicle: vehicleResponse!,
+      };
+    }
+
+    // Validate status transitions based on current status
+    const allowedTransitions: Record<VehicleStatus, VehicleStatus[]> = {
+      [VehicleStatus.DRAFT]: [VehicleStatus.PENDING],
+      [VehicleStatus.PENDING]: [], // Cannot change from PENDING (waiting for admin)
+      [VehicleStatus.APPROVED]: [
+        VehicleStatus.HIDDEN,
+        VehicleStatus.MAINTENANCE,
+      ],
+      [VehicleStatus.REJECTED]: [VehicleStatus.PENDING], // Can resubmit
+      [VehicleStatus.HIDDEN]: [VehicleStatus.APPROVED],
+      [VehicleStatus.MAINTENANCE]: [VehicleStatus.APPROVED],
+    };
+
+    const allowedStatuses = allowedTransitions[vehicle.status];
+    if (!allowedStatuses.includes(newStatus)) {
+      throw new BadRequestException(
+        `Không thể chuyển từ trạng thái ${vehicle.status} sang ${newStatus}. ` +
+          `Chỉ có thể chuyển sang: ${allowedStatuses.join(', ') || 'không có'}`,
+      );
+    }
+
+    // Check for active rentals if changing to HIDDEN or MAINTENANCE
+    if (
+      newStatus === VehicleStatus.HIDDEN ||
+      newStatus === VehicleStatus.MAINTENANCE
+    ) {
+      const activeRentals = await this.prismaService.rental.count({
+        where: {
+          vehicleId: vehicleId,
+          status: {
+            in: [
+              RentalStatus.PENDING_PAYMENT,
+              RentalStatus.AWAIT_APPROVAL,
+              RentalStatus.CONFIRMED,
+              RentalStatus.ON_TRIP,
+            ],
+          },
+          deletedAt: null,
+        },
+      });
+
+      if (activeRentals > 0) {
+        throw new BadRequestException(
+          `Không thể thay đổi trạng thái xe vì xe đang có ${activeRentals} đơn thuê đang hoạt động`,
+        );
+      }
+    }
+
+    // Update vehicle status
+    const updated = await this.prismaService.vehicle.update({
+      where: { id: vehicleId },
+      data: {
+        status: newStatus,
+      },
+      select: selectVehicle,
+    });
+
+    // Log audit
+    await this.auditLogService
+      .log({
+        actorId: userId,
+        action: AuditAction.UPDATE,
+        targetId: vehicle.id,
+        targetType: AuditTargetType.VEHICLE,
+        metadata: {
+          action: 'update_vehicle_status',
+          oldStatus: vehicle.status,
+          newStatus: newStatus,
+          brand: vehicle.brand,
+          model: vehicle.model,
+          licensePlate: vehicle.licensePlate,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log vehicle status update audit', error);
+      });
+
+    // Generate appropriate message
+    const statusMessages: Record<VehicleStatus, string> = {
+      [VehicleStatus.DRAFT]: 'Xe đã được lưu ở trạng thái nháp',
+      [VehicleStatus.PENDING]: 'Xe đã được gửi để duyệt',
+      [VehicleStatus.APPROVED]: 'Xe đã được hiển thị',
+      [VehicleStatus.REJECTED]: 'Xe đã bị từ chối',
+      [VehicleStatus.HIDDEN]: 'Xe đã được ẩn',
+      [VehicleStatus.MAINTENANCE]: 'Xe đã được đánh dấu là đang bảo trì',
+    };
+
+    return {
+      message: statusMessages[newStatus] || 'Trạng thái xe đã được cập nhật',
+      vehicle: updated,
+    };
   }
 }

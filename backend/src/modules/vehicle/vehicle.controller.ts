@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -16,6 +17,7 @@ import { AuthGuard } from '@/common/guards/auth.guard';
 import { AuthenticatedRequest } from '@/types/response.type';
 import { CreateVehicleDto } from '@/common/dto/Vehicle/create-vehicle.dto';
 import { RejectVehicleDto } from '@/common/dto/Vehicle/review-vehicle.dto';
+import { ChangeVehicleStatusDto } from '@/common/dto/Vehicle/change-vehicle-status.dto';
 import {
   CreateVehicleResponse,
   VehicleResponse,
@@ -70,6 +72,21 @@ export class VehicleController {
     }
 
     return this.vehicleService.getMyVehicleDetail(userId, id);
+  }
+
+  @Patch(ROUTES.VEHICLE.UPDATE_VEHICLE_STATUS)
+  @UseGuards(AuthGuard)
+  updateVehicleStatus(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() changeStatusDto: ChangeVehicleStatusDto,
+  ): Promise<{ message: string; vehicle: VehicleResponse }> {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.vehicleService.updateVehicleStatus(userId, id, changeStatusDto);
   }
 
   // Admin
