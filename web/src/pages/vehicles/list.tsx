@@ -1,4 +1,9 @@
-import type { AdminVehicleItem, VehicleStatus } from '@/services/api.admin-vehicle'
+import { Loader2, RefreshCw } from 'lucide-react'
+import { StatusBadge } from './status-badge'
+import type {
+  AdminVehicleItem,
+  VehicleStatus,
+} from '@/services/api.admin-vehicle'
 import {
   Table,
   TableBody,
@@ -15,10 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Loader2, RefreshCw } from 'lucide-react'
-import { StatusBadge } from './status-badge'
 
-const statusOptions: { label: string; value?: VehicleStatus }[] = [
+const statusOptions: Array<{ label: string; value?: VehicleStatus }> = [
   { label: 'Tất cả', value: undefined },
   { label: 'Chờ duyệt', value: 'PENDING' },
   { label: 'Đã duyệt', value: 'APPROVED' },
@@ -28,7 +31,7 @@ const statusOptions: { label: string; value?: VehicleStatus }[] = [
 ]
 
 interface VehicleListTableProps {
-  items: AdminVehicleItem[]
+  items: Array<AdminVehicleItem>
   selected?: AdminVehicleItem | null
   isLoading: boolean
   isError: boolean
@@ -66,9 +69,7 @@ export function VehicleListTable({
   return (
     <div>
       <div className="flex items-center justify-between border-b px-4 py-3">
-        <h2 className="text-sm font-semibold text-gray-800">
-          Danh sách xe
-        </h2>
+        <h2 className="text-sm font-semibold text-gray-800">Danh sách xe</h2>
         <div className="flex items-center gap-3">
           <Select
             value={statusFilter ?? 'all'}
@@ -224,4 +225,3 @@ export function VehicleListTable({
     </div>
   )
 }
-

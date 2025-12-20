@@ -145,4 +145,14 @@ export const authApi = {
     }
     throw new Error(response.message || "Gửi KYC thất bại");
   },
+
+  async logout(): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      API_ENDPOINTS.AUTH.LOGOUT
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Đăng xuất thất bại");
+  },
 };

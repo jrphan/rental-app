@@ -40,7 +40,6 @@ export default function VehiclesScreen() {
 
   const vehicleStatusTabs = [
     { label: "Tất cả", value: "ALL" },
-    { label: vehicleStatusLabels.DRAFT, value: "DRAFT" },
     { label: vehicleStatusLabels.PENDING, value: "PENDING" },
     { label: vehicleStatusLabels.APPROVED, value: "APPROVED" },
     { label: vehicleStatusLabels.REJECTED, value: "REJECTED" },

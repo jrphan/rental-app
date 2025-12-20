@@ -1,33 +1,27 @@
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
-} from '@/components/ui/sidebar'
-import {
-  Home,
-  ShieldCheck,
-  MonitorCheck,
-  Users,
-  Bike,
-} from 'lucide-react'
-import { useNavigate, useLocation } from '@tanstack/react-router'
+import { Bike, Home, MonitorCheck, ShieldCheck, Users } from 'lucide-react'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import ROUTES from '@/constants/routes'
-import { cn } from '@/lib/utils'
-import { adminKycApi } from '@/services/api.admin-kyc'
-import { adminVehicleApi } from '@/services/api.admin-vehicle'
 import type { AdminKycListResponse, KycStatus } from '@/types/auth.types'
 import type {
   AdminVehicleListResponse,
   VehicleStatus,
 } from '@/services/api.admin-vehicle'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar'
+import ROUTES from '@/constants/routes'
+import { cn } from '@/lib/utils'
+import { adminKycApi } from '@/services/api.admin-kyc'
+import { adminVehicleApi } from '@/services/api.admin-vehicle'
 
 const menuItems = [
   {
@@ -64,7 +58,7 @@ export function AdminSidebar() {
         page: 1,
         limit: 1,
       }),
-    staleTime: 30_000,
+    staleTime: 10_000,
   })
 
   const { data: vehicleData } = useQuery<AdminVehicleListResponse>({
@@ -78,7 +72,7 @@ export function AdminSidebar() {
         page: 1,
         limit: 1,
       }),
-    staleTime: 30_000,
+    staleTime: 10_000,
   })
 
   const pendingKycCount = kycData?.total ?? 0
@@ -137,12 +131,11 @@ export function AdminSidebar() {
                         {item.title}
                       </span>
                       <div className="ml-auto flex items-center gap-2">
-                        {(isKycItem || isVehicleItem) &&
-                          pendingCount > 0 && (
-                            <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-semibold text-white shadow-sm">
-                              {pendingCount > 99 ? '99+' : pendingCount}
-                            </span>
-                          )}
+                        {(isKycItem || isVehicleItem) && pendingCount > 0 && (
+                          <span className="inline-flex min-w-7 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-semibold text-white shadow-sm">
+                            {pendingCount > 99 ? '99+' : pendingCount}
+                          </span>
+                        )}
                         {isActive && (
                           <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                         )}

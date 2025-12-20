@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { router } from "expo-router";
+import { useAuthStore } from "@/store/auth";
 import type { Vehicle } from "../types";
 import { formatPrice, getVehicleStatusLabel } from "../utils";
 import ChangeVehicleStatusModal from "./ChangeVehicleStatusModal";
@@ -24,9 +26,13 @@ export default function VehicleCard({
   variant = "full",
 }: VehicleCardProps) {
   const { width: windowWidth } = useWindowDimensions();
+  const { user } = useAuthStore();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showStatusModal, setShowStatusModal] = useState(false);
+
+  // Kiểm tra xem user hiện tại có phải là chủ xe không
+  const isOwner = user?.id && vehicle.ownerId === user.id;
 
   // Tính toán card width dựa trên variant
   const getCardWidth = React.useCallback(() => {
@@ -78,6 +84,14 @@ export default function VehicleCard({
     variant === "compact"
       ? { width: cardWidth, marginRight: 16 }
       : { width: windowWidth - 32 };
+
+  const handleCardPress = () => {
+    if (onPress) {
+      onPress(vehicle);
+    } else {
+      router.push(`/vehicle/${vehicle.id}`);
+    }
+  };
 
   return (
     <View
@@ -144,24 +158,45 @@ export default function VehicleCard({
           </View>
         )}
       </View>
-      <View className="p-4">
+      <TouchableOpacity onPress={handleCardPress} className="p-4">
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-lg font-semibold text-gray-900">
             {vehicle.brand} {vehicle.model}
           </Text>
-          <View className="flex-row items-center gap-2">
-            <TouchableOpacity
-              onPress={() => setShowStatusModal(true)}
-              className="p-1"
-            >
-              <MaterialIcons name="edit" size={18} color="#6B7280" />
-            </TouchableOpacity>
-            <View className="bg-green-100 px-2 py-1 rounded">
-              <Text className="text-xs font-medium text-green-700">
-                {getVehicleStatusLabel(vehicle.status)}
-              </Text>
+          {/* Chỉ hiển thị edit button và status badge khi user là chủ xe */}
+          {isOwner && (
+            <View className="flex-row items-center gap-2">
+              {/* Nút edit - cho phép edit nội dung xe */}
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push(
+                    `/(tabs)/profile/register-vendor?vehicleId=${vehicle.id}`
+                  );
+                }}
+                className="p-1"
+              >
+                <MaterialIcons name="edit" size={18} color="#6B7280" />
+              </TouchableOpacity>
+              {/* Nút thay đổi trạng thái - chỉ hiển thị khi không phải REJECTED */}
+              {vehicle.status !== "REJECTED" && (
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setShowStatusModal(true);
+                  }}
+                  className="p-1"
+                >
+                  <MaterialIcons name="settings" size={18} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+              <View className="bg-green-100 px-2 py-1 rounded">
+                <Text className="text-xs font-medium text-green-700">
+                  {getVehicleStatusLabel(vehicle.status)}
+                </Text>
+              </View>
             </View>
-          </View>
+          )}
         </View>
         <View className="flex-row items-center mb-2">
           <MaterialIcons name="confirmation-number" size={16} color="#6B7280" />
@@ -192,7 +227,7 @@ export default function VehicleCard({
             {formatPrice(Number(vehicle.pricePerDay))}/ngày
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
       <ChangeVehicleStatusModal
         visible={showStatusModal}

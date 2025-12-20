@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
-import { io, Socket } from 'socket.io-client'
+import { io } from 'socket.io-client'
 import { useQueryClient } from '@tanstack/react-query'
-import { type Notification } from '@/services/api.notification'
+import type { Socket } from 'socket.io-client'
+import type { Notification } from '@/services/api.notification'
 import { getAuthCache } from '@/store/auth'
 
 // Get API URL from environment
 const getApiUrl = () => {
-  if (typeof window !== 'undefined' && import.meta.env?.VITE_API_URL) {
+  if (typeof window !== 'undefined' && import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL
   }
   // Fallback - should be set in environment
@@ -36,7 +37,7 @@ export function useNotificationSocket(
       try {
         // Get authentication token
         const authData = getAuthCache()
-        const token = authData?.token
+        const token = authData.token
         if (!token) {
           console.log('[WebSocket] No auth token, skipping connection')
           return
@@ -65,7 +66,7 @@ export function useNotificationSocket(
           baseUrl,
           socketUrl,
           hasToken: !!token,
-          tokenLength: token?.length,
+          tokenLength: token.length,
         })
 
         // Create new socket connection
@@ -118,13 +119,13 @@ export function useNotificationSocket(
               context?: any
             },
           ) => {
-            console.error('[WebSocket] Connection error:', error.message)
-            console.error('[WebSocket] Error details:', {
-              message: error.message,
-              type: error.type,
-              description: error.description,
-              context: error.context,
-            })
+            // console.error('[WebSocket] Connection error:', error.message)
+            // console.error('[WebSocket] Error details:', {
+            //   message: error.message,
+            //   type: error.type,
+            //   description: error.description,
+            //   context: error.context,
+            // })
           },
         )
 
@@ -138,10 +139,10 @@ export function useNotificationSocket(
           // Check if notification is about vehicle (approval/rejection)
           // Based on title or message containing vehicle-related keywords
           const isVehicleNotification =
-            notification.title?.toLowerCase().includes('xe') ||
-            notification.message?.toLowerCase().includes('xe') ||
-            notification.title?.toLowerCase().includes('vehicle') ||
-            notification.message?.toLowerCase().includes('vehicle') ||
+            notification.title.toLowerCase().includes('xe') ||
+            notification.message.toLowerCase().includes('xe') ||
+            notification.title.toLowerCase().includes('vehicle') ||
+            notification.message.toLowerCase().includes('vehicle') ||
             notification.data?.vehicleId ||
             notification.data?.vehicle
 
@@ -167,11 +168,11 @@ export function useNotificationSocket(
           // Based on title, message, type, or data containing KYC-related keywords
           const isKycNotification =
             notification.type === 'KYC_UPDATE' ||
-            notification.title?.toLowerCase().includes('kyc') ||
-            notification.message?.toLowerCase().includes('kyc') ||
-            notification.title?.toLowerCase().includes('xác thực') ||
-            notification.message?.toLowerCase().includes('xác thực') ||
-            notification.title?.toLowerCase().includes('duyệt') ||
+            notification.title.toLowerCase().includes('kyc') ||
+            notification.message.toLowerCase().includes('kyc') ||
+            notification.title.toLowerCase().includes('xác thực') ||
+            notification.message.toLowerCase().includes('xác thực') ||
+            notification.title.toLowerCase().includes('duyệt') ||
             notification.data?.kycId ||
             notification.data?.kyc
 

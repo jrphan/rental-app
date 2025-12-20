@@ -17,8 +17,13 @@ export default function VehiclesList({
 }: VehiclesListProps) {
   if (vehicles.length === 0) {
     return (
-      <View className="items-center justify-center py-20 bg-gray-50">
-        <MaterialIcons name="directions-bike" size={64} color="#D1D5DB" />
+      <View className="items-center justify-center py-20">
+        <MaterialIcons
+          name="directions-bike"
+          size={64}
+          color="#D1D5DB"
+          style={{ marginTop: 50 }}
+        />
         <Text className="text-gray-500 mt-4 text-center">
           Không có xe nào ở trạng thái này
         </Text>

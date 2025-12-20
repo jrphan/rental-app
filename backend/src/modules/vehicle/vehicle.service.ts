@@ -132,6 +132,87 @@ export class VehicleService {
     };
   }
 
+  async updateVehicle(
+    userId: string,
+    vehicleId: string,
+    updateVehicleDto: CreateVehicleDto,
+  ): Promise<CreateVehicleResponse> {
+    // Find vehicle and verify ownership
+    const vehicle = await this.prismaService.vehicle.findFirst({
+      where: {
+        id: vehicleId,
+        ownerId: userId,
+        deletedAt: null,
+      },
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException(
+        'Xe không tồn tại hoặc bạn không có quyền truy cập',
+      );
+    }
+
+    // Only allow update if vehicle is REJECTED, DRAFT, or APPROVED
+    if (
+      vehicle.status !== VehicleStatus.REJECTED &&
+      vehicle.status !== VehicleStatus.DRAFT &&
+      vehicle.status !== VehicleStatus.APPROVED
+    ) {
+      throw new BadRequestException(
+        'Chỉ có thể cập nhật xe khi trạng thái là BỊ TỪ CHỐI, NHÁP, hoặc ĐÃ DUYỆT',
+      );
+    }
+
+    const { images, ...vehicleData } = updateVehicleDto;
+
+    // Delete old images
+    await this.prismaService.vehicleImage.deleteMany({
+      where: { vehicleId },
+    });
+
+    // Update vehicle
+    const updated = await this.prismaService.vehicle.update({
+      where: { id: vehicleId },
+      data: {
+        ...vehicleData,
+        depositAmount: vehicleData.depositAmount || 0,
+        requiredLicense: vehicleData.requiredLicense || 'A1',
+        instantBook: vehicleData.instantBook || false,
+        images: {
+          create: images.map((img, index) => ({
+            url: img.url,
+            isPrimary: img.isPrimary ?? index === 0,
+            order: img.order ?? index,
+          })),
+        },
+      },
+      select: selectVehicle,
+    });
+
+    await this.auditLogService
+      .log({
+        actorId: userId,
+        action: AuditAction.UPDATE,
+        targetId: updated.id,
+        targetType: AuditTargetType.VEHICLE,
+        metadata: {
+          action: 'update_vehicle',
+          brand: updated.brand,
+          model: updated.model,
+          licensePlate: updated.licensePlate,
+          previousStatus: vehicle.status,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log vehicle update audit', error);
+      });
+
+    return {
+      message: 'Cập nhật thông tin xe thành công',
+      vehicle: updated,
+    };
+  }
+
   async listVehicles(
     reviewerId: string,
     status?: VehicleStatus,
@@ -339,6 +420,80 @@ export class VehicleService {
     return {
       items,
       total,
+    };
+  }
+
+  /**
+   * Lấy thông tin chi tiết xe (public - không cần auth)
+   * Chỉ trả về xe đã được APPROVED
+   */
+  async getVehicleDetailPublic(id: string): Promise<VehicleResponse> {
+    const vehicle = await this.prismaService.vehicle.findFirst({
+      where: {
+        id,
+        status: VehicleStatus.APPROVED, // Chỉ trả về xe đã được duyệt
+        deletedAt: null,
+      },
+      select: selectVehicle,
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException('Xe không tồn tại hoặc chưa được duyệt');
+    }
+
+    return vehicle;
+  }
+
+  /**
+   * Lấy danh sách reviews của xe (public)
+   */
+  async getVehicleReviews(vehicleId: string) {
+    // Kiểm tra xe có tồn tại và đã được duyệt
+    const vehicle = await this.prismaService.vehicle.findFirst({
+      where: {
+        id: vehicleId,
+        status: VehicleStatus.APPROVED,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException('Xe không tồn tại hoặc chưa được duyệt');
+    }
+
+    // Lấy reviews của xe (chỉ reviews cho xe, không phải reviews cho owner)
+    const reviews = await this.prismaService.review.findMany({
+      where: {
+        vehicleId,
+        type: 'RENTER_TO_VEHICLE',
+        isHidden: false,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Tính toán average rating và total
+    const totalReviews = reviews.length;
+    const averageRating =
+      totalReviews > 0
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews
+        : 0;
+
+    return {
+      reviews,
+      averageRating,
+      totalReviews,
     };
   }
 

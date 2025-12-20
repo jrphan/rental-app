@@ -102,4 +102,14 @@ export const apiNotification = {
     }
     throw new Error(response.message || "Đăng ký device token thất bại");
   },
+
+  async deleteNotification(id: string): Promise<{ message: string }> {
+    const response = await apiClient.delete<{ message: string }>(
+      API_ENDPOINTS.USER.DELETE_NOTIFICATION.replace(":id", id)
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Xóa thông báo thất bại");
+  },
 };

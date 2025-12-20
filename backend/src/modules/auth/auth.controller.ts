@@ -20,6 +20,7 @@ import {
   VerifyOtpResponse,
   VerifyResetPasswordResponse,
   RefreshTokenResponse,
+  LogoutResponse,
 } from '@/types/auth.type';
 import { ROUTES } from '@/config/routes';
 import { VerifyOtpDto } from '@/common/dto/Auth/verify-otp.dto';
@@ -92,5 +93,16 @@ export class AuthController {
     @Body() refreshTokenDto: RefreshTokenDto,
   ): Promise<RefreshTokenResponse> {
     return this.authService.refreshToken(refreshTokenDto.refreshToken);
+  }
+
+  @Post(ROUTES.AUTH.LOGOUT)
+  @UseGuards(AuthGuard)
+  logout(@Req() req: Request): Promise<LogoutResponse> {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.authService.logout(userId);
   }
 }

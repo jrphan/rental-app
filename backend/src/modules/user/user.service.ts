@@ -14,6 +14,7 @@ import {
   AdminKycActionResponse,
   selectAdminKyc,
 } from '@/types/user.type';
+import { VehicleResponse, selectVehicle } from '@/types/vehicle.type';
 import {
   ForbiddenException,
   Injectable,
@@ -27,6 +28,7 @@ import {
   Prisma,
   User,
   UserRole,
+  VehicleStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
@@ -429,5 +431,122 @@ export class UserService {
       });
 
     return { message: 'KYC đã bị từ chối' };
+  }
+
+  /**
+   * Thêm xe vào danh sách yêu thích
+   * Lưu ý: Cần chạy `npx prisma migrate dev` và `npx prisma generate` để Prisma client nhận diện model VehicleFavorite
+   */
+  async addFavorite(
+    userId: string,
+    vehicleId: string,
+  ): Promise<{ message: string }> {
+    // Kiểm tra xe có tồn tại và đã được duyệt
+    const vehicle = await this.prismaService.vehicle.findFirst({
+      where: {
+        id: vehicleId,
+        status: VehicleStatus.APPROVED,
+        deletedAt: null,
+      },
+    });
+
+    if (!vehicle) {
+      throw new NotFoundException('Xe không tồn tại hoặc chưa được duyệt');
+    }
+
+    // Kiểm tra đã favorite chưa
+    const existing = await this.prismaService.vehicleFavorite.findUnique({
+      where: {
+        userId_vehicleId: {
+          userId,
+          vehicleId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new ForbiddenException('Xe đã có trong danh sách yêu thích');
+    }
+
+    // Thêm vào favorite
+    await this.prismaService.vehicleFavorite.create({
+      data: {
+        userId,
+        vehicleId,
+      },
+    });
+
+    return { message: 'Đã thêm vào danh sách yêu thích' };
+  }
+
+  /**
+   * Xóa xe khỏi danh sách yêu thích
+   */
+  async removeFavorite(
+    userId: string,
+    vehicleId: string,
+  ): Promise<{ message: string }> {
+    const result = await this.prismaService.vehicleFavorite.deleteMany({
+      where: {
+        userId,
+        vehicleId,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new NotFoundException('Xe không có trong danh sách yêu thích');
+    }
+
+    return { message: 'Đã xóa khỏi danh sách yêu thích' };
+  }
+
+  /**
+   * Kiểm tra xe có trong danh sách yêu thích không
+   */
+  async checkFavorite(
+    userId: string,
+    vehicleId: string,
+  ): Promise<{ isFavorite: boolean }> {
+    const favorite = await this.prismaService.vehicleFavorite.findUnique({
+      where: {
+        userId_vehicleId: {
+          userId,
+          vehicleId,
+        },
+      },
+    });
+
+    return { isFavorite: !!favorite };
+  }
+
+  /**
+   * Lấy danh sách xe yêu thích
+   */
+  async getFavorites(userId: string): Promise<{
+    items: VehicleResponse[];
+    total: number;
+  }> {
+    const favorites = await this.prismaService.vehicleFavorite.findMany({
+      where: {
+        userId,
+        vehicle: {
+          status: VehicleStatus.APPROVED,
+          deletedAt: null,
+        },
+      },
+      include: {
+        vehicle: {
+          select: selectVehicle,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return {
+      items: favorites.map(fav => fav.vehicle),
+      total: favorites.length,
+    };
   }
 }

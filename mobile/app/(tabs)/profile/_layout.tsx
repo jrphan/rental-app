@@ -9,6 +9,7 @@ export default function ProfileLayout() {
       }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="favorites" />
     </Stack>
   );
 }

@@ -7,12 +7,14 @@ import type { NotificationItem as NotificationItemType } from "../types";
 interface NotificationsListProps {
   data: NotificationItemType[];
   onItemAction?: (action: string, item: NotificationItemType) => void;
+  onItemNavigate?: (item: NotificationItemType) => void;
   onRefresh?: () => void;
 }
 
 export default function NotificationsList({
   data,
   onItemAction,
+  onItemNavigate,
   onRefresh,
 }: NotificationsListProps) {
   return (
@@ -20,7 +22,11 @@ export default function NotificationsList({
       <FlatList
         data={data}
         renderItem={({ item }) => (
-          <NotificationItem item={item} onAction={onItemAction} />
+          <NotificationItem
+            item={item}
+            onAction={onItemAction}
+            onNavigate={onItemNavigate}
+          />
         )}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
@@ -30,6 +36,7 @@ export default function NotificationsList({
               name="notifications-none"
               size={48}
               color="#9CA3AF"
+              style={{ marginTop: 50 }}
             />
             <Text className="text-gray-500 text-base mt-4">
               Không có thông báo

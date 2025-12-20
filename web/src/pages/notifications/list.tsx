@@ -1,8 +1,9 @@
-import { apiNotification, type Notification } from '@/services/api.notification'
-import { CheckCircle, Info, AlertCircle, CreditCard, Bell } from 'lucide-react'
+import { AlertCircle, Bell, CheckCircle, CreditCard, Info } from 'lucide-react'
+import type { Notification } from '@/services/api.notification'
+import { apiNotification } from '@/services/api.notification'
 
 interface NotificationListProps {
-  notifications: Notification[]
+  notifications: Array<Notification>
   isLoading: boolean
   onMarkAsRead: (id: string) => void
   formatTime: (dateString: string) => string
@@ -58,8 +59,11 @@ export function NotificationList({
 
   if (notifications.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-        <Bell className="w-12 h-12 mb-4 text-gray-400" />
+      <div className="flex flex-col items-center justify-center py-12 text-gray-500 bg-gray-50">
+        <Bell
+          className="w-12 h-12 mb-4 text-gray-400"
+          style={{ marginTop: 50 }}
+        />
         <p>Không có thông báo nào</p>
       </div>
     )
@@ -132,4 +136,3 @@ export function NotificationList({
     </div>
   )
 }
-

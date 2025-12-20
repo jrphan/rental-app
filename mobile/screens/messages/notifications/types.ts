@@ -5,5 +5,8 @@ export interface NotificationItem {
   message: string;
   time: string;
   isRead: boolean;
+  // Thông tin gốc từ API để navigate
+  originalType?: "SYSTEM" | "PROMOTION" | "RENTAL_UPDATE" | "PAYMENT" | "KYC_UPDATE";
+  originalData?: Record<string, any>;
 }
 

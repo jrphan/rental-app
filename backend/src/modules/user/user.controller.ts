@@ -5,6 +5,7 @@ import {
   Get,
   Put,
   Post,
+  Delete,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -72,6 +73,59 @@ export class UserController {
     return this.userService.submitKyc(userId, submitKycDto);
   }
 
+  @Post(ROUTES.USER.ADD_FAVORITE)
+  @UseGuards(AuthGuard)
+  addFavorite(
+    @Req() req: Request,
+    @Param('vehicleId') vehicleId: string,
+  ): Promise<{ message: string }> {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.userService.addFavorite(userId, vehicleId);
+  }
+
+  @Delete(ROUTES.USER.REMOVE_FAVORITE)
+  @UseGuards(AuthGuard)
+  removeFavorite(
+    @Req() req: Request,
+    @Param('vehicleId') vehicleId: string,
+  ): Promise<{ message: string }> {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.userService.removeFavorite(userId, vehicleId);
+  }
+
+  @Get(ROUTES.USER.CHECK_FAVORITE)
+  @UseGuards(AuthGuard)
+  checkFavorite(
+    @Req() req: Request,
+    @Param('vehicleId') vehicleId: string,
+  ): Promise<{ isFavorite: boolean }> {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.userService.checkFavorite(userId, vehicleId);
+  }
+
+  @Get(ROUTES.USER.GET_FAVORITES)
+  @UseGuards(AuthGuard)
+  getFavorites(@Req() req: Request) {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.userService.getFavorites(userId);
+  }
+
   // Admin
   @Get(ROUTES.ADMIN.LIST_USERS)
   @UseGuards(AuthGuard)
@@ -95,10 +149,7 @@ export class UserController {
 
     const filters = {
       role,
-      isActive:
-        typeof isActive === 'string'
-          ? isActive === 'true'
-          : undefined,
+      isActive: typeof isActive === 'string' ? isActive === 'true' : undefined,
       isPhoneVerified:
         typeof isPhoneVerified === 'string'
           ? isPhoneVerified === 'true'

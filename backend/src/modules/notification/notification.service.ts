@@ -273,4 +273,36 @@ export class NotificationService {
       },
     });
   }
+
+  /**
+   * Xóa notification
+   */
+  async deleteNotification(notificationId: string, userId: string) {
+    const notification = await this.prismaService.notification.findFirst({
+      where: {
+        id: notificationId,
+        userId,
+      },
+    });
+
+    if (!notification) {
+      return null;
+    }
+
+    await this.prismaService.notification.delete({
+      where: { id: notificationId },
+    });
+
+    // Send unread count update via WebSocket
+    if (this.notificationGateway) {
+      try {
+        const unreadCount = await this.getUnreadCount(userId);
+        this.notificationGateway.sendUnreadCountUpdate(userId, unreadCount);
+      } catch (error) {
+        this.logger.error('Failed to send unread count update', error);
+      }
+    }
+
+    return { message: 'Notification deleted successfully' };
+  }
 }

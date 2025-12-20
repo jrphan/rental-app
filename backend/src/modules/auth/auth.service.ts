@@ -21,6 +21,7 @@ import {
   VerifyResetPasswordResponse,
   ChangePasswordResponse,
   RefreshTokenResponse,
+  LogoutResponse,
 } from '@/types/auth.type';
 import { UserService } from '@/modules/user/user.service';
 import { SmsService } from '@/modules/sms/sms.service';
@@ -910,5 +911,32 @@ export class AuthService {
       .catch(error => {
         this.logger.error('Failed to log', error);
       });
+  }
+
+  async logout(userId: string): Promise<LogoutResponse> {
+    await this.loggerService
+      .log(
+        `User ${userId} logged out successfully`,
+        { userId },
+        { category: LOG_CATEGORY.AUTH },
+      )
+      .catch(error => {
+        this.logger.error('Failed to log', error);
+      });
+    await this.auditLogService
+      .log({
+        actorId: userId,
+        action: AuditAction.LOGIN,
+        targetId: userId,
+        targetType: AuditTargetType.USER,
+        metadata: { result: 'success', action: 'logout' },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log audit', error);
+      });
+
+    return {
+      message: 'Đăng xuất thành công',
+    };
   }
 }

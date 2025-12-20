@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Query,
   Req,
@@ -100,5 +101,16 @@ export class NotificationController {
     );
 
     return { message: 'Device token registered successfully' };
+  }
+
+  @Delete(ROUTES.USER.DELETE_NOTIFICATION)
+  @UseGuards(AuthGuard)
+  async deleteNotification(@Req() req: Request, @Param('id') id: string) {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.notificationService.deleteNotification(id, userId);
   }
 }

@@ -81,6 +81,13 @@ export default function ProfileActions({
       showCondition: () => user?.isVendor ?? false,
     },
     {
+      id: "favorites",
+      icon: "favorite",
+      iconType: "MaterialIcons",
+      title: "Xe yêu thích",
+      route: "/(tabs)/profile/favorites",
+    },
+    {
       id: "change-password",
       icon: "lock",
       iconType: "MaterialIcons",

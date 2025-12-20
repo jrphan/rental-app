@@ -1,5 +1,5 @@
-import type { AdminVehicleItem } from '@/services/api.admin-vehicle'
 import { StatusBadge } from './status-badge'
+import type { AdminVehicleItem } from '@/services/api.admin-vehicle'
 
 interface VehicleDetailPanelProps {
   selected: AdminVehicleItem | null
@@ -36,7 +36,10 @@ export function VehicleDetailPanel({
         ) : (
           <>
             <Section title="Thông tin chủ xe">
-              <DetailRow label="Họ tên" value={selected.owner.fullName || '—'} />
+              <DetailRow
+                label="Họ tên"
+                value={selected.owner.fullName || '—'}
+              />
               <DetailRow label="Số điện thoại" value={selected.owner.phone} />
               <DetailRow label="Email" value={selected.owner.email || '—'} />
               <DetailRow
@@ -48,11 +51,16 @@ export function VehicleDetailPanel({
             <Section title="Thông tin xe">
               <DetailRow label="Hãng" value={selected.brand} />
               <DetailRow label="Dòng xe" value={selected.model} />
-              <DetailRow label="Năm sản xuất" value={selected.year.toString()} />
+              <DetailRow
+                label="Năm sản xuất"
+                value={selected.year.toString()}
+              />
               <DetailRow label="Màu sắc" value={selected.color} />
               <DetailRow
                 label="Biển số"
-                value={<span className="font-mono">{selected.licensePlate}</span>}
+                value={
+                  <span className="font-mono">{selected.licensePlate}</span>
+                }
               />
               <DetailRow
                 label="Dung tích xi lanh"
@@ -140,52 +148,50 @@ export function VehicleDetailPanel({
               </Section>
             )}
 
-            <Section title="Hành động">
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <button
-                    disabled={
-                      isApproving ||
-                      isRejecting ||
-                      selected.status === 'APPROVED'
-                    }
-                    onClick={onApprove}
-                    className="flex-1 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400"
-                  >
-                    {isApproving ? 'Đang duyệt...' : 'Duyệt xe'}
-                  </button>
-                  <button
-                    disabled={isApproving || isRejecting}
-                    onClick={onClearSelection}
-                    className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                  >
-                    Bỏ chọn
-                  </button>
-                </div>
+            {selected.status === 'PENDING' && (
+              <Section title="Hành động">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <button
+                      disabled={isApproving || isRejecting}
+                      onClick={onApprove}
+                      className="flex-1 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400"
+                    >
+                      {isApproving ? 'Đang duyệt...' : 'Duyệt xe'}
+                    </button>
+                    <button
+                      disabled={isApproving || isRejecting}
+                      onClick={onClearSelection}
+                      className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                    >
+                      Bỏ chọn
+                    </button>
+                  </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-700">
-                    Lý do từ chối
-                  </label>
-                  <textarea
-                    rows={3}
-                    className="bg-white mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-300"
-                    placeholder="Nhập lý do chi tiết nếu cần từ chối xe..."
-                    value={rejectReason}
-                    onChange={(e) => onRejectReasonChange(e.target.value)}
-                  />
-                  <button
-                    disabled={
-                      !rejectReason.trim() || isApproving || isRejecting
-                    }
-                    onClick={onReject}
-                    className="w-full rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
-                  >
-                    {isRejecting ? 'Đang từ chối...' : 'Từ chối xe'}
-                  </button>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-700">
+                      Lý do từ chối
+                    </label>
+                    <textarea
+                      rows={3}
+                      className="bg-white mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-300"
+                      placeholder="Nhập lý do chi tiết nếu cần từ chối xe..."
+                      value={rejectReason}
+                      onChange={(e) => onRejectReasonChange(e.target.value)}
+                    />
+                    <button
+                      disabled={
+                        !rejectReason.trim() || isApproving || isRejecting
+                      }
+                      onClick={onReject}
+                      className="w-full rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+                    >
+                      {isRejecting ? 'Đang từ chối...' : 'Từ chối xe'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Section>
+              </Section>
+            )}
           </>
         )}
       </div>
@@ -248,4 +254,3 @@ function ImagePreview({ label, src }: { label: string; src: string }) {
     </div>
   )
 }
-

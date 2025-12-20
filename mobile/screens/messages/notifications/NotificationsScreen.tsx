@@ -13,10 +13,14 @@ import { formatTimeAgo } from "@/utils/date.utils";
 import type { NotificationItem } from "./types";
 import { useNotificationSocket } from "@/hooks/notifications/useNotificationSocket";
 import { useAuthStore } from "@/store/auth";
+import { router } from "expo-router";
+import { useToast } from "@/hooks/useToast";
+import ROUTES from "@/constants/routes";
 
 export default function NotificationsScreen() {
   const queryClient = useQueryClient();
   const { isAuthenticated } = useAuthStore();
+  const toast = useToast();
 
   // Setup WebSocket connection for real-time notifications
   useNotificationSocket({
@@ -63,6 +67,8 @@ export default function NotificationsScreen() {
       message: notif.message,
       time: formatTimeAgo(notif.createdAt),
       isRead: notif.isRead,
+      originalType: notif.type,
+      originalData: notif.data,
     };
   };
 
@@ -78,7 +84,19 @@ export default function NotificationsScreen() {
 
   const handleItemAction = useCallback(
     async (action: string, item: NotificationItem) => {
-      if ((action === "Đã đọc" || action === "markAsRead") && !item.isRead) {
+      if (action === "Xóa") {
+        try {
+          await apiNotification.deleteNotification(item.id);
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          toast.showSuccess("Đã xóa thông báo");
+        } catch (error: any) {
+          console.error("Failed to delete notification:", error);
+          toast.showError(error?.message || "Xóa thông báo thất bại");
+        }
+      } else if (
+        (action === "Đã đọc" || action === "markAsRead") &&
+        !item.isRead
+      ) {
         try {
           await apiNotification.markAsRead(item.id);
           queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -87,8 +105,36 @@ export default function NotificationsScreen() {
         }
       }
     },
-    [queryClient]
+    [queryClient, toast]
   );
+
+  const handleItemNavigate = useCallback((item: NotificationItem) => {
+    const { originalType, originalData } = item;
+
+    // Navigate dựa trên notification type và data
+    if (originalType === "KYC_UPDATE") {
+      // Navigate tới profile/KYC screen
+      router.push(ROUTES.PROFILE);
+    } else if (originalType === "RENTAL_UPDATE") {
+      // Navigate tới booking detail nếu có rentalId
+      if (originalData?.rentalId) {
+        // TODO: Navigate tới booking detail khi có route
+        router.push(ROUTES.BOOKINGS);
+      } else {
+        router.push(ROUTES.BOOKINGS);
+      }
+    } else if (originalType === "PAYMENT") {
+      // Navigate tới payment/transaction screen
+      router.push(ROUTES.BOOKINGS);
+    } else if (originalData?.vehicleId) {
+      // Nếu có vehicleId thì navigate tới vehicle detail
+      // TODO: Navigate tới vehicle detail khi có route
+      // router.push(ROUTES.HOME);
+    } else {
+      // Default: không navigate hoặc navigate tới home
+      // Có thể bỏ qua nếu không cần navigate
+    }
+  }, []);
 
   // Tabs config
   const notificationTabs = useMemo<TabConfig[]>(
@@ -110,6 +156,7 @@ export default function NotificationsScreen() {
             data={unreadNotifications}
             onRefresh={refetchUnread}
             onItemAction={handleItemAction}
+            onItemNavigate={handleItemNavigate}
           />
         ),
       },
@@ -126,6 +173,7 @@ export default function NotificationsScreen() {
             data={allNotifications}
             onRefresh={refetchAll}
             onItemAction={handleItemAction}
+            onItemNavigate={handleItemNavigate}
           />
         ),
       },
@@ -138,6 +186,7 @@ export default function NotificationsScreen() {
       refetchUnread,
       refetchAll,
       handleItemAction,
+      handleItemNavigate,
     ]
   );
 

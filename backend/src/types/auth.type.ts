@@ -71,3 +71,7 @@ export interface VerifyResetPasswordResponse {
 export interface ChangePasswordResponse {
   message: string;
 }
+
+export interface LogoutResponse {
+  message: string;
+}

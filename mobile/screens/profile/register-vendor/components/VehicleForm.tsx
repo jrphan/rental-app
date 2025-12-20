@@ -7,6 +7,7 @@ import {
   Switch,
   Image,
 } from "react-native";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -102,7 +103,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
   }, [vehicleData, form]);
 
   const mutation = useMutation({
-    mutationFn: (data: VehicleInput) => {
+    mutationFn: async (data: VehicleInput) => {
       // Transform form data to API format
       const images = data.imageUrls.map((url, index) => ({
         url,
@@ -110,7 +111,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         order: index,
       }));
 
-      return apiVehicle.create({
+      const vehiclePayload = {
         brand: data.brand,
         model: data.model,
         year: parseInt(data.year, 10),
@@ -130,7 +131,24 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         cavetBack: data.cavetBack,
         instantBook: data.instantBook,
         images,
-      });
+      };
+
+      // If vehicle exists, update it
+      if (vehicleId && vehicleData) {
+        // Update vehicle
+        const updateResult = await apiVehicle.updateVehicle(vehicleId, vehiclePayload);
+        
+        // If status is REJECTED or DRAFT, change to PENDING after update
+        // If status is APPROVED, keep it as APPROVED (don't change status)
+        if (vehicleData.status === "REJECTED" || vehicleData.status === "DRAFT") {
+          await apiVehicle.updateVehicleStatus(vehicleId, { status: "PENDING" });
+        }
+        
+        return updateResult;
+      }
+
+      // Otherwise, create new vehicle
+      return apiVehicle.create(vehiclePayload);
     },
     onSuccess: async () => {
       // Refresh user info to get updated isVendor status
@@ -139,10 +157,13 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         updateUser(updatedUser);
         queryClient.invalidateQueries({ queryKey: ["user", "sync"] });
         queryClient.invalidateQueries({ queryKey: ["myVehicles"] });
+        queryClient.invalidateQueries({ queryKey: ["myVehicle", vehicleId] });
       } catch (error) {
         console.error("Failed to sync user info:", error);
       }
-      router.back();
+      
+      // Chuyển về danh sách xe sau khi cập nhật/tạo thành công
+      router.replace("/(tabs)/vehicles");
     },
   });
 
@@ -162,23 +183,55 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
     user?.isActive && user?.isPhoneVerified && user?.kyc?.status === "APPROVED";
 
   if (!isEligible) {
+    const conditions = [
+      {
+        label: "Tài khoản đã được kích hoạt",
+        completed: user?.isActive || false,
+      },
+      {
+        label: "Đã xác thực số điện thoại",
+        completed: user?.isPhoneVerified || false,
+      },
+      {
+        label: "Đã hoàn thành KYC và được duyệt",
+        completed: user?.kyc?.status === "APPROVED",
+      },
+    ];
+
     return (
       <View className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
         <Text className="text-base font-semibold text-red-900 mb-2">
           Bạn chưa đủ điều kiện đăng ký làm chủ xe
         </Text>
-        <Text className="text-sm text-red-700">
+        <Text className="text-sm text-red-700 mb-2">
           Để đăng ký làm chủ xe, bạn cần:
         </Text>
-        <Text className="text-sm text-red-700 mt-1">
-          • Tài khoản đã được kích hoạt
-        </Text>
-        <Text className="text-sm text-red-700">
-          • Đã xác thực số điện thoại
-        </Text>
-        <Text className="text-sm text-red-700">
-          • Đã hoàn thành KYC và được duyệt
-        </Text>
+        {conditions.map((condition, index) => (
+          <View key={index} className="flex-row items-center mb-1">
+            {condition.completed ? (
+              <MaterialIcons
+                name="check-circle"
+                size={18}
+                color="#10b981"
+                style={{ marginRight: 8 }}
+              />
+            ) : (
+              <MaterialIcons
+                name="radio-button-unchecked"
+                size={18}
+                color="#ef4444"
+                style={{ marginRight: 8 }}
+              />
+            )}
+            <Text
+              className={`text-sm ${
+                condition.completed ? "text-green-700" : "text-red-700"
+              }`}
+            >
+              {condition.label}
+            </Text>
+          </View>
+        ))}
       </View>
     );
   }
@@ -194,7 +247,8 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
     );
   }
 
-  const isReadOnly = vehicleData?.status === "PENDING"; // Disable form when viewing pending vehicle
+  // Allow edit when REJECTED or DRAFT, disable when PENDING
+  const isReadOnly = vehicleData?.status === "PENDING";
 
   return (
     <ScrollView
@@ -227,7 +281,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
             {vehicleData.licensePlate}
           </Text>
           <Text className="text-xs text-red-700 mt-1">
-            Vui lòng kiểm tra lại thông tin và đăng ký lại.
+            Vui lòng kiểm tra lại thông tin, cập nhật và gửi lại để được duyệt.
           </Text>
         </View>
       )}
@@ -240,6 +294,9 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
           <Text className="text-xs text-green-700">
             Xe: {vehicleData.brand} {vehicleData.model} -{" "}
             {vehicleData.licensePlate}
+          </Text>
+          <Text className="text-xs text-green-700 mt-1">
+            Bạn có thể cập nhật thông tin xe. Xe sẽ vẫn ở trạng thái đã duyệt sau khi cập nhật.
           </Text>
         </View>
       )}
@@ -710,14 +767,23 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         </View>
       )}
 
-      {!vehicleData && (
+      {(!vehicleData || 
+        vehicleData.status === "REJECTED" || 
+        vehicleData.status === "DRAFT" ||
+        vehicleData.status === "APPROVED") && (
         <Button
           onPress={form.handleSubmit(onSubmit)}
-          disabled={isSubmitting || mutation.isPending}
+          disabled={isSubmitting || mutation.isPending || isReadOnly}
           className="mt-4"
         >
           {isSubmitting || mutation.isPending ? (
             <ActivityIndicator size="small" color="#fff" />
+          ) : vehicleData?.status === "REJECTED" ? (
+            "Cập nhật và gửi lại"
+          ) : vehicleData?.status === "APPROVED" ? (
+            "Cập nhật thông tin"
+          ) : vehicleData ? (
+            "Cập nhật xe"
           ) : (
             "Đăng ký xe"
           )}

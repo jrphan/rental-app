@@ -163,6 +163,7 @@ model User {
 
   otps             Otp[] // <--- Thêm dòng này
   files            UserFile[]
+  favoriteVehicles VehicleFavorite[] // Xe yêu thích của người dùng
 
   @@index([phone])
   @@index([email])
@@ -265,7 +266,8 @@ model Vehicle {
   owner           User          @relation("OwnerVehicles", fields: [ownerId], references: [id])
   rentals         Rental[]
   reviews         Review[]      // Đánh giá dành cho xe này
-  unavailabilities VehicleUnavailability[] 
+  unavailabilities VehicleUnavailability[]
+  favorites       VehicleFavorite[] // Xe được yêu thích bởi người dùng
 
   @@index([status])
   @@index([district, city])
@@ -512,4 +514,22 @@ model UserFile {
   @@index([userId])
   @@index([folder])
   @@map("user_files")
+}
+
+// ==================== FAVORITES ====================
+
+model VehicleFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  vehicleId String
+  
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vehicleId]) // Một user chỉ có thể favorite một xe 1 lần
+  @@index([userId])
+  @@index([vehicleId])
+  @@map("vehicle_favorites")
 }
