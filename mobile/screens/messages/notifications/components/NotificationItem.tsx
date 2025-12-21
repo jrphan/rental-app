@@ -8,19 +8,47 @@ import { getNotificationIcon, getNotificationColor } from "../utils";
 interface NotificationItemProps {
   item: NotificationItemType;
   onAction?: (action: string, item: NotificationItemType) => void;
+  onNavigate?: (item: NotificationItemType) => void;
 }
 
 export default function NotificationItem({
   item,
   onAction,
+  onNavigate,
 }: NotificationItemProps) {
   const iconColor = getNotificationColor(item.type);
 
   const handleAction = (action: string) => {
-    if (onAction) {
-      onAction(action, item);
+    if (action === "Xóa") {
+      Alert.alert("Xác nhận xóa", "Bạn có chắc muốn xóa thông báo này?", [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: () => {
+            if (onAction) {
+              onAction(action, item);
+            }
+          },
+        },
+      ]);
     } else {
-      Alert.alert(action, `${item.title} • ${action.toLowerCase()}`);
+      if (onAction) {
+        onAction(action, item);
+      } else {
+        Alert.alert(action, `${item.title} • ${action.toLowerCase()}`);
+      }
+    }
+  };
+
+  const handlePress = () => {
+    // Nếu chưa đọc thì mark as read trước
+    if (!item.isRead && onAction) {
+      onAction("markAsRead", item);
+    }
+    // Sau đó navigate
+    if (onNavigate) {
+      onNavigate(item);
     }
   };
 
@@ -36,12 +64,6 @@ export default function NotificationItem({
       ]}
       rightActions={[
         {
-          label: "Ghim",
-          backgroundColor: "#f59e0b",
-          textColor: "#ffffff",
-          onPress: () => handleAction("Ghim"),
-        },
-        {
           label: "Xóa",
           backgroundColor: "#ef4444",
           textColor: "#ffffff",
@@ -54,6 +76,7 @@ export default function NotificationItem({
           !item.isRead ? "bg-blue-50" : "bg-white"
         }`}
         activeOpacity={0.7}
+        onPress={handlePress}
       >
         {/* Icon */}
         <View

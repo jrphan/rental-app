@@ -13,6 +13,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { queryClient } from "@/lib/queryClient";
 import { ToastContainer } from "@/components/ui/toast";
 import { useSyncUser } from "@/hooks/user/useSyncUser";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -23,11 +24,17 @@ function RootLayoutNav() {
   // Nếu API fail (token hết hạn hoặc user không tồn tại) thì tự động logout
   useSyncUser();
 
+  // Register for push notifications
+  usePushNotifications();
+
   return (
     <Stack screenOptions={{ headerShown: false, animation: "flip" }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="vehicle/[id]" />
+      <Stack.Screen name="owner/[ownerId]" />
+      <Stack.Screen name="search" />
     </Stack>
   );
 }

@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectRouteImport } from './routes/_protect'
 import { Route as ProtectIndexRouteImport } from './routes/_protect/index'
+import { Route as ProtectVehiclesRouteImport } from './routes/_protect/vehicles'
 import { Route as ProtectUsersRouteImport } from './routes/_protect/users'
+import { Route as ProtectNotificationsRouteImport } from './routes/_protect/notifications'
 import { Route as ProtectKycRouteImport } from './routes/_protect/kyc'
 
 const LoginRoute = LoginRouteImport.update({
@@ -29,9 +31,19 @@ const ProtectIndexRoute = ProtectIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ProtectRoute,
 } as any)
+const ProtectVehiclesRoute = ProtectVehiclesRouteImport.update({
+  id: '/vehicles',
+  path: '/vehicles',
+  getParentRoute: () => ProtectRoute,
+} as any)
 const ProtectUsersRoute = ProtectUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => ProtectRoute,
+} as any)
+const ProtectNotificationsRoute = ProtectNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => ProtectRoute,
 } as any)
 const ProtectKycRoute = ProtectKycRouteImport.update({
@@ -43,13 +55,17 @@ const ProtectKycRoute = ProtectKycRouteImport.update({
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/kyc': typeof ProtectKycRoute
+  '/notifications': typeof ProtectNotificationsRoute
   '/users': typeof ProtectUsersRoute
+  '/vehicles': typeof ProtectVehiclesRoute
   '/': typeof ProtectIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/kyc': typeof ProtectKycRoute
+  '/notifications': typeof ProtectNotificationsRoute
   '/users': typeof ProtectUsersRoute
+  '/vehicles': typeof ProtectVehiclesRoute
   '/': typeof ProtectIndexRoute
 }
 export interface FileRoutesById {
@@ -57,20 +73,24 @@ export interface FileRoutesById {
   '/_protect': typeof ProtectRouteWithChildren
   '/login': typeof LoginRoute
   '/_protect/kyc': typeof ProtectKycRoute
+  '/_protect/notifications': typeof ProtectNotificationsRoute
   '/_protect/users': typeof ProtectUsersRoute
+  '/_protect/vehicles': typeof ProtectVehiclesRoute
   '/_protect/': typeof ProtectIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/login' | '/kyc' | '/users' | '/'
+  fullPaths: '/login' | '/kyc' | '/notifications' | '/users' | '/vehicles' | '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/kyc' | '/users' | '/'
+  to: '/login' | '/kyc' | '/notifications' | '/users' | '/vehicles' | '/'
   id:
     | '__root__'
     | '/_protect'
     | '/login'
     | '/_protect/kyc'
+    | '/_protect/notifications'
     | '/_protect/users'
+    | '/_protect/vehicles'
     | '/_protect/'
   fileRoutesById: FileRoutesById
 }
@@ -102,11 +122,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectIndexRouteImport
       parentRoute: typeof ProtectRoute
     }
+    '/_protect/vehicles': {
+      id: '/_protect/vehicles'
+      path: '/vehicles'
+      fullPath: '/vehicles'
+      preLoaderRoute: typeof ProtectVehiclesRouteImport
+      parentRoute: typeof ProtectRoute
+    }
     '/_protect/users': {
       id: '/_protect/users'
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof ProtectUsersRouteImport
+      parentRoute: typeof ProtectRoute
+    }
+    '/_protect/notifications': {
+      id: '/_protect/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof ProtectNotificationsRouteImport
       parentRoute: typeof ProtectRoute
     }
     '/_protect/kyc': {
@@ -121,13 +155,17 @@ declare module '@tanstack/react-router' {
 
 interface ProtectRouteChildren {
   ProtectKycRoute: typeof ProtectKycRoute
+  ProtectNotificationsRoute: typeof ProtectNotificationsRoute
   ProtectUsersRoute: typeof ProtectUsersRoute
+  ProtectVehiclesRoute: typeof ProtectVehiclesRoute
   ProtectIndexRoute: typeof ProtectIndexRoute
 }
 
 const ProtectRouteChildren: ProtectRouteChildren = {
   ProtectKycRoute: ProtectKycRoute,
+  ProtectNotificationsRoute: ProtectNotificationsRoute,
   ProtectUsersRoute: ProtectUsersRoute,
+  ProtectVehiclesRoute: ProtectVehiclesRoute,
   ProtectIndexRoute: ProtectIndexRoute,
 }
 

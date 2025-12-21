@@ -14,6 +14,10 @@ const API_ENDPOINTS = {
     GET_USER_INFO: '/user/get-user-info',
     UPDATE_PROFILE: '/user/update-profile',
     SUBMIT_KYC: '/user/kyc',
+    GET_NOTIFICATIONS: '/user/notifications',
+    GET_UNREAD_NOTIFICATION_COUNT: '/user/notifications/unread-count',
+    MARK_NOTIFICATION_AS_READ: (id: string) => `/user/notifications/${id}/read`,
+    MARK_ALL_NOTIFICATIONS_AS_READ: '/user/notifications/read-all',
   },
   ADMIN: {
     LIST_USERS: '/admin/users',
@@ -21,6 +25,10 @@ const API_ENDPOINTS = {
     GET_KYC_DETAIL: (id: string) => `/admin/kyc/${id}`,
     APPROVE_KYC: (id: string) => `/admin/kyc/${id}/approve`,
     REJECT_KYC: (id: string) => `/admin/kyc/${id}/reject`,
+    LIST_VEHICLES: '/admin/vehicles',
+    GET_VEHICLE_DETAIL: (id: string) => `/admin/vehicles/${id}`,
+    APPROVE_VEHICLE: (id: string) => `/admin/vehicles/${id}/approve`,
+    REJECT_VEHICLE: (id: string) => `/admin/vehicles/${id}/reject`,
   },
   FILES: {
     UPLOAD: '/files/upload',

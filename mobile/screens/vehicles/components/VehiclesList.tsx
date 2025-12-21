@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import React, { useCallback } from "react";
+import { View, Text, FlatList, ListRenderItem, ScrollView } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import VehicleCard from "./VehicleCard";
 import type { Vehicle } from "../types";
@@ -15,10 +15,33 @@ export default function VehiclesList({
   onVehiclePress,
   variant = "full",
 }: VehiclesListProps) {
+  // Memoize render item to avoid recreating on every render
+  const renderItem: ListRenderItem<Vehicle> = useCallback(
+    ({ item: vehicle }) => (
+      <VehicleCard
+        vehicle={vehicle}
+        onPress={onVehiclePress}
+        variant={variant}
+      />
+    ),
+    [onVehiclePress, variant]
+  );
+
+  // Memoize key extractor
+  const keyExtractor = useCallback((item: Vehicle) => item.id, []);
+
+  // Item separator component
+  const ItemSeparator = useCallback(() => <View style={{ height: 16 }} />, []);
+
   if (vehicles.length === 0) {
     return (
-      <View className="items-center justify-center py-20 bg-gray-50">
-        <MaterialIcons name="directions-bike" size={64} color="#D1D5DB" />
+      <View className="items-center justify-center py-20">
+        <MaterialIcons
+          name="directions-bike"
+          size={64}
+          color="#D1D5DB"
+          style={{ marginTop: 50 }}
+        />
         <Text className="text-gray-500 mt-4 text-center">
           Không có xe nào ở trạng thái này
         </Text>
@@ -51,10 +74,13 @@ export default function VehiclesList({
     );
   }
 
-  // Vertical scroll cho full variant
+  // Vertical scroll cho full variant - use FlatList for virtualization
   return (
-    <ScrollView
-      style={{ flex: 1 }}
+    <FlatList
+      data={vehicles}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      ItemSeparatorComponent={ItemSeparator}
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingBottom: 16,
@@ -62,15 +88,12 @@ export default function VehiclesList({
       }}
       showsVerticalScrollIndicator={false}
       className="bg-gray-50"
-    >
-      {vehicles.map((vehicle) => (
-        <VehicleCard
-          key={vehicle.id}
-          vehicle={vehicle}
-          onPress={onVehiclePress}
-          variant={variant}
-        />
-      ))}
-    </ScrollView>
+      // Performance optimizations
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={10}
+      updateCellsBatchingPeriod={50}
+      initialNumToRender={10}
+      windowSize={10}
+    />
   );
 }

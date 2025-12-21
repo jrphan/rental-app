@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { storage } from "@/lib/async-storage";
 import { User } from "@/types/auth.types";
+import { queryClient } from "@/lib/queryClient";
 
 interface AuthTokens {
   accessToken: string;
@@ -73,6 +74,9 @@ export const useAuthStore = create<AuthState>()(
         });
       },
       logout: () => {
+        // Xóa cache React Query
+        queryClient.clear();
+        
         authCache = {
           user: null,
           token: null,

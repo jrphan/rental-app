@@ -19,6 +19,7 @@ export interface TabConfig {
   value: string;
   route: string;
   content?: React.ReactNode;
+  contentFactory?: () => React.ReactNode; // Lazy content factory - only called when tab is active
 }
 
 export interface TabsProps {
@@ -149,9 +150,16 @@ export function Tabs({
     };
   });
 
-  // Lấy content từ active tab
+  // Lấy content từ active tab - use factory if available for lazy loading
   const activeTabConfig = tabs.find((tab) => tab.value === activeTab);
-  const activeContent = activeTabConfig?.content;
+  const activeContent = useMemo(() => {
+    if (!activeTabConfig) return null;
+    // Prefer factory for lazy loading, fallback to content
+    if (activeTabConfig.contentFactory) {
+      return activeTabConfig.contentFactory();
+    }
+    return activeTabConfig.content;
+  }, [activeTabConfig]);
 
   // Render tabs container - ScrollView cho inline variant, View cho các variant khác
   const renderTabsContainer = () => {

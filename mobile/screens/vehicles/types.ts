@@ -5,6 +5,14 @@ export interface VehicleImage {
   order: number;
 }
 
+export interface VehicleOwner {
+  id: string;
+  phone: string;
+  fullName?: string | null;
+  email?: string | null;
+  avatar?: string | null;
+}
+
 export interface Vehicle {
   id: string;
   ownerId: string;
@@ -32,6 +40,7 @@ export interface Vehicle {
     | "HIDDEN";
   description: string;
   images: VehicleImage[];
+  owner?: VehicleOwner;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,8 +51,10 @@ export interface RentalVehicle {
   model: string;
   licensePlate: string;
   images: {
+    id?: string;
     url: string;
     isPrimary: boolean;
+    order?: number;
   }[];
 }
 

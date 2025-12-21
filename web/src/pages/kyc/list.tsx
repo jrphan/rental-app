@@ -1,3 +1,5 @@
+import { Loader2, RefreshCw } from 'lucide-react'
+import { StatusBadge } from './status-badge'
 import type { AdminKycItem, KycStatus } from '@/types/auth.types'
 import {
   Table,
@@ -15,10 +17,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Loader2, RefreshCw } from 'lucide-react'
-import { StatusBadge } from './status-badge'
 
-const statusOptions: { label: string; value?: KycStatus }[] = [
+const statusOptions: Array<{ label: string; value?: KycStatus }> = [
   { label: 'Tất cả', value: undefined },
   { label: 'Chờ duyệt', value: 'PENDING' },
   { label: 'Đã duyệt', value: 'APPROVED' },
@@ -26,7 +26,7 @@ const statusOptions: { label: string; value?: KycStatus }[] = [
 ]
 
 interface KycListTableProps {
-  items: AdminKycItem[]
+  items: Array<AdminKycItem>
   selected?: AdminKycItem | null
   isLoading: boolean
   isError: boolean

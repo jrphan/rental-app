@@ -6,6 +6,8 @@ export default function VehiclesLayout() {
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
+        // Lazy load screens to improve performance
+        lazy: true,
       }}
     >
       <Stack.Screen name="index" />

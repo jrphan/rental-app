@@ -9,6 +9,10 @@ import ProfileAddress from "./components/ProfileAddress";
 import ProfileLogoutButton from "./components/ProfileLogoutButton";
 import { StatusBar, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useMutation } from "@tanstack/react-query";
+import { authApi } from "@/services/api.auth";
+import { router } from "expo-router";
+import ROUTES from "@/constants/routes";
 
 export default function ProfileScreen() {
   const toast = useToast();
@@ -16,9 +20,26 @@ export default function ProfileScreen() {
 
   console.log("user", JSON.stringify(user, null, 2));
 
+  const logoutMutation = useMutation({
+    mutationFn: () => authApi.logout(),
+    onSuccess: () => {
+      logout();
+      toast.showSuccess("Đã đăng xuất thành công", { title: "Đăng xuất" });
+      router.replace(ROUTES.LOGIN);
+    },
+    onError: (error: any) => {
+      // Vẫn logout ngay cả khi API fail để đảm bảo user có thể logout
+      logout();
+      toast.showError(
+        error?.message || "Đã đăng xuất (có thể không đồng bộ với server)",
+        { title: "Đăng xuất" }
+      );
+      router.replace(ROUTES.LOGIN);
+    },
+  });
+
   const handleLogout = () => {
-    logout();
-    toast.showSuccess("Đã đăng xuất thành công", { title: "Đăng xuất" });
+    logoutMutation.mutate();
   };
 
   if (!isAuthenticated) {
@@ -60,7 +81,10 @@ export default function ProfileScreen() {
           <ProfileActions user={user} isLoadingKyc={false} />
           <ProfileBio profile={null} />
           <ProfileAddress profile={null} />
-          <ProfileLogoutButton onLogout={handleLogout} />
+          <ProfileLogoutButton
+            onLogout={handleLogout}
+            isLoading={logoutMutation.isPending}
+          />
         </ScrollView>
       </SafeAreaView>
     </>

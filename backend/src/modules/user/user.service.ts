@@ -14,6 +14,7 @@ import {
   AdminKycActionResponse,
   selectAdminKyc,
 } from '@/types/user.type';
+import { VehicleResponse, selectVehicle } from '@/types/vehicle.type';
 import {
   ForbiddenException,
   Injectable,
@@ -27,9 +28,11 @@ import {
   Prisma,
   User,
   UserRole,
+  VehicleStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { NotificationService } from '@/modules/notification/notification.service';
 
 @Injectable()
 export class UserService {
@@ -38,6 +41,7 @@ export class UserService {
   constructor(
     private readonly prismaService: PrismaService,
     private readonly auditLogService: AuditLogService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private async assertAdminOrSupport(userId: string): Promise<void> {
@@ -369,6 +373,13 @@ export class UserService {
         this.logger.error('Failed to log KYC approval audit', error);
       });
 
+    // Send notification to user
+    await this.notificationService
+      .notifyKycApproved(kyc.userId)
+      .catch(error => {
+        this.logger.error('Failed to send KYC approval notification', error);
+      });
+
     return { message: 'KYC đã được phê duyệt' };
   }
 
@@ -412,6 +423,162 @@ export class UserService {
         this.logger.error('Failed to log KYC rejection audit', error);
       });
 
+    // Send notification to user
+    await this.notificationService
+      .notifyKycRejected(kyc.userId, reason)
+      .catch(error => {
+        this.logger.error('Failed to send KYC rejection notification', error);
+      });
+
     return { message: 'KYC đã bị từ chối' };
+  }
+
+  /**
+   * Thêm xe vào danh sách yêu thích
+   */
+  async addFavorite(
+    userId: string,
+    vehicleId: string,
+  ): Promise<{ message: string }> {
+    try {
+      // Kiểm tra xe có tồn tại và đã được duyệt
+      const vehicle = await this.prismaService.vehicle.findFirst({
+        where: {
+          id: vehicleId,
+          status: VehicleStatus.APPROVED,
+          deletedAt: null,
+        },
+      });
+
+      if (!vehicle) {
+        throw new NotFoundException('Xe không tồn tại hoặc chưa được duyệt');
+      }
+
+      // Kiểm tra đã favorite chưa
+      const existing = await this.prismaService.vehicleFavorite.findUnique({
+        where: {
+          userId_vehicleId: {
+            userId,
+            vehicleId,
+          },
+        },
+      });
+
+      if (existing) {
+        throw new ForbiddenException('Xe đã có trong danh sách yêu thích');
+      }
+
+      // Thêm vào favorite
+      await this.prismaService.vehicleFavorite.create({
+        data: {
+          userId,
+          vehicleId,
+        },
+      });
+
+      return { message: 'Đã thêm vào danh sách yêu thích' };
+    } catch (error) {
+      this.logger.error(
+        `Error adding favorite: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Xóa xe khỏi danh sách yêu thích
+   */
+  async removeFavorite(
+    userId: string,
+    vehicleId: string,
+  ): Promise<{ message: string }> {
+    try {
+      const result = await this.prismaService.vehicleFavorite.deleteMany({
+        where: {
+          userId,
+          vehicleId,
+        },
+      });
+
+      if (result.count === 0) {
+        throw new NotFoundException('Xe không có trong danh sách yêu thích');
+      }
+
+      return { message: 'Đã xóa khỏi danh sách yêu thích' };
+    } catch (error) {
+      this.logger.error(
+        `Error removing favorite: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Kiểm tra xe có trong danh sách yêu thích không
+   */
+  async checkFavorite(
+    userId: string,
+    vehicleId: string,
+  ): Promise<{ isFavorite: boolean }> {
+    try {
+      const favorite = await this.prismaService.vehicleFavorite.findUnique({
+        where: {
+          userId_vehicleId: {
+            userId,
+            vehicleId,
+          },
+        },
+      });
+
+      return { isFavorite: !!favorite };
+    } catch (error) {
+      this.logger.error(
+        `Error checking favorite: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách xe yêu thích
+   */
+  async getFavorites(userId: string): Promise<{
+    items: VehicleResponse[];
+    total: number;
+  }> {
+    try {
+      const favorites = await this.prismaService.vehicleFavorite.findMany({
+        where: {
+          userId,
+          vehicle: {
+            status: VehicleStatus.APPROVED,
+            deletedAt: null,
+          },
+        },
+        select: {
+          vehicle: {
+            select: selectVehicle,
+          },
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return {
+        items: favorites.map(fav => fav.vehicle),
+        total: favorites.length,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error getting favorites: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
   }
 }

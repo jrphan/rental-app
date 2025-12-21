@@ -32,13 +32,28 @@ export const vehicleSchema = z.object({
       /^[A-Z0-9\s\-]+$/i,
       "Biển số chỉ được chứa chữ cái, số, khoảng trắng và dấu gạch ngang"
     ),
-  fuelType: z.enum(["PETROL", "ELECTRIC", "HYBRID"], {
-    message: "Vui lòng chọn loại nhiên liệu",
+  engineSize: z
+    .string()
+    .min(1, "Dung tích xi lanh không được để trống")
+    .regex(/^\d+$/, "Dung tích xi lanh phải là số")
+    .refine(
+      (val) => {
+        const size = parseInt(val, 10);
+        return size >= 50 && size <= 10000;
+      },
+      {
+        message: "Dung tích xi lanh phải từ 50 đến 10000 cc",
+      }
+    ),
+  requiredLicense: z.enum(["A1", "A2", "A3", "A4"], {
+    message: "Vui lòng chọn loại bằng lái",
   }),
-  transmission: z.enum(["MANUAL", "AUTOMATIC", "SEMI_AUTOMATIC"], {
-    message: "Vui lòng chọn loại hộp số",
-  }),
-  dailyRate: z
+  address: z.string().min(1, "Địa chỉ không được để trống"),
+  district: z.string().optional(),
+  city: z.string().optional(),
+  lat: z.string().regex(/^-?\d+\.?\d*$/, "Vĩ độ không hợp lệ"),
+  lng: z.string().regex(/^-?\d+\.?\d*$/, "Kinh độ không hợp lệ"),
+  pricePerDay: z
     .string()
     .min(1, "Giá ngày không được để trống")
     .regex(/^\d+$/, "Giá ngày phải là số")
@@ -58,12 +73,16 @@ export const vehicleSchema = z.object({
     .refine(
       (val) => {
         const amount = parseInt(val, 10);
-        return amount > 0 && amount <= 500000000;
+        return amount >= 0 && amount <= 500000000;
       },
       {
-        message: "Tiền cọc phải từ 1 đến 500,000,000 VNĐ",
+        message: "Tiền cọc phải từ 0 đến 500,000,000 VNĐ",
       }
     ),
+  description: z.string().optional(),
+  cavetFront: z.string().optional(),
+  cavetBack: z.string().optional(),
+  instantBook: z.boolean().optional(),
   imageUrls: z
     .array(z.string().url("URL hình ảnh không hợp lệ"))
     .min(1, "Cần ít nhất 1 hình ảnh")

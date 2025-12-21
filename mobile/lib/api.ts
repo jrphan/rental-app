@@ -21,6 +21,7 @@ import {
 } from "@/lib/force-logout";
 import ROUTES from "@/constants/routes";
 import API_ENDPOINTS from "@/services/api.endpoints";
+import { queryClient } from "@/lib/queryClient";
 
 const baseURL = process.env.EXPO_PUBLIC_API_URL || "";
 
@@ -36,6 +37,8 @@ const forceLogoutAndRedirect = async (reason?: string) => {
   }
 
   try {
+    // Xóa cache React Query trước khi logout
+    queryClient.clear();
     useAuthStore.getState().logout();
   } finally {
     setTimeout(() => {

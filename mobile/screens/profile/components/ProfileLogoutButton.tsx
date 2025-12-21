@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 
 interface ProfileLogoutButtonProps {
   onLogout: () => void;
+  isLoading?: boolean;
 }
 
 export default function ProfileLogoutButton({
   onLogout,
+  isLoading = false,
 }: ProfileLogoutButtonProps) {
   const confirmLogout = () =>
     Alert.alert("Xác nhận", "Bạn có chắc muốn đăng xuất?", [
@@ -29,9 +31,10 @@ export default function ProfileLogoutButton({
         variant="destructive"
         className="shadow-lg"
         size="lg"
+        disabled={isLoading}
       >
         <Text className="text-center text-base font-bold text-white">
-          Đăng xuất
+          {isLoading ? "Đang đăng xuất..." : "Đăng xuất"}
         </Text>
       </Button>
     </View>

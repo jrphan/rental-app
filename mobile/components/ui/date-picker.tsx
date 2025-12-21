@@ -15,6 +15,8 @@ interface DatePickerProps {
   error?: string;
   mode?: "date" | "time" | "datetime";
   allowClear?: boolean;
+  minimumDate?: Date;
+  maximumDate?: Date;
 }
 
 export function DatePicker({
@@ -25,6 +27,8 @@ export function DatePicker({
   error,
   mode = "date",
   allowClear = false,
+  minimumDate,
+  maximumDate,
 }: DatePickerProps) {
   const [show, setShow] = useState(false);
   const [tempDate, setTempDate] = useState<Date | null>(null);
@@ -100,7 +104,16 @@ export function DatePicker({
 
   const currentDate = parseDate(value);
 
-  const handleChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
+  const handleChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShow(false);
+      if (event.type === "set" && selectedDate) {
+        onChange?.(formatInternal(selectedDate));
+      }
+      return;
+    }
+
+    // iOS: chỉ lưu tempDate, chờ user nhấn "Lưu"
     if (!selectedDate) {
       return;
     }
@@ -144,7 +157,19 @@ export function DatePicker({
 
       {error && <Text className="mt-1 text-sm text-red-500">{error}</Text>}
 
-      {show && (
+      {Platform.OS === "android" && show && (
+        <DateTimePicker
+          value={currentDate}
+          mode={mode}
+          display="default"
+          onChange={handleChange}
+          locale="vi"
+          minimumDate={minimumDate}
+          maximumDate={maximumDate}
+        />
+      )}
+
+      {Platform.OS === "ios" && show && (
         <Modal
           transparent
           animationType="slide"
@@ -188,12 +213,14 @@ export function DatePicker({
               <DateTimePicker
                 value={tempDate || currentDate}
                 mode={mode}
-                display={Platform.OS === "ios" ? "spinner" : "default"}
+                display="spinner"
                 onChange={handleChange}
                 locale="vi"
                 themeVariant="light"
                 textColor="black"
                 accentColor="black"
+                minimumDate={minimumDate}
+                maximumDate={maximumDate}
               />
             </TouchableOpacity>
           </TouchableOpacity>
