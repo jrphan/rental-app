@@ -14,13 +14,15 @@ export default function MessagesLayout() {
         label: "Thông báo",
         value: "notifications",
         route: "/(tabs)/messages/notifications",
-        content: <NotificationsTab />,
+        // Use contentFactory for lazy loading
+        contentFactory: () => <NotificationsTab />,
       },
       {
         label: "Nhắn tin",
         value: "chat",
         route: "/(tabs)/messages/chat",
-        content: <ChatTab />,
+        // Use contentFactory for lazy loading
+        contentFactory: () => <ChatTab />,
       },
     ],
     []

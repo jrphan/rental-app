@@ -34,6 +34,16 @@ export const ROUTES = {
     UPDATE_VEHICLE_STATUS: '/vehicle/my-vehicles/:id/status',
     GET_VEHICLE_DETAIL: '/vehicle/:id',
     GET_VEHICLE_REVIEWS: '/vehicle/:id/reviews',
+    SEARCH: '/vehicle/search',
+    LIST_POPULAR: '/vehicle/popular',
+    LIST_BY_CITY: '/vehicle/by-city',
+    LIST_BY_OWNER: '/vehicle/by-owner/:ownerId',
+  },
+  RENTAL: {
+    CREATE: '/rental/create',
+    GET_MY_RENTALS: '/rental/my-rentals',
+    GET_RENTAL_DETAIL: '/rental/:id',
+    UPDATE_RENTAL_STATUS: '/rental/:id/status',
   },
   ADMIN: {
     LIST_USERS: '/admin/users',

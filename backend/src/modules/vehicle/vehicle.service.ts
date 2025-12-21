@@ -643,4 +643,335 @@ export class VehicleService {
       vehicle: updated,
     };
   }
+
+  /**
+   * Tìm kiếm xe (public - không cần auth)
+   */
+  async searchVehicles(filters: {
+    lat?: number;
+    lng?: number;
+    radius?: number; // km
+    city?: string;
+    district?: string;
+    startDate?: Date;
+    endDate?: Date;
+    search?: string; // brand, model
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    items: VehicleResponse[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+
+    const where: Prisma.VehicleWhereInput = {
+      status: VehicleStatus.APPROVED,
+      deletedAt: null,
+    };
+
+    // Location filter
+    if (filters.city) {
+      where.city = { contains: filters.city, mode: 'insensitive' };
+    }
+
+    if (filters.district) {
+      where.district = { contains: filters.district, mode: 'insensitive' };
+    }
+
+    // Search by brand/model
+    if (filters.search) {
+      where.OR = [
+        { brand: { contains: filters.search, mode: 'insensitive' } },
+        { model: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Date availability filter
+    const availabilityFilter = this.buildAvailabilityFilter(
+      filters.startDate,
+      filters.endDate,
+    );
+    if (availabilityFilter) {
+      where.AND = availabilityFilter;
+    }
+
+    const items = await this.prismaService.vehicle.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: selectVehicle,
+    });
+
+    // Filter by radius if lat/lng provided
+    let filteredItems = items;
+    if (filters.lat && filters.lng && filters.radius) {
+      const radiusKm = filters.radius || 10;
+      filteredItems = items.filter(vehicle => {
+        const distance = this.calculateDistance(
+          filters.lat!,
+          filters.lng!,
+          vehicle.lat,
+          vehicle.lng,
+        );
+        return distance <= radiusKm;
+      });
+    }
+
+    return {
+      items: filteredItems,
+      total: filteredItems.length,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * Lấy danh sách xe của một owner cụ thể (public - chỉ trả về xe APPROVED)
+   */
+  async getVehiclesByOwner(ownerId: string): Promise<UserVehicleListResponse> {
+    const vehicles = await this.prismaService.vehicle.findMany({
+      where: {
+        ownerId,
+        status: VehicleStatus.APPROVED,
+        deletedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: selectVehicle,
+    });
+
+    return {
+      items: vehicles,
+      total: vehicles.length,
+    };
+  }
+
+  /**
+   * Tính khoảng cách giữa 2 điểm (Haversine formula)
+   */
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = this.deg2rad(lat2 - lat1);
+    const dLon = this.deg2rad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) *
+        Math.cos(this.deg2rad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in km
+    return distance;
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI / 180);
+  }
+
+  /**
+   * Helper function để tạo availability filter cho Prisma where clause
+   * Loại trừ xe có unavailability hoặc rental trùng với khoảng thời gian
+   */
+  private buildAvailabilityFilter(
+    startDate?: Date,
+    endDate?: Date,
+  ): Prisma.VehicleWhereInput['AND'] {
+    if (!startDate && !endDate) {
+      return undefined;
+    }
+
+    const start = startDate ? new Date(startDate) : new Date();
+    const end = endDate ? new Date(endDate) : new Date();
+
+    return [
+      {
+        OR: [
+          {
+            unavailabilities: {
+              none: {
+                OR: [
+                  {
+                    AND: [
+                      { startDate: { lte: end } },
+                      { endDate: { gte: start } },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+          { unavailabilities: { none: {} } },
+        ],
+      },
+      {
+        OR: [
+          {
+            rentals: {
+              none: {
+                status: {
+                  in: [
+                    RentalStatus.CONFIRMED,
+                    RentalStatus.ON_TRIP,
+                    RentalStatus.AWAIT_APPROVAL,
+                  ],
+                },
+                OR: [
+                  {
+                    AND: [
+                      { startDate: { lte: end } },
+                      { endDate: { gte: start } },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+          { rentals: { none: {} } },
+        ],
+      },
+    ];
+  }
+
+  /**
+   * Lấy danh sách xe phổ biến (dựa trên số lượt favorite và reviews)
+   * Nếu không có xe nổi bật, lấy các xe có thể thuê được
+   */
+  async getPopularVehicles(
+    limit = 10,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<VehicleResponse[]> {
+    const where: Prisma.VehicleWhereInput = {
+      status: VehicleStatus.APPROVED,
+      deletedAt: null,
+    };
+
+    // Apply availability filter if dates provided
+    const availabilityFilter = this.buildAvailabilityFilter(startDate, endDate);
+    if (availabilityFilter) {
+      where.AND = availabilityFilter;
+    }
+
+    try {
+      // Get vehicles with favorite and review counts
+      const vehiclesWithCounts = await this.prismaService.vehicle.findMany({
+        where,
+        include: {
+          _count: {
+            select: {
+              favorites: true,
+              reviews: true,
+            },
+          },
+        },
+        take: limit * 2, // Get more to sort and filter
+      });
+
+      // Sort by favorite count, then review count, then created date
+      const sorted = vehiclesWithCounts.sort((a, b) => {
+        const aFavCount = a._count.favorites;
+        const bFavCount = b._count.favorites;
+        if (aFavCount !== bFavCount) {
+          return bFavCount - aFavCount;
+        }
+        const aRevCount = a._count.reviews;
+        const bRevCount = b._count.reviews;
+        if (aRevCount !== bRevCount) {
+          return bRevCount - aRevCount;
+        }
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+
+      // Get top vehicles with full details
+      const topVehicleIds = sorted.slice(0, limit).map(v => v.id);
+
+      const vehicles = await this.prismaService.vehicle.findMany({
+        where: {
+          id: { in: topVehicleIds },
+        },
+        select: selectVehicle,
+      });
+
+      // Maintain order
+      const result = topVehicleIds
+        .map(id => vehicles.find(v => v.id === id))
+        .filter((v): v is VehicleResponse => v !== undefined);
+
+      // Nếu không đủ xe nổi bật, lấy thêm các xe có thể thuê được
+      if (result.length < limit) {
+        const remainingCount = limit - result.length;
+        const excludeIds = result.map(v => v.id);
+
+        const additionalVehicles = await this.prismaService.vehicle.findMany({
+          where: {
+            ...where,
+            id: {
+              notIn: excludeIds.length > 0 ? excludeIds : undefined,
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: remainingCount,
+          select: selectVehicle,
+        });
+
+        return [...result, ...additionalVehicles];
+      }
+
+      return result;
+    } catch (error) {
+      // Nếu có lỗi (ví dụ: bảng favorites chưa tồn tại), fallback về lấy xe có thể thuê được
+      this.logger.warn(
+        'Failed to get popular vehicles, falling back to available vehicles',
+        error,
+      );
+
+      const vehicles = await this.prismaService.vehicle.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        select: selectVehicle,
+      });
+
+      return vehicles;
+    }
+  }
+
+  /**
+   * Lấy danh sách xe theo thành phố
+   */
+  async getVehiclesByCity(
+    city: string,
+    limit = 20,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<VehicleResponse[]> {
+    const where: Prisma.VehicleWhereInput = {
+      status: VehicleStatus.APPROVED,
+      deletedAt: null,
+      city: { contains: city, mode: 'insensitive' },
+    };
+
+    // Apply availability filter if dates provided
+    const availabilityFilter = this.buildAvailabilityFilter(startDate, endDate);
+    if (availabilityFilter) {
+      where.AND = availabilityFilter;
+    }
+
+    const vehicles = await this.prismaService.vehicle.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: selectVehicle,
+    });
+
+    return vehicles;
+  }
 }

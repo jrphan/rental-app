@@ -5,6 +5,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -19,10 +20,12 @@ import type { Vehicle } from "./types";
 import { COLORS } from "@/constants/colors";
 import { useAuthStore } from "@/store/auth";
 import VehicleImageCarousel from "./components/VehicleImageCarousel";
+import { useToast } from "@/hooks/useToast";
 
 export default function VehicleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+  const toast = useToast();
 
   // Try to get vehicle detail - first try as owner, then as public
   const {
@@ -33,19 +36,23 @@ export default function VehicleDetailScreen() {
     queryKey: ["vehicle", id],
     queryFn: async () => {
       if (!id) throw new Error("Vehicle ID is required");
-      // Thử lấy với getMyVehicleDetail trước (nếu là chủ xe)
-      try {
-        const vehicleData = await apiVehicle.getMyVehicleDetail(id);
-        // Kiểm tra xem có phải chủ xe không
-        if (user?.id && vehicleData.ownerId === user.id) {
-          return vehicleData;
+      // Nếu có user, thử lấy với getMyVehicleDetail trước (nếu là chủ xe)
+      if (user?.id && isAuthenticated) {
+        try {
+          const vehicleData = await apiVehicle.getMyVehicleDetail(id);
+          // Kiểm tra xem có phải chủ xe không
+          if (vehicleData.ownerId === user.id) {
+            return vehicleData;
+          }
+          // Nếu không phải chủ xe, dùng public API
+          return apiVehicle.getVehicleDetail(id);
+        } catch {
+          // Nếu lỗi (không phải chủ xe hoặc không có quyền), dùng public API
+          return apiVehicle.getVehicleDetail(id);
         }
-        // Nếu không phải chủ xe, dùng public API
-        return apiVehicle.getVehicleDetail(id);
-      } catch {
-        // Nếu không phải chủ xe hoặc lỗi, dùng public API
-        return apiVehicle.getVehicleDetail(id);
       }
+      // Nếu không có user hoặc chưa đăng nhập, dùng public API
+      return apiVehicle.getVehicleDetail(id);
     },
     enabled: !!id,
   });
@@ -302,6 +309,77 @@ export default function VehicleDetailScreen() {
             </View>
           </View>
 
+          {/* Owner Information */}
+          {vehicle.owner && !isOwner && (
+            <View className="mb-4">
+              <Text className="text-lg font-semibold text-gray-900 mb-3">
+                Chủ xe
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  if (!vehicle.owner) return;
+                  const params = new URLSearchParams({
+                    ownerName: vehicle.owner.fullName || "Chủ xe",
+                  });
+                  if (vehicle.owner.avatar) {
+                    params.append("ownerAvatar", vehicle.owner.avatar);
+                  }
+                  router.push(`/owner/${vehicle.ownerId}?${params.toString()}`);
+                }}
+                activeOpacity={0.7}
+                className="bg-gray-50 rounded-xl p-4 border border-gray-200"
+              >
+                <View className="flex-row items-center">
+                  {vehicle.owner?.avatar ? (
+                    <Image
+                      source={{ uri: vehicle.owner.avatar }}
+                      className="w-16 h-16 rounded-full mr-3"
+                    />
+                  ) : (
+                    <View className="w-16 h-16 rounded-full mr-3 bg-gray-300 items-center justify-center">
+                      <MaterialIcons
+                        name="account-circle"
+                        size={40}
+                        color="#9CA3AF"
+                      />
+                    </View>
+                  )}
+                  <View className="flex-1">
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-base font-semibold text-gray-900">
+                        {vehicle.owner?.fullName || "Chủ xe"}
+                      </Text>
+                      <MaterialIcons
+                        name="chevron-right"
+                        size={24}
+                        color="#6B7280"
+                      />
+                    </View>
+                    <View className="flex-row items-center mt-1">
+                      <MaterialIcons name="phone" size={16} color="#6B7280" />
+                      <Text className="ml-1 text-sm text-gray-600">
+                        {vehicle.owner?.phone || ""}
+                      </Text>
+                    </View>
+                    {vehicle.owner?.email && (
+                      <View className="flex-row items-center mt-1">
+                        <MaterialIcons name="email" size={16} color="#6B7280" />
+                        <Text className="ml-1 text-sm text-gray-600">
+                          {vehicle.owner.email}
+                        </Text>
+                      </View>
+                    )}
+                    <View className="flex-row items-center mt-2">
+                      <Text className="text-sm text-primary-600 font-medium">
+                        Xem tất cả xe cho thuê
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Description */}
           {vehicle.description && (
             <View className="mb-4">
@@ -386,6 +464,32 @@ export default function VehicleDetailScreen() {
                 <MaterialIcons name="edit" size={20} color="#FFFFFF" />
                 <Text className="ml-2 text-base font-semibold text-white">
                   Cập nhật và gửi lại
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Rent Button (only for non-owners and approved vehicles) */}
+          {!isOwner && vehicle.status === "APPROVED" && (
+            <TouchableOpacity
+              onPress={() => {
+                if (!isAuthenticated || !user) {
+                  toast.showInfo("Vui lòng đăng nhập để sử dụng chức năng này");
+                } else {
+                  router.push(`/booking?vehicleId=${vehicle.id}`);
+                }
+              }}
+              className="bg-orange-600 rounded-xl p-4 mb-4"
+              style={{ backgroundColor: COLORS.primary }}
+            >
+              <View className="flex-row items-center justify-center">
+                <MaterialIcons
+                  name="directions-bike"
+                  size={24}
+                  color="#FFFFFF"
+                />
+                <Text className="ml-2 text-lg font-semibold text-white">
+                  {isAuthenticated && user ? "Thuê xe" : "Đăng nhập để thuê xe"}
                 </Text>
               </View>
             </TouchableOpacity>

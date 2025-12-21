@@ -1,8 +1,13 @@
 import React from "react";
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, TouchableOpacity } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { Rental } from "../types";
-import { formatPrice, formatDate, getRentalStatusColor, getRentalStatusLabel } from "../utils";
+import {
+  formatPrice,
+  formatDate,
+  getRentalStatusColor,
+  getRentalStatusLabel,
+} from "../utils";
 
 interface RentalCardProps {
   rental: Rental;
@@ -15,8 +20,18 @@ export default function RentalCard({ rental, onPress }: RentalCardProps) {
     rental.vehicle.images?.[0]?.url ||
     "https://via.placeholder.com/300x200?text=No+Image";
 
+  const handlePress = () => {
+    if (onPress) {
+      onPress(rental);
+    }
+  };
+
   return (
-    <View className="bg-white rounded-xl mb-3 border border-gray-200 overflow-hidden">
+    <TouchableOpacity
+      className="bg-white rounded-xl mb-3 border border-gray-200 overflow-hidden"
+      onPress={handlePress}
+      activeOpacity={0.7}
+    >
       <View className="flex-row">
         <Image
           source={{ uri: primaryImage }}
@@ -50,29 +65,24 @@ export default function RentalCard({ rental, onPress }: RentalCardProps) {
           </View>
           {rental.deliveryFee > 0 && (
             <View className="flex-row items-center mb-1">
-              <MaterialIcons
-                name="local-shipping"
-                size={14}
-                color="#6B7280"
-              />
+              <MaterialIcons name="local-shipping" size={14} color="#6B7280" />
               <Text className="text-xs text-gray-500 ml-1">
-                Phí giao: {formatPrice(Number(rental.deliveryFee))}
+                Phí giao: {formatPrice(rental.deliveryFee)}
               </Text>
             </View>
           )}
           <View className="flex-row items-center justify-between mt-1">
             <Text className="text-sm font-bold text-primary-600">
-              {formatPrice(Number(rental.totalPrice))}
+              {formatPrice(rental.totalPrice)}
             </Text>
             {rental.discountAmount > 0 && (
               <Text className="text-xs text-green-600">
-                -{formatPrice(Number(rental.discountAmount))}
+                -{formatPrice(rental.discountAmount)}
               </Text>
             )}
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
-

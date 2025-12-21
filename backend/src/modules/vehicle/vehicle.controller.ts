@@ -105,6 +105,69 @@ export class VehicleController {
     return this.vehicleService.updateVehicleStatus(userId, id, changeStatusDto);
   }
 
+  // Public routes - must be defined BEFORE /vehicle/:id to avoid route conflicts
+  @Get(ROUTES.VEHICLE.SEARCH)
+  searchVehicles(
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+    @Query('radius') radius?: string,
+    @Query('city') city?: string,
+    @Query('district') district?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.vehicleService.searchVehicles({
+      lat: lat ? Number(lat) : undefined,
+      lng: lng ? Number(lng) : undefined,
+      radius: radius ? Number(radius) : undefined,
+      city,
+      district,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      search,
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+    });
+  }
+
+  @Get(ROUTES.VEHICLE.LIST_POPULAR)
+  getPopularVehicles(
+    @Query('limit') limit?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.vehicleService.getPopularVehicles(
+      limit ? Number(limit) : 10,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+    );
+  }
+
+  @Get(ROUTES.VEHICLE.LIST_BY_CITY)
+  getVehiclesByCity(
+    @Query('city') city: string,
+    @Query('limit') limit?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.vehicleService.getVehiclesByCity(
+      city,
+      limit ? Number(limit) : 20,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+    );
+  }
+
+  @Get(ROUTES.VEHICLE.LIST_BY_OWNER)
+  getVehiclesByOwner(
+    @Param('ownerId') ownerId: string,
+  ): Promise<UserVehicleListResponse> {
+    return this.vehicleService.getVehiclesByOwner(ownerId);
+  }
+
   @Get(ROUTES.VEHICLE.GET_VEHICLE_DETAIL)
   getVehicleDetailPublic(@Param('id') id: string): Promise<VehicleResponse> {
     return this.vehicleService.getVehicleDetailPublic(id);

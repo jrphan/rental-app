@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Text, TouchableOpacity } from "react-native";
 import { Tabs } from "@/components/ui/tabs";
 import type { TabConfig } from "@/components/ui/tabs";
 import NotificationsList from "./components/NotificationsList";
@@ -16,6 +16,7 @@ import { useAuthStore } from "@/store/auth";
 import { router } from "expo-router";
 import { useToast } from "@/hooks/useToast";
 import ROUTES from "@/constants/routes";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export default function NotificationsScreen() {
   const queryClient = useQueryClient();
@@ -35,6 +36,7 @@ export default function NotificationsScreen() {
   } = useQuery({
     queryKey: ["notifications", "all"],
     queryFn: () => apiNotification.getNotifications({ limit: 100 }),
+    enabled: isAuthenticated,
   });
 
   // Fetch unread notifications
@@ -46,6 +48,7 @@ export default function NotificationsScreen() {
     queryKey: ["notifications", "unread"],
     queryFn: () =>
       apiNotification.getNotifications({ isRead: false, limit: 100 }),
+    enabled: isAuthenticated,
   });
 
   // Convert API notifications to component format
@@ -136,49 +139,89 @@ export default function NotificationsScreen() {
     }
   }, []);
 
+  // Empty state component for unauthenticated users
+  const AuthRequiredMessage = () => (
+    <View className="flex-1 items-center justify-center px-6 py-12">
+      <MaterialIcons name="info-outline" size={64} color="#9CA3AF" />
+      <Text className="mt-4 text-lg font-semibold text-gray-900 text-center">
+        Vui lòng đăng nhập
+      </Text>
+      <Text className="mt-2 text-base text-gray-600 text-center">
+        Đăng nhập để xem và quản lý thông báo của bạn
+      </Text>
+      <TouchableOpacity
+        onPress={() => router.push("/(auth)/login")}
+        className="mt-6 bg-orange-600 rounded-xl px-6 py-3"
+        style={{ backgroundColor: COLORS.primary }}
+      >
+        <Text className="text-white font-semibold text-base">Đăng nhập</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   // Tabs config
   const notificationTabs = useMemo<TabConfig[]>(
-    () => [
-      {
-        label: `Chưa đọc${
-          unreadNotifications.length > 0
-            ? ` (${unreadNotifications.length})`
-            : ""
-        }`,
-        value: "unread",
-        route: "",
-        content: isLoadingUnread ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          </View>
-        ) : (
-          <NotificationsList
-            data={unreadNotifications}
-            onRefresh={refetchUnread}
-            onItemAction={handleItemAction}
-            onItemNavigate={handleItemNavigate}
-          />
-        ),
-      },
-      {
-        label: "Tất cả",
-        value: "all",
-        route: "",
-        content: isLoadingAll ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          </View>
-        ) : (
-          <NotificationsList
-            data={allNotifications}
-            onRefresh={refetchAll}
-            onItemAction={handleItemAction}
-            onItemNavigate={handleItemNavigate}
-          />
-        ),
-      },
-    ],
+    () => {
+      if (!isAuthenticated) {
+        return [
+          {
+            label: "Chưa đọc",
+            value: "unread",
+            route: "",
+            content: <AuthRequiredMessage />,
+          },
+          {
+            label: "Tất cả",
+            value: "all",
+            route: "",
+            content: <AuthRequiredMessage />,
+          },
+        ];
+      }
+
+      return [
+        {
+          label: `Chưa đọc${
+            unreadNotifications.length > 0
+              ? ` (${unreadNotifications.length})`
+              : ""
+          }`,
+          value: "unread",
+          route: "",
+          content: isLoadingUnread ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+          ) : (
+            <NotificationsList
+              data={unreadNotifications}
+              onRefresh={refetchUnread}
+              onItemAction={handleItemAction}
+              onItemNavigate={handleItemNavigate}
+            />
+          ),
+        },
+        {
+          label: "Tất cả",
+          value: "all",
+          route: "",
+          content: isLoadingAll ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color={COLORS.primary} />
+            </View>
+          ) : (
+            <NotificationsList
+              data={allNotifications}
+              onRefresh={refetchAll}
+              onItemAction={handleItemAction}
+              onItemNavigate={handleItemNavigate}
+            />
+          ),
+        },
+      ];
+    },
     [
+      isAuthenticated,
       unreadNotifications,
       allNotifications,
       isLoadingUnread,

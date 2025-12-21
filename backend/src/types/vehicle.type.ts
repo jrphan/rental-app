@@ -41,6 +41,7 @@ export const selectVehicle = {
       phone: true,
       fullName: true,
       email: true,
+      avatar: true,
     },
   },
 } satisfies Prisma.VehicleSelect;

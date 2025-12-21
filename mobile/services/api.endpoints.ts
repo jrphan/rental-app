@@ -34,12 +34,22 @@ const API_ENDPOINTS = {
     GET_VEHICLE_REVIEWS: "/vehicle/:id/reviews",
     UPDATE_VEHICLE: "/vehicle/my-vehicles/:id",
     UPDATE_VEHICLE_STATUS: "/vehicle/my-vehicles/:id/status",
+    SEARCH: "/vehicle/search",
+    LIST_POPULAR: "/vehicle/popular",
+    LIST_BY_CITY: "/vehicle/by-city",
+    LIST_BY_OWNER: "/vehicle/by-owner/:ownerId",
   },
   FILES: {
     UPLOAD: "/files/upload",
     UPLOAD_MULTIPLE: "/files/upload-multiple",
     LIST_MY_FILES: "/files/me",
     DELETE_FILE: "/files/:id",
+  },
+  RENTAL: {
+    CREATE: "/rental/create",
+    GET_MY_RENTALS: "/rental/my-rentals",
+    GET_RENTAL_DETAIL: "/rental/:id",
+    UPDATE_RENTAL_STATUS: "/rental/:id/status",
   },
 };
 

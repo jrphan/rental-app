@@ -26,6 +26,7 @@ import {
   VEHICLE_BRANDS,
   getModelsByBrand,
 } from "@/constants/vehicle.constants";
+import { VIETNAM_CITIES } from "@/constants/city.constants";
 import type { VehicleInput } from "@/schemas/vehicle.schema";
 
 const licenseTypeOptions = [
@@ -136,14 +137,22 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
       // If vehicle exists, update it
       if (vehicleId && vehicleData) {
         // Update vehicle
-        const updateResult = await apiVehicle.updateVehicle(vehicleId, vehiclePayload);
-        
+        const updateResult = await apiVehicle.updateVehicle(
+          vehicleId,
+          vehiclePayload
+        );
+
         // If status is REJECTED or DRAFT, change to PENDING after update
         // If status is APPROVED, keep it as APPROVED (don't change status)
-        if (vehicleData.status === "REJECTED" || vehicleData.status === "DRAFT") {
-          await apiVehicle.updateVehicleStatus(vehicleId, { status: "PENDING" });
+        if (
+          vehicleData.status === "REJECTED" ||
+          vehicleData.status === "DRAFT"
+        ) {
+          await apiVehicle.updateVehicleStatus(vehicleId, {
+            status: "PENDING",
+          });
         }
-        
+
         return updateResult;
       }
 
@@ -161,7 +170,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
       } catch (error) {
         console.error("Failed to sync user info:", error);
       }
-      
+
       // Chuyển về danh sách xe sau khi cập nhật/tạo thành công
       router.replace("/(tabs)/vehicles");
     },
@@ -296,7 +305,8 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
             {vehicleData.licensePlate}
           </Text>
           <Text className="text-xs text-green-700 mt-1">
-            Bạn có thể cập nhật thông tin xe. Xe sẽ vẫn ở trạng thái đã duyệt sau khi cập nhật.
+            Bạn có thể cập nhật thông tin xe. Xe sẽ vẫn ở trạng thái đã duyệt
+            sau khi cập nhật.
           </Text>
         </View>
       )}
@@ -522,19 +532,20 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
       <Controller
         control={form.control}
         name="city"
-        render={({
-          field: { onChange, onBlur, value },
-          fieldState: { error },
-        }) => (
-          <Input
-            label="Thành phố/Tỉnh"
-            placeholder="Nhập thành phố/tỉnh"
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            error={error?.message}
-            editable={!isReadOnly}
-          />
+        render={({ field: { onChange, value }, fieldState: { error } }) => (
+          <View className="mb-4">
+            <Select
+              label="Thành phố/Tỉnh"
+              options={VIETNAM_CITIES}
+              value={value}
+              onValueChange={onChange}
+              placeholder="Chọn thành phố/tỉnh"
+              disabled={isReadOnly}
+            />
+            {error && (
+              <Text className="mt-1 text-sm text-red-500">{error.message}</Text>
+            )}
+          </View>
         )}
       />
 
@@ -767,8 +778,8 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         </View>
       )}
 
-      {(!vehicleData || 
-        vehicleData.status === "REJECTED" || 
+      {(!vehicleData ||
+        vehicleData.status === "REJECTED" ||
         vehicleData.status === "DRAFT" ||
         vehicleData.status === "APPROVED") && (
         <Button

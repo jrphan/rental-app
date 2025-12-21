@@ -126,4 +126,60 @@ export const apiVehicle = {
     }
     throw new Error(response.message || "Thay đổi trạng thái xe thất bại");
   },
+
+  async searchVehicles(params: {
+    lat?: number;
+    lng?: number;
+    radius?: number;
+    city?: string;
+    district?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<UserVehicleListResponse & { page: number; limit: number }> {
+    const response = await apiClient.get<
+      UserVehicleListResponse & { page: number; limit: number }
+    >(API_ENDPOINTS.VEHICLE.SEARCH, { params });
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Tìm kiếm xe thất bại");
+  },
+
+  async getPopularVehicles(limit = 10): Promise<Vehicle[]> {
+    const response = await apiClient.get<Vehicle[]>(
+      API_ENDPOINTS.VEHICLE.LIST_POPULAR,
+      { params: { limit } }
+    );
+    if (response.success && response.data) {
+      return Array.isArray(response.data) ? response.data : [];
+    }
+    throw new Error(response.message || "Lấy danh sách xe phổ biến thất bại");
+  },
+
+  async getVehiclesByCity(
+    city: string,
+    limit = 20
+  ): Promise<Vehicle[]> {
+    const response = await apiClient.get<Vehicle[]>(
+      API_ENDPOINTS.VEHICLE.LIST_BY_CITY,
+      { params: { city, limit } }
+    );
+    if (response.success && response.data) {
+      return Array.isArray(response.data) ? response.data : [];
+    }
+    throw new Error(response.message || "Lấy danh sách xe theo thành phố thất bại");
+  },
+
+  async getVehiclesByOwner(ownerId: string): Promise<UserVehicleListResponse> {
+    const response = await apiClient.get<UserVehicleListResponse>(
+      API_ENDPOINTS.VEHICLE.LIST_BY_OWNER.replace(":ownerId", ownerId)
+    );
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Lấy danh sách xe của chủ xe thất bại");
+  },
 };

@@ -435,48 +435,55 @@ export class UserService {
 
   /**
    * Thêm xe vào danh sách yêu thích
-   * Lưu ý: Cần chạy `npx prisma migrate dev` và `npx prisma generate` để Prisma client nhận diện model VehicleFavorite
    */
   async addFavorite(
     userId: string,
     vehicleId: string,
   ): Promise<{ message: string }> {
-    // Kiểm tra xe có tồn tại và đã được duyệt
-    const vehicle = await this.prismaService.vehicle.findFirst({
-      where: {
-        id: vehicleId,
-        status: VehicleStatus.APPROVED,
-        deletedAt: null,
-      },
-    });
+    try {
+      // Kiểm tra xe có tồn tại và đã được duyệt
+      const vehicle = await this.prismaService.vehicle.findFirst({
+        where: {
+          id: vehicleId,
+          status: VehicleStatus.APPROVED,
+          deletedAt: null,
+        },
+      });
 
-    if (!vehicle) {
-      throw new NotFoundException('Xe không tồn tại hoặc chưa được duyệt');
-    }
+      if (!vehicle) {
+        throw new NotFoundException('Xe không tồn tại hoặc chưa được duyệt');
+      }
 
-    // Kiểm tra đã favorite chưa
-    const existing = await this.prismaService.vehicleFavorite.findUnique({
-      where: {
-        userId_vehicleId: {
+      // Kiểm tra đã favorite chưa
+      const existing = await this.prismaService.vehicleFavorite.findUnique({
+        where: {
+          userId_vehicleId: {
+            userId,
+            vehicleId,
+          },
+        },
+      });
+
+      if (existing) {
+        throw new ForbiddenException('Xe đã có trong danh sách yêu thích');
+      }
+
+      // Thêm vào favorite
+      await this.prismaService.vehicleFavorite.create({
+        data: {
           userId,
           vehicleId,
         },
-      },
-    });
+      });
 
-    if (existing) {
-      throw new ForbiddenException('Xe đã có trong danh sách yêu thích');
+      return { message: 'Đã thêm vào danh sách yêu thích' };
+    } catch (error) {
+      this.logger.error(
+        `Error adding favorite: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
     }
-
-    // Thêm vào favorite
-    await this.prismaService.vehicleFavorite.create({
-      data: {
-        userId,
-        vehicleId,
-      },
-    });
-
-    return { message: 'Đã thêm vào danh sách yêu thích' };
   }
 
   /**
@@ -486,18 +493,26 @@ export class UserService {
     userId: string,
     vehicleId: string,
   ): Promise<{ message: string }> {
-    const result = await this.prismaService.vehicleFavorite.deleteMany({
-      where: {
-        userId,
-        vehicleId,
-      },
-    });
+    try {
+      const result = await this.prismaService.vehicleFavorite.deleteMany({
+        where: {
+          userId,
+          vehicleId,
+        },
+      });
 
-    if (result.count === 0) {
-      throw new NotFoundException('Xe không có trong danh sách yêu thích');
+      if (result.count === 0) {
+        throw new NotFoundException('Xe không có trong danh sách yêu thích');
+      }
+
+      return { message: 'Đã xóa khỏi danh sách yêu thích' };
+    } catch (error) {
+      this.logger.error(
+        `Error removing favorite: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
     }
-
-    return { message: 'Đã xóa khỏi danh sách yêu thích' };
   }
 
   /**
@@ -507,16 +522,24 @@ export class UserService {
     userId: string,
     vehicleId: string,
   ): Promise<{ isFavorite: boolean }> {
-    const favorite = await this.prismaService.vehicleFavorite.findUnique({
-      where: {
-        userId_vehicleId: {
-          userId,
-          vehicleId,
+    try {
+      const favorite = await this.prismaService.vehicleFavorite.findUnique({
+        where: {
+          userId_vehicleId: {
+            userId,
+            vehicleId,
+          },
         },
-      },
-    });
+      });
 
-    return { isFavorite: !!favorite };
+      return { isFavorite: !!favorite };
+    } catch (error) {
+      this.logger.error(
+        `Error checking favorite: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -526,27 +549,36 @@ export class UserService {
     items: VehicleResponse[];
     total: number;
   }> {
-    const favorites = await this.prismaService.vehicleFavorite.findMany({
-      where: {
-        userId,
-        vehicle: {
-          status: VehicleStatus.APPROVED,
-          deletedAt: null,
+    try {
+      const favorites = await this.prismaService.vehicleFavorite.findMany({
+        where: {
+          userId,
+          vehicle: {
+            status: VehicleStatus.APPROVED,
+            deletedAt: null,
+          },
         },
-      },
-      include: {
-        vehicle: {
-          select: selectVehicle,
+        select: {
+          vehicle: {
+            select: selectVehicle,
+          },
+          createdAt: true,
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
-    return {
-      items: favorites.map(fav => fav.vehicle),
-      total: favorites.length,
-    };
+      return {
+        items: favorites.map(fav => fav.vehicle),
+        total: favorites.length,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error getting favorites: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
   }
 }
