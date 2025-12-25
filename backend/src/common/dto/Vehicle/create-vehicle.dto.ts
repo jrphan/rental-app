@@ -31,6 +31,9 @@ class VehicleImageDto {
 
 export class CreateVehicleDto {
   @IsString()
+  type: string;
+
+  @IsString()
   brand: string;
 
   @IsString()
@@ -77,8 +80,16 @@ export class CreateVehicleDto {
   @Type(() => VehicleImageDto)
   images: VehicleImageDto[];
 
+  @IsOptional()
+  @IsString()
+  fullAddress?: string;
+
   @IsString()
   address: string;
+
+  @IsOptional()
+  @IsString()
+  ward?: string;
 
   @IsOptional()
   @IsString()

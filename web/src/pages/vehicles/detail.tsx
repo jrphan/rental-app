@@ -50,6 +50,7 @@ export function VehicleDetailPanel({
 
             <Section title="Thông tin xe">
               <DetailRow label="Hãng" value={selected.brand} />
+              <DetailRow label="Loại xe" value={selected.type} />
               <DetailRow label="Dòng xe" value={selected.model} />
               <DetailRow
                 label="Năm sản xuất"
@@ -75,6 +76,7 @@ export function VehicleDetailPanel({
 
             <Section title="Địa chỉ">
               <DetailRow label="Địa chỉ" value={selected.address} />
+              <DetailRow label="Phường/Xã" value={selected.ward || '—'} />
               <DetailRow label="Quận/Huyện" value={selected.district || '—'} />
               <DetailRow label="Thành phố/Tỉnh" value={selected.city || '—'} />
               <DetailRow

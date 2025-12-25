@@ -116,6 +116,12 @@ export class VehicleController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('search') search?: string,
+    @Query('q') q?: string,
+    @Query('licensePlate') licensePlate?: string,
+    @Query('type') type?: string, // comma separated
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('sortBy') sortBy?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -128,6 +134,12 @@ export class VehicleController {
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
       search,
+      q,
+      licensePlate,
+      type,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      sortBy,
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     });

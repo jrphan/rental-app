@@ -302,6 +302,7 @@ export default function VehicleDetailScreen() {
                 <MaterialIcons name="location-on" size={20} color="#6B7280" />
                 <Text className="ml-3 text-base text-gray-700 flex-1">
                   {vehicle.address}
+                  {vehicle.ward && `, ${vehicle.ward}`}
                   {vehicle.district && `, ${vehicle.district}`}
                   {vehicle.city && `, ${vehicle.city}`}
                 </Text>

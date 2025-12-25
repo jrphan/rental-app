@@ -232,7 +232,8 @@ model Kyc {
 model Vehicle {
   id              String        @id @default(cuid())
   ownerId         String
-  
+
+  type            String?
   brand           String
   model           String
   year            Int
@@ -240,23 +241,24 @@ model Vehicle {
   licensePlate    String        @unique 
   engineSize      Int           
   requiredLicense LicenseType   @default(A1) 
-  
+
   cavetFront      String?       
   cavetBack       String?
-  
   description     String?       @db.Text
   images          VehicleImage[]
-  
-  address         String        // Địa chỉ chi tiết
-  district        String?       
+
+  fullAddress     String?       
+  address         String        
+  district        String?
+  ward            String?      
   city            String?       
   lat             Float
   lng             Float
-  
+
   pricePerDay     Decimal       @db.Decimal(15, 2)
   depositAmount   Decimal       @default(0) @db.Decimal(15, 2)
   instantBook     Boolean       @default(false) 
-  
+
   status          VehicleStatus @default(DRAFT)
   
   createdAt       DateTime      @default(now())

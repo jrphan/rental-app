@@ -655,7 +655,13 @@ export class VehicleService {
     district?: string;
     startDate?: Date;
     endDate?: Date;
-    search?: string; // brand, model
+    search?: string; // raw search
+    q?: string; // normalized search
+    licensePlate?: string;
+    type?: string; // comma separated types
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy?: string;
     page?: number;
     limit?: number;
   }): Promise<{
@@ -672,21 +678,79 @@ export class VehicleService {
       deletedAt: null,
     };
 
-    // Location filter
     if (filters.city) {
       where.city = { contains: filters.city, mode: 'insensitive' };
     }
-
     if (filters.district) {
       where.district = { contains: filters.district, mode: 'insensitive' };
     }
 
-    // Search by brand/model
-    if (filters.search) {
-      where.OR = [
-        { brand: { contains: filters.search, mode: 'insensitive' } },
-        { model: { contains: filters.search, mode: 'insensitive' } },
-      ];
+    // Search across multiple fields (brand, model, type, address, location, plate).
+    if (filters.q || filters.search || filters.licensePlate) {
+      const q = (filters.q || filters.search || '').trim();
+      const lp = filters.licensePlate;
+      const or: Prisma.VehicleWhereInput[] = [];
+
+      if (q) {
+        or.push(
+          { brand: { contains: q, mode: 'insensitive' } },
+          { model: { contains: q, mode: 'insensitive' } },
+          { type: { contains: q, mode: 'insensitive' } },
+          { address: { contains: q, mode: 'insensitive' } },
+          { fullAddress: { contains: q, mode: 'insensitive' } },
+          { city: { contains: q, mode: 'insensitive' } },
+          { district: { contains: q, mode: 'insensitive' } },
+          { ward: { contains: q, mode: 'insensitive' } },
+        );
+
+        // If query contains digits only or looks like a number, try matching price/deposit
+        const numericToken = q.replace(/[^\d]/g, '');
+        if (numericToken && numericToken.length > 0) {
+          const num = Number(numericToken);
+          if (!Number.isNaN(num) && num > 0) {
+            or.push(
+              { pricePerDay: { equals: num } as any },
+              { depositAmount: { equals: num } as any },
+            );
+          }
+        }
+      }
+
+      if (lp) {
+        or.push({ licensePlate: { contains: lp, mode: 'insensitive' } });
+      }
+
+      if (or.length > 0) where.OR = or;
+    }
+
+    // Type filter (vehicle.type or brand/model mapping)
+    if (filters.type) {
+      const types = String(filters.type)
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+      if (types.length) {
+        where.type = { in: types as any };
+      }
+    }
+
+    // Price range
+    if (
+      typeof filters.minPrice === 'number' ||
+      typeof filters.maxPrice === 'number'
+    ) {
+      const priceCond: Prisma.VehicleWhereInput = {};
+      if (typeof filters.minPrice === 'number')
+        (priceCond as any).pricePerDay = { gte: Number(filters.minPrice) };
+      if (typeof filters.maxPrice === 'number')
+        (priceCond as any).pricePerDay = {
+          ...(priceCond as any).pricePerDay,
+          lte: Number(filters.maxPrice),
+        };
+      if (Object.keys(priceCond).length) {
+        const current = Array.isArray(where.AND) ? where.AND : [];
+        where.AND = [...current, priceCond];
+      }
     }
 
     // Date availability filter
@@ -695,9 +759,18 @@ export class VehicleService {
       filters.endDate,
     );
     if (availabilityFilter) {
-      where.AND = availabilityFilter;
+      const current = Array.isArray(where.AND) ? where.AND : [];
+      const availabilityArray = Array.isArray(availabilityFilter)
+        ? availabilityFilter
+        : [availabilityFilter];
+      if (availabilityArray.length > 0) {
+        where.AND = [...current, ...availabilityArray];
+      }
     }
 
+    // NOTE: ensure where.AND is now an array when used later
+
+    // Fetch initial list with pagination (will apply radius filtering and sorting after)
     const items = await this.prismaService.vehicle.findMany({
       where,
       skip: (page - 1) * limit,
@@ -706,23 +779,48 @@ export class VehicleService {
       select: selectVehicle,
     });
 
-    // Filter by radius if lat/lng provided
+    // Radius filter (if provided)
     let filteredItems = items;
     if (filters.lat && filters.lng && filters.radius) {
       const radiusKm = filters.radius || 10;
-      filteredItems = items.filter(vehicle => {
-        const distance = this.calculateDistance(
-          filters.lat!,
-          filters.lng!,
-          vehicle.lat,
-          vehicle.lng,
+      filteredItems = items
+        .map(v => ({
+          v,
+          distance: this.calculateDistance(
+            filters.lat!,
+            filters.lng!,
+            v.lat,
+            v.lng,
+          ),
+        }))
+        .filter(x => x.distance <= radiusKm)
+        .sort((a, b) => a.distance - b.distance)
+        .map(x => ({ ...x.v, __distance: x.distance }) as any);
+    }
+
+    // Apply sorting if requested
+    if (filters.sortBy) {
+      if (filters.sortBy === 'price_asc')
+        filteredItems.sort(
+          (a, b) => Number(a.pricePerDay) - Number(b.pricePerDay),
         );
-        return distance <= radiusKm;
-      });
+      else if (filters.sortBy === 'price_desc')
+        filteredItems.sort(
+          (a, b) => Number(b.pricePerDay) - Number(a.pricePerDay),
+        );
+      else if (filters.sortBy === 'distance_asc')
+        filteredItems.sort(
+          (a, b) => (a as any).__distance - (b as any).__distance,
+        );
+      else if (filters.sortBy === 'distance_desc')
+        filteredItems.sort(
+          (a, b) => (b as any).__distance - (a as any).__distance,
+        );
+      // rating_desc requires join/aggregation with reviews - omitted for brevity (can compute average rating separately)
     }
 
     return {
-      items: filteredItems,
+      items: filteredItems as any,
       total: filteredItems.length,
       page,
       limit,

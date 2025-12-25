@@ -1,7 +1,13 @@
 import API_ENDPOINTS from '@/services/api.endpoints'
 import { apiClient } from '@/lib/api'
 
-export type VehicleStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'MAINTENANCE' | 'HIDDEN'
+export type VehicleStatus =
+  | 'DRAFT'
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'MAINTENANCE'
+  | 'HIDDEN'
 
 export interface VehicleImage {
   id: string
@@ -13,6 +19,7 @@ export interface VehicleImage {
 export interface AdminVehicleItem {
   id: string
   ownerId: string
+  type: string
   brand: string
   model: string
   year: number
@@ -23,7 +30,9 @@ export interface AdminVehicleItem {
   cavetFront: string | null
   cavetBack: string | null
   description: string | null
+  fullAddress?: string | null
   address: string
+  ward: string | null
   district: string | null
   city: string | null
   lat: number
@@ -106,4 +115,3 @@ export const adminVehicleApi = {
     throw new Error(response.message || 'Từ chối xe thất bại')
   },
 }
-
