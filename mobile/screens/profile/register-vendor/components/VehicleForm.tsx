@@ -18,6 +18,7 @@ import { COLORS } from "@/constants/colors";
 import { VEHICLE_BRANDS, VEHICLE_TYPES, getModelsByBrand } from "@/constants/vehicle.constants";
 import { VIETNAM_CITIES } from "@/constants/city.constants";
 import type { VehicleInput } from "@/schemas/vehicle.schema";
+import { formatCurrency, parseCurrency } from "@/utils/currency";
 
 const licenseTypeOptions = [
 	{ label: "A1", value: "A1" },
@@ -25,21 +26,6 @@ const licenseTypeOptions = [
 	{ label: "A3", value: "A3" },
 	{ label: "A4", value: "A4" },
 ];
-
-// Helper functions for formatting currency
-const formatCurrency = (value: string): string => {
-	// Remove all non-numeric characters
-	const numericValue = value.replace(/\D/g, "");
-	if (!numericValue) return "";
-
-	// Add dots as thousand separators
-	return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-};
-
-const parseCurrency = (value: string): string => {
-	// Remove all dots to get pure number string
-	return value.replace(/\./g, "");
-};
 
 interface VehicleFormProps {
 	vehicleId?: string;

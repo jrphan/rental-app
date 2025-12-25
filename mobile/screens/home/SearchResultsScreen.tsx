@@ -6,12 +6,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import HeaderBase from "@/components/header/HeaderBase";
 import FilterModal, { type SearchFilters } from "@/components/search/FilterModal";
-import { normalizeSearchQuery, detectLicensePlateTokens } from "@/lib/search.utils";
+import { detectLicensePlateTokens } from "@/lib/search.utils";
 import { apiVehicle } from "@/services/api.vehicle";
 import { COLORS } from "@/constants/colors";
 import VehicleCard from "@/screens/vehicles/components/VehicleCard";
 import VehicleSearchBar from "../home/components/VehicleSearchBar";
 import type { Vehicle } from "@/screens/vehicles/types";
+import { calculateDistanceKm } from "@/lib/geo";
 
 export default function SearchResultsScreen() {
 	const router = useRouter();
@@ -119,14 +120,14 @@ export default function SearchResultsScreen() {
 	const handleApplyFilters = (f: SearchFilters) => {
 		// set filters, close modal, then navigate after a short delay so modal close animation is visible
 		setActiveFilters(f);
+		// setFilterModalVisible(false);
 		// setTimeout(() => {
 		// 	const newParams = new URLSearchParams();
 		// 	if (params.search) newParams.append("search", params.search);
-		// 	if (f.city) newParams.append("city", f.locationLabel || "");
+		// 	if (f.locationLabel) newParams.append("locationLabel", f.locationLabel);
 		// 	if (f.lat) newParams.append("lat", String(f.lat));
 		// 	if (f.lng) newParams.append("lng", String(f.lng));
 		// 	if (f.radius) newParams.append("radius", String(f.radius));
-		// 	// use comma-separated "type" param (backend expects `type`)
 		// 	if (f.types && f.types.length) newParams.append("type", f.types.join(","));
 		// 	if (f.minPrice) newParams.append("minPrice", String(f.minPrice));
 		// 	if (f.maxPrice) newParams.append("maxPrice", String(f.maxPrice));
@@ -140,7 +141,10 @@ export default function SearchResultsScreen() {
 		...searchFilters,
 		q: searchFilters.search,
 		licensePlate: detectLicensePlateTokens(searchFilters.search),
-		// send comma-separated type string (backend expects `type` query param)
+		// lat/lng/radius: prefer params then activeFilters (so immediate query after apply works)
+		lat: params.lat ? Number(params.lat) : activeFilters.lat,
+		lng: params.lng ? Number(params.lng) : activeFilters.lng,
+		radius: params.radius ? Number(params.radius) : activeFilters.radius,
 		type: params.type
 			? String(params.type)
 			: activeFilters.types?.length
@@ -180,9 +184,24 @@ export default function SearchResultsScreen() {
 
 		return (
 			<View>
-				{vehicles.map((vehicle) => (
-					<VehicleCard key={vehicle.id} vehicle={vehicle} variant="full" />
-				))}
+				{vehicles.map((vehicle) => {
+					// compute distance if we have reference location
+					const refLat = builtFilters.lat as number | undefined;
+					const refLng = builtFilters.lng as number | undefined;
+					const distanceKm =
+						refLat && refLng && vehicle.lat != null && vehicle.lng != null
+							? Number(
+									calculateDistanceKm(
+										refLat,
+										refLng,
+										Number(vehicle.lat),
+										Number(vehicle.lng)
+									).toFixed(1)
+								)
+							: undefined;
+
+					return <VehicleCard key={vehicle.id} vehicle={vehicle} variant="full" distanceKm={distanceKm} />;
+				})}
 			</View>
 		);
 	};
@@ -207,7 +226,11 @@ export default function SearchResultsScreen() {
 				showBackButton
 				action={
 					<TouchableOpacity onPress={() => setFilterModalVisible(true)} style={{ padding: 6 }}>
-						<MaterialIcons name="filter-list" size={22} color={hasActiveFilter ? COLORS.primary : "#111827"} />
+						<MaterialIcons
+							name="filter-list"
+							size={22}
+							color={hasActiveFilter ? COLORS.primary : "#111827"}
+						/>
 						{hasActiveFilter && (
 							<View
 								style={{

@@ -50,23 +50,21 @@ export default function LocationPicker({ onLocationSelect, currentLat, currentLn
 			const lng = location.coords.longitude.toString();
 
 			// Try Google reverse geocode to get address parts (more consistent)
-			// if (API_KEY) {
-				try {
-					const parts = await reverseGeocode(lat, lng);
-					if (parts) {
-						onLocationSelect(lat, lng, {
-							address: parts.address,
-							fullAddress: parts.fullAddress,
-							ward: parts.ward,
-							district: parts.district,
-							city: parts.city,
-						});
-						return;
-					}
-				} catch (err) {
-					console.warn("Google reverse geocode failed:", err);
+			try {
+				const parts = await reverseGeocode(lat, lng);
+				if (parts) {
+					onLocationSelect(lat, lng, {
+						address: parts.address,
+						fullAddress: parts.fullAddress,
+						ward: parts.ward,
+						district: parts.district,
+						city: parts.city,
+					});
+					return;
 				}
-			// }
+			} catch (err) {
+				console.warn("Google reverse geocode failed:", err);
+			}
 
 			// Fallback to Expo reverse geocode if Google unavailable
 			try {

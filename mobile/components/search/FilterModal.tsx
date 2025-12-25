@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Modal, View, Text, TouchableOpacity, TextInput, ScrollView } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import MapPickerModal from "@/components/location/MapPickerModal";
-import { Select } from "@/components/ui/select";
 import { COLORS } from "@/constants/colors";
 import { VEHICLE_TYPES } from "@/constants/vehicle.constants";
+import { formatCurrency, parseCurrency } from "@/utils/currency";
 
 export type SearchFilters = {
 	lat?: number;
@@ -27,10 +27,29 @@ interface FilterModalProps {
 export default function FilterModal({ visible, initial, onClose, onApply }: FilterModalProps) {
 	const [showMapPicker, setShowMapPicker] = useState(false);
 	const [showSortModal, setShowSortModal] = useState(false);
+	// Local formatted strings for price inputs
+	const [minPriceStr, setMinPriceStr] = useState("");
+	const [maxPriceStr, setMaxPriceStr] = useState("");
 	const [filters, setFilters] = useState<SearchFilters>(initial || {});
+
 	useEffect(() => {
 		setFilters(initial || {});
+		setMinPriceStr(initial?.minPrice ? formatCurrency(String(initial.minPrice)) : "");
+		setMaxPriceStr(initial?.maxPrice ? formatCurrency(String(initial.maxPrice)) : "");
 	}, [initial, visible]);
+
+	// helper to update numeric + formatted
+	const handleMinPriceChange = (text: string) => {
+		const parsed = parseCurrency(text);
+		setMinPriceStr(parsed ? formatCurrency(parsed) : "");
+		setFilters({ ...filters, minPrice: parsed ? Number(parsed) : undefined });
+	};
+
+	const handleMaxPriceChange = (text: string) => {
+		const parsed = parseCurrency(text);
+		setMaxPriceStr(parsed ? formatCurrency(parsed) : "");
+		setFilters({ ...filters, maxPrice: parsed ? Number(parsed) : undefined });
+	};
 
 	const toggleType = (type: string) => {
 		const set = new Set(filters.types || []);
@@ -146,7 +165,11 @@ export default function FilterModal({ visible, initial, onClose, onApply }: Filt
 						<View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
 							<Text style={{ fontWeight: "600" }}>Khoảng giá (VNĐ/ngày)</Text>
 							<TouchableOpacity
-								onPress={() => setFilters({ ...filters, minPrice: undefined, maxPrice: undefined })}
+								onPress={() => {
+									setFilters({ ...filters, minPrice: undefined, maxPrice: undefined });
+									setMinPriceStr("");
+									setMaxPriceStr("");
+								}}
 							>
 								<Text style={{ color: COLORS.primary }}>Xóa</Text>
 							</TouchableOpacity>
@@ -155,9 +178,9 @@ export default function FilterModal({ visible, initial, onClose, onApply }: Filt
 							<TextInput
 								keyboardType="numeric"
 								placeholder="Min"
-                                placeholderTextColor="#9CA3AF"
-								value={filters.minPrice?.toString() || ""}
-								onChangeText={(v) => setFilters({ ...filters, minPrice: v ? Number(v) : undefined })}
+								placeholderTextColor="#9CA3AF"
+								value={minPriceStr}
+								onChangeText={handleMinPriceChange}
 								style={{
 									flex: 1,
 									borderWidth: 1,
@@ -170,9 +193,9 @@ export default function FilterModal({ visible, initial, onClose, onApply }: Filt
 							<TextInput
 								keyboardType="numeric"
 								placeholder="Max"
-                                placeholderTextColor="#9CA3AF"
-								value={filters.maxPrice?.toString() || ""}
-								onChangeText={(v) => setFilters({ ...filters, maxPrice: v ? Number(v) : undefined })}
+								placeholderTextColor="#9CA3AF"
+								value={maxPriceStr}
+								onChangeText={handleMaxPriceChange}
 								style={{
 									flex: 1,
 									borderWidth: 1,
@@ -230,8 +253,8 @@ export default function FilterModal({ visible, initial, onClose, onApply }: Filt
 									{[
 										{ label: "Giá tăng dần", value: "price_asc" },
 										{ label: "Giá giảm dần", value: "price_desc" },
-										{ label: "Khoảng cách tăng dần", value: "distance_asc" },
-										{ label: "Khoảng cách giảm dần", value: "distance_desc" },
+										{ label: "Khoảng cách gần nhất", value: "distance_asc" },
+										{ label: "Khoảng cách xa nhất", value: "distance_desc" },
 										{ label: "Đánh giá tốt nhất", value: "rating_desc" },
 									].map((opt) => (
 										<TouchableOpacity

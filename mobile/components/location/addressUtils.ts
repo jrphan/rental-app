@@ -61,11 +61,8 @@ export function parseAddressPartsFromGoogleResult(formatted: string | undefined,
  * Reverse geocode helper (reuse across MapPickerModal + LocationPicker)
  */
 export async function reverseGeocode(lat: number | string, lng: number | string, apiKey?: string) {
-	if (!apiKey){
-		const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
-		if (!API_KEY) return null;
-		apiKey = API_KEY;
-	} 
+	apiKey = apiKey || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+	if (!apiKey) return null;
 	try {
 		const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=vi`;
 		const resp = await fetch(url);
