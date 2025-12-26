@@ -116,7 +116,6 @@ export class VehicleController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('search') search?: string,
-    @Query('q') q?: string,
     @Query('licensePlate') licensePlate?: string,
     @Query('type') type?: string, // comma separated
     @Query('minPrice') minPrice?: string,
@@ -134,7 +133,6 @@ export class VehicleController {
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
       search,
-      q,
       licensePlate,
       type,
       minPrice: minPrice ? Number(minPrice) : undefined,

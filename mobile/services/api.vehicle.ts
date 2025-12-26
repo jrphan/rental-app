@@ -117,7 +117,6 @@ export const apiVehicle = {
 		startDate?: string;
 		endDate?: string;
 		search?: string;
-		q?: string; // normalized query (optional)
 		licensePlate?: string;
 		type?: string; // comma separated types
 		minPrice?: number;

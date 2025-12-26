@@ -655,8 +655,7 @@ export class VehicleService {
     district?: string;
     startDate?: Date;
     endDate?: Date;
-    search?: string; // raw search
-    q?: string; // normalized search
+    search?: string;
     licensePlate?: string;
     type?: string; // comma separated types
     minPrice?: number;
@@ -686,8 +685,8 @@ export class VehicleService {
     }
 
     // Search across multiple fields (brand, model, type, address, location, plate).
-    if (filters.q || filters.search || filters.licensePlate) {
-      const q = (filters.q || filters.search || '').trim();
+    if (filters.search || filters.licensePlate) {
+      const q = (filters.search || '').trim();
       const lp = filters.licensePlate;
       const or: Prisma.VehicleWhereInput[] = [];
 

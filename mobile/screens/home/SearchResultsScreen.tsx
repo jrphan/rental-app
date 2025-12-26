@@ -13,6 +13,8 @@ import VehicleCard from "@/screens/vehicles/components/VehicleCard";
 import VehicleSearchBar from "../home/components/VehicleSearchBar";
 import type { Vehicle } from "@/screens/vehicles/types";
 import { calculateDistanceKm } from "@/lib/geo";
+import MapView, { Marker } from "react-native-maps";
+import VehiclesMap from "@/components/map/VehiclesMap";
 
 export default function SearchResultsScreen() {
 	const router = useRouter();
@@ -50,6 +52,8 @@ export default function SearchResultsScreen() {
 	const [filterModalVisible, setFilterModalVisible] = useState(false);
 	const [activeFilters, setActiveFilters] = useState<SearchFilters>({});
 	const [hasActiveFilter, setHasActiveFilter] = useState(false);
+	const [viewMode, setViewMode] = useState<"list" | "map">("list");
+	const [mapFullScreen, setMapFullScreen] = useState(false);
 
 	// Parse search filters from params
 	const searchFilters = {
@@ -118,28 +122,13 @@ export default function SearchResultsScreen() {
 	};
 
 	const handleApplyFilters = (f: SearchFilters) => {
-		// set filters, close modal, then navigate after a short delay so modal close animation is visible
+		// set filters
 		setActiveFilters(f);
-		// setFilterModalVisible(false);
-		// setTimeout(() => {
-		// 	const newParams = new URLSearchParams();
-		// 	if (params.search) newParams.append("search", params.search);
-		// 	if (f.locationLabel) newParams.append("locationLabel", f.locationLabel);
-		// 	if (f.lat) newParams.append("lat", String(f.lat));
-		// 	if (f.lng) newParams.append("lng", String(f.lng));
-		// 	if (f.radius) newParams.append("radius", String(f.radius));
-		// 	if (f.types && f.types.length) newParams.append("type", f.types.join(","));
-		// 	if (f.minPrice) newParams.append("minPrice", String(f.minPrice));
-		// 	if (f.maxPrice) newParams.append("maxPrice", String(f.maxPrice));
-		// 	if (f.sortBy) newParams.append("sortBy", f.sortBy);
-		// 	router.replace(`/search?${newParams.toString()}` as any);
-		// }, 180);
 	};
 
 	// Build searchFilters for queryFn (include normalized query + licensePlate token)
 	const builtFilters = {
 		...searchFilters,
-		q: searchFilters.search,
 		licensePlate: detectLicensePlateTokens(searchFilters.search),
 		// lat/lng/radius: prefer params then activeFilters (so immediate query after apply works)
 		lat: params.lat ? Number(params.lat) : activeFilters.lat,
@@ -248,57 +237,94 @@ export default function SearchResultsScreen() {
 				}
 			/>
 
-			<ScrollView
-				className="flex-1"
-				showsVerticalScrollIndicator={false}
-				contentContainerStyle={{ paddingBottom: 24 }}
-			>
-				{/* Search Bar */}
-				<View className="px-4 pt-4 pb-2 mb-4">
-					<VehicleSearchBar
-						onSearch={handleSearch}
-						onCityChange={handleCityChange}
-						onLocationChange={handleLocationChange}
-						onDateRangeChange={handleDateRangeChange}
-						location={location}
-						dateRange={dateRange}
-					/>
-				</View>
-
-				<View className="px-4 pt-2">
-					{/* Search Summary */}
-					<View className="mb-4">
-						<Text className="text-sm text-gray-600 mb-1">Đang tìm kiếm: {getSearchSummary()}</Text>
-						{searchResults && searchResults.total > 0 && (
-							<Text className="text-base font-semibold text-gray-900">
-								Tìm thấy {searchResults.total} xe
-							</Text>
-						)}
+			{mapFullScreen ? (
+				/* Render map full screen area (below header) */
+				<VehiclesMap
+					vehicles={searchResults?.items || []}
+					initialLat={builtFilters.lat as number | undefined}
+					initialLng={builtFilters.lng as number | undefined}
+					fullScreen
+					onToggleFullScreen={() => setMapFullScreen(false)}
+				/>
+			) : (
+				<ScrollView
+					className="flex-1"
+					showsVerticalScrollIndicator={false}
+					contentContainerStyle={{ paddingBottom: 24 }}
+				>
+					{/* Search Bar */}
+					<View className="px-4 pt-4 pb-2 mb-4">
+						<VehicleSearchBar
+							onSearch={handleSearch}
+							onCityChange={handleCityChange}
+							onLocationChange={handleLocationChange}
+							onDateRangeChange={handleDateRangeChange}
+							location={location}
+							dateRange={dateRange}
+						/>
 					</View>
 
-					{/* Results */}
-					{isLoadingSearch ? (
-						<View className="py-12 items-center">
-							<ActivityIndicator size="large" color={COLORS.primary} />
-							<Text className="mt-4 text-gray-600">Đang tìm kiếm...</Text>
-						</View>
-					) : isErrorSearch ? (
-						<View className="py-12 items-center">
-							<MaterialIcons name="error-outline" size={64} color="#EF4444" />
-							<Text className="mt-4 text-red-600 text-center">Không thể tìm kiếm. Vui lòng thử lại.</Text>
-							<TouchableOpacity
-								onPress={() => router.back()}
-								className="mt-4 px-6 py-2 bg-primary rounded-lg"
-								style={{ backgroundColor: COLORS.primary }}
+					<View className="px-4 pt-2">
+						{/* Search Summary */}
+						<View className="mb-4">
+							<Text className="text-sm text-gray-600 mb-1">Đang tìm kiếm: {getSearchSummary()}</Text>
+							<View
+								style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
 							>
-								<Text className="text-white font-semibold">Quay lại</Text>
-							</TouchableOpacity>
+								<Text className="text-base font-semibold text-gray-900">
+									{searchResults && searchResults.total > 0
+										? `Tìm thấy ${searchResults.total} xe`
+										: "—"}
+								</Text>
+								<TouchableOpacity
+									onPress={() => setViewMode((v) => (v === "list" ? "map" : "list"))}
+									style={{ flexDirection: "row", alignItems: "center", padding: 8 }}
+								>
+									<MaterialIcons
+										name={viewMode === "map" ? "view-list" : "map"}
+										size={20}
+										color="#111827"
+									/>
+									<Text style={{ marginLeft: 8, fontWeight: "600" }}>
+										{viewMode === "map" ? "Danh sách" : "Bản đồ"}
+									</Text>
+								</TouchableOpacity>
+							</View>
 						</View>
-					) : (
-						renderVehicleList(searchResults?.items)
-					)}
-				</View>
-			</ScrollView>
+
+						{/* Results */}
+						{isLoadingSearch ? (
+							<View className="py-12 items-center">
+								<ActivityIndicator size="large" color={COLORS.primary} />
+								<Text className="mt-4 text-gray-600">Đang tìm kiếm...</Text>
+							</View>
+						) : isErrorSearch ? (
+							<View className="py-12 items-center">
+								<MaterialIcons name="error-outline" size={64} color="#EF4444" />
+								<Text className="mt-4 text-red-600 text-center">
+									Không thể tìm kiếm. Vui lòng thử lại.
+								</Text>
+								<TouchableOpacity
+									onPress={() => router.back()}
+									className="mt-4 px-6 py-2 bg-primary rounded-lg"
+									style={{ backgroundColor: COLORS.primary }}
+								>
+									<Text className="text-white font-semibold">Quay lại</Text>
+								</TouchableOpacity>
+							</View>
+						) : viewMode === "list" ? (
+							renderVehicleList(searchResults?.items)
+						) : (
+							<VehiclesMap
+								vehicles={searchResults?.items || []}
+								initialLat={builtFilters.lat as number | undefined}
+								initialLng={builtFilters.lng as number | undefined}
+								onToggleFullScreen={() => setMapFullScreen(true)}
+							/>
+						)}
+					</View>
+				</ScrollView>
+			)}
 
 			<FilterModal
 				visible={filterModalVisible}
