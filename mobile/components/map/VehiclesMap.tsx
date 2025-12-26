@@ -60,7 +60,9 @@ export default function VehiclesMap({
 		);
 	};
 
-	const containerStyle = fullScreen ? { flex: 1 } : { height: Dimensions.get("window").height * 0.6 };
+	const containerStyle = fullScreen
+		? { flex: 1 }
+		: { height: Dimensions.get("window").height * 0.6, borderRadius: 16, overflow: "hidden" };
 
 	return (
 		<View style={containerStyle}>
@@ -82,6 +84,13 @@ export default function VehiclesMap({
 						</View>
 					</Marker>
 				))}
+				<Marker
+					coordinate={{
+						latitude: initialLat,
+						longitude: initialLng,
+					}}
+					pinColor={COLORS.primary}
+				/>
 			</MapView>
 
 			{/* Zoom / Fullscreen toggle button (top-right) */}
@@ -169,7 +178,7 @@ const styles = StyleSheet.create({
 	fullscreenBtn: {
 		position: "absolute",
 		top: 12,
-		right: 12,
+		left: 12,
 		backgroundColor: "#fff",
 		opacity: 0.6,
 		padding: 9,

@@ -13,7 +13,6 @@ import VehicleCard from "@/screens/vehicles/components/VehicleCard";
 import VehicleSearchBar from "../home/components/VehicleSearchBar";
 import type { Vehicle } from "@/screens/vehicles/types";
 import { calculateDistanceKm } from "@/lib/geo";
-import MapView, { Marker } from "react-native-maps";
 import VehiclesMap from "@/components/map/VehiclesMap";
 
 export default function SearchResultsScreen() {
