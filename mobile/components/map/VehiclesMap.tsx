@@ -13,6 +13,7 @@ interface VehiclesMapProps {
 	initialLat?: number;
 	initialLng?: number;
 	fullScreen?: boolean;
+	viewVehicleLocation?: boolean;
 	onToggleFullScreen?: () => void;
 }
 
@@ -21,6 +22,7 @@ export default function VehiclesMap({
 	initialLat,
 	initialLng,
 	fullScreen = false,
+	viewVehicleLocation = false,
 	onToggleFullScreen,
 }: VehiclesMapProps) {
 	const router = useRouter();
@@ -62,7 +64,11 @@ export default function VehiclesMap({
 
 	const containerStyle = fullScreen
 		? { flex: 1 }
-		: { height: Dimensions.get("window").height * 0.6, borderRadius: 16, overflow: "hidden" };
+		: {
+				height: Dimensions.get("window").height * (viewVehicleLocation ? 0.2 : 0.6),
+				borderRadius: 16,
+				overflow: "hidden",
+			};
 
 	return (
 		<View style={containerStyle}>
@@ -72,18 +78,19 @@ export default function VehiclesMap({
 				initialRegion={initialRegion}
 				showsUserLocation
 			>
-				{clusters.map((c, idx) => (
-					<Marker
-						key={`${c.lat}-${c.lng}-${idx}`}
-						coordinate={{ latitude: c.lat, longitude: c.lng }}
-						onPress={() => onMarkerPress(idx)}
-					>
-						<View style={styles.clusterMarker}>
-							<Text style={styles.clusterText}>{c.items.length}</Text>
-							<Text style={styles.clusterEmoji}>🏍️</Text>
-						</View>
-					</Marker>
-				))}
+				{!viewVehicleLocation &&
+					clusters.map((c, idx) => (
+						<Marker
+							key={`${c.lat}-${c.lng}-${idx}`}
+							coordinate={{ latitude: c.lat, longitude: c.lng }}
+							onPress={() => onMarkerPress(idx)}
+						>
+							<View style={styles.clusterMarker}>
+								<Text style={styles.clusterText}>{c.items.length}</Text>
+								<Text style={styles.clusterEmoji}>🏍️</Text>
+							</View>
+						</Marker>
+					))}
 				<Marker
 					coordinate={{
 						latitude: initialLat,
@@ -95,7 +102,7 @@ export default function VehiclesMap({
 
 			{/* Zoom / Fullscreen toggle button (top-right) */}
 			<TouchableOpacity
-				style={styles.fullscreenBtn}
+				style={viewVehicleLocation && fullScreen ? [styles.fullscreenBtn, { top: 60 }] : styles.fullscreenBtn}
 				onPress={() => onToggleFullScreen && onToggleFullScreen()}
 				activeOpacity={0.8}
 			>
