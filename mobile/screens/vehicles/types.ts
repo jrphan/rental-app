@@ -34,6 +34,7 @@ export interface Vehicle {
 	pricePerDay: number;
 	depositAmount: number;
 	instantBook: boolean;
+	deliveryAvailable?: boolean;
 	status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "MAINTENANCE" | "HIDDEN";
 	description: string;
 	images: VehicleImage[];

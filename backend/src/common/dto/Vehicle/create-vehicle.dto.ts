@@ -123,4 +123,9 @@ export class CreateVehicleDto {
   @IsOptional()
   @IsBoolean()
   instantBook?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  deliveryAvailable?: boolean;
 }

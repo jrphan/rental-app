@@ -29,6 +29,7 @@ export interface CreateVehicleRequest {
 	pricePerDay: number;
 	depositAmount?: number;
 	instantBook?: boolean;
+	deliveryAvailable?: boolean;
 }
 
 export interface CreateVehicleResponse {

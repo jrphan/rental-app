@@ -94,10 +94,11 @@ export class VehicleService {
       data: {
         ...vehicleData,
         ownerId: userId,
-        status: VehicleStatus.PENDING, // Set to PENDING for admin review
+        status: VehicleStatus.PENDING,
         depositAmount: vehicleData.depositAmount || 0,
         requiredLicense: vehicleData.requiredLicense || 'A1',
         instantBook: vehicleData.instantBook || false,
+        deliveryAvailable: vehicleData.deliveryAvailable || false,
         images: {
           create: images.map((img, index) => ({
             url: img.url,
@@ -178,6 +179,7 @@ export class VehicleService {
         depositAmount: vehicleData.depositAmount || 0,
         requiredLicense: vehicleData.requiredLicense || 'A1',
         instantBook: vehicleData.instantBook || false,
+        deliveryAvailable: vehicleData.deliveryAvailable || false,
         images: {
           create: images.map((img, index) => ({
             url: img.url,

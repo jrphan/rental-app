@@ -257,7 +257,8 @@ model Vehicle {
 
   pricePerDay     Decimal       @db.Decimal(15, 2)
   depositAmount   Decimal       @default(0) @db.Decimal(15, 2)
-  instantBook     Boolean       @default(false) 
+  instantBook     Boolean       @default(false)
+  deliveryAvailable Boolean     @default(false)
 
   status          VehicleStatus @default(DRAFT)
   

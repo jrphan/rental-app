@@ -71,6 +71,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				cavetFront: (vehicleData as any).cavetFront || "",
 				cavetBack: (vehicleData as any).cavetBack || "",
 				instantBook: vehicleData.instantBook || false,
+				deliveryAvailable: (vehicleData as any).deliveryAvailable || false,
 				imageUrls: imageUrls.length > 0 ? imageUrls : [],
 			});
 		}
@@ -120,6 +121,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				cavetFront: data.cavetFront,
 				cavetBack: data.cavetBack,
 				instantBook: data.instantBook,
+				deliveryAvailable: data.deliveryAvailable,
 				images,
 			};
 
@@ -676,14 +678,37 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 								</Text>
 							</View>
 							<Switch
-								value={value || false}
+								trackColor={{ true: "#34D399", false: "#D1D5DB" }}
+								thumbColor={value ? "#fff" : "#fff"}
 								onValueChange={onChange}
-								trackColor={{ false: "#D1D5DB", true: COLORS.primary }}
-								thumbColor="#FFFFFF"
+								value={value}
 								disabled={isReadOnly}
 							/>
 						</View>
-						{error && <Text className="mt-1 text-sm text-red-500">{error.message}</Text>}
+					</View>
+				)}
+			/>
+
+			<Controller
+				control={form.control}
+				name="deliveryAvailable"
+				render={({ field: { onChange, value }, fieldState: { error } }) => (
+					<View className="mb-4">
+						<View className="flex-row items-center justify-between mb-2">
+							<View className="flex-1 mr-4">
+								<Text className="text-sm font-medium text-gray-700 mb-1">Giao xe tận nơi</Text>
+								<Text className="text-xs text-gray-500">
+									Bật nếu bạn muốn hỗ trợ giao/nhận xe tận nơi (phí giao sẽ do chủ/khách thỏa thuận).
+								</Text>
+							</View>
+							<Switch
+								trackColor={{ true: "#34D399", false: "#D1D5DB" }}
+								thumbColor={value ? "#fff" : "#fff"}
+								onValueChange={onChange}
+								value={value}
+								disabled={isReadOnly}
+							/>
+						</View>
 					</View>
 				)}
 			/>

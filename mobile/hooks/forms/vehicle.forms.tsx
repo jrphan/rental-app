@@ -17,7 +17,7 @@ export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
 			licensePlate: defaultValues?.licensePlate || "",
 			engineSize: defaultValues?.engineSize || "110",
 			requiredLicense: defaultValues?.requiredLicense || "A1",
-			fullAddress: defaultValues?.fullAddress || "", 
+			fullAddress: defaultValues?.fullAddress || "",
 			address: defaultValues?.address || "", // street
 			ward: defaultValues?.ward || "",
 			district: defaultValues?.district || "",
@@ -30,6 +30,7 @@ export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
 			cavetFront: defaultValues?.cavetFront || "",
 			cavetBack: defaultValues?.cavetBack || "",
 			instantBook: defaultValues?.instantBook || false,
+			deliveryAvailable: defaultValues?.deliveryAvailable || false,
 			imageUrls: defaultValues?.imageUrls || [],
 		},
 		mode: "onChange",

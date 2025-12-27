@@ -80,6 +80,7 @@ export const vehicleSchema = z.object({
 	cavetFront: z.string().optional(),
 	cavetBack: z.string().optional(),
 	instantBook: z.boolean().optional(),
+	deliveryAvailable: z.boolean().optional(),
 	imageUrls: z
 		.array(z.string().url("URL hình ảnh không hợp lệ"))
 		.min(1, "Cần ít nhất 1 hình ảnh")
