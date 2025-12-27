@@ -6,6 +6,7 @@ import {
   Modal,
   FlatList,
   StyleSheet,
+  Image,
 } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/constants/colors";
@@ -23,6 +24,10 @@ interface SelectProps<T = string> {
   placeholder?: string;
   label?: string;
   disabled?: boolean;
+  /**
+   * Custom renderer cho từng item trong danh sách dropdown
+   */
+  renderItem?: (item: SelectOption<T>) => React.ReactNode;
 }
 
 export function Select<T = string>({
@@ -32,10 +37,15 @@ export function Select<T = string>({
   placeholder = "Chọn...",
   label,
   disabled = false,
+  renderItem,
 }: SelectProps<T>) {
   const [modalVisible, setModalVisible] = useState(false);
 
   const selectedOption = options.find((opt) => opt.value === value);
+
+  // Helper để kiểm tra icon có phải là URL ảnh không
+  const isIconUrl = (icon?: string) =>
+    icon && (icon.startsWith("http") || icon.startsWith("https"));
 
   return (
     <View>
@@ -49,22 +59,28 @@ export function Select<T = string>({
           disabled ? "bg-gray-100" : "bg-white"
         }`}
       >
-        <Text
-          className={`flex-1 ${
-            selectedOption ? "text-gray-900" : "text-gray-400"
-          }`}
-        >
+        <View className="flex-1 flex-row items-center">
           {selectedOption ? (
             <View className="flex-row items-center gap-2">
               {selectedOption.icon && (
-                <Text className="text-lg">{selectedOption.icon}</Text>
+                <>
+                  {isIconUrl(selectedOption.icon) ? (
+                    <Image
+                      source={{ uri: selectedOption.icon }}
+                      style={{ width: 24, height: 24 }}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <Text className="text-lg">{selectedOption.icon}</Text>
+                  )}
+                </>
               )}
-              <Text>{selectedOption.label}</Text>
+              <Text className="text-gray-900">{selectedOption.label}</Text>
             </View>
           ) : (
-            placeholder
+            <Text className="text-gray-400">{placeholder}</Text>
           )}
-        </Text>
+        </View>
         <MaterialIcons
           name={modalVisible ? "keyboard-arrow-up" : "keyboard-arrow-down"}
           size={24}
@@ -104,17 +120,35 @@ export function Select<T = string>({
                     value === item.value ? "bg-orange-50" : "bg-white"
                   }`}
                 >
-                  <View className="flex-row items-center gap-3 flex-1">
-                    {item.icon && <Text className="text-xl">{item.icon}</Text>}
-                    <Text
-                      className={`flex-1 ${
-                        value === item.value
-                          ? "text-orange-600 font-semibold"
-                          : "text-gray-900"
-                      }`}
-                    >
-                      {item.label}
-                    </Text>
+                  <View className="flex-1">
+                    {renderItem ? (
+                      renderItem(item)
+                    ) : (
+                      <View className="flex-row items-center gap-3">
+                        {item.icon && (
+                          <>
+                            {isIconUrl(item.icon) ? (
+                              <Image
+                                source={{ uri: item.icon }}
+                                style={{ width: 28, height: 28 }}
+                                resizeMode="contain"
+                              />
+                            ) : (
+                              <Text className="text-xl">{item.icon}</Text>
+                            )}
+                          </>
+                        )}
+                        <Text
+                          className={`flex-1 ${
+                            value === item.value
+                              ? "text-orange-600 font-semibold"
+                              : "text-gray-900"
+                          }`}
+                        >
+                          {item.label}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   {value === item.value && (
                     <MaterialIcons

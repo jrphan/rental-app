@@ -15,7 +15,7 @@ import { router } from "expo-router";
 import { apiUser } from "@/services/api.user";
 import { useState, useEffect } from "react";
 import { COLORS } from "@/constants/colors";
-import { VEHICLE_BRANDS, VEHICLE_TYPES, getModelsByBrand } from "@/constants/vehicle.constants";
+import { VEHICLE_BRANDS, VEHICLE_TYPES, getModelsByBrand, getVehicleTypeByModel } from "@/constants/vehicle.constants";
 import { VIETNAM_CITIES } from "@/constants/city.constants";
 import type { VehicleInput } from "@/schemas/vehicle.schema";
 import { formatCurrency, parseCurrency } from "@/utils/currency";
@@ -75,6 +75,19 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 			});
 		}
 	}, [vehicleData, form]);
+
+	// Auto-fill vehicle type when brand and model are selected
+	const selectedBrand = form.watch("brand");
+	const selectedModel = form.watch("model");
+
+	useEffect(() => {
+		if (selectedBrand && selectedModel && selectedBrand !== "Khác") {
+			const vehicleType = getVehicleTypeByModel(selectedModel);
+			if (vehicleType) {
+				form.setValue("type", vehicleType);
+			}
+		}
+	}, [selectedBrand, selectedModel, form]);
 
 	const mutation = useMutation({
 		mutationFn: async (data: VehicleInput) => {
@@ -313,6 +326,18 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 							}}
 							placeholder="Chọn hãng xe"
 							disabled={isReadOnly}
+							renderItem={(item: any) => (
+								<View className="flex-row items-center">
+									{item.icon && (
+										<Image
+											source={{ uri: item.icon }}
+											style={{ width: 24, height: 24, marginRight: 8 }}
+											resizeMode="contain"
+										/>
+									)}
+									<Text className="text-base text-gray-900">{item.label}</Text>
+								</View>
+							)}
 						/>
 						{error && <Text className="mt-1 text-sm text-red-500">{error.message}</Text>}
 					</View>
@@ -323,7 +348,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				control={form.control}
 				name="model"
 				render={({ field: { onChange, value }, fieldState: { error } }) => {
-					const selectedBrand = form.watch("brand");
+					// const selectedBrand = form.watch("brand"); // Đã lấy ở trên
 					const modelOptions = selectedBrand ? getModelsByBrand(selectedBrand) : [];
 
 					// If brand is "Khác" or not selected, show input field
