@@ -51,6 +51,14 @@ const API_ENDPOINTS = {
     GET_RENTAL_DETAIL: "/rental/:id",
     UPDATE_RENTAL_STATUS: "/rental/:id/status",
   },
+  CHAT: {
+    GET_MY_CHATS: "/chat/my-chats",
+    GET_CHAT_DETAIL: "/chat/:id",
+    GET_MESSAGES: "/chat/:id/messages",
+    SEND_MESSAGE: "/chat/:id/messages",
+    MARK_READ: "/chat/:id/read",
+    GET_UNREAD_COUNT: "/chat/unread-count",
+  },
 };
 
 export default API_ENDPOINTS;

@@ -1,14 +1,16 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TouchableOpacity, Alert, Image } from "react-native";
 import SwipeActionRow from "@/components/SwipeActionRow";
 import type { ChatItem as ChatItemType } from "../types";
+import type { Chat } from "@/services/api.chat";
 
 interface ChatItemProps {
-  item: ChatItemType;
-  onAction?: (action: string, item: ChatItemType) => void;
+  item: ChatItemType & { chat?: Chat; avatar?: string | null };
+  onAction?: (action: string, item: ChatItemType | Chat) => void;
+  onPress?: () => void;
 }
 
-export default function ChatItem({ item, onAction }: ChatItemProps) {
+export default function ChatItem({ item, onAction, onPress }: ChatItemProps) {
   const handleAction = (action: string) => {
     if (onAction) {
       onAction(action, item);
@@ -45,16 +47,25 @@ export default function ChatItem({ item, onAction }: ChatItemProps) {
       <TouchableOpacity
         className="flex-row gap-2 items-center px-4 py-4 bg-white border-b border-gray-100 active:bg-gray-50"
         activeOpacity={0.7}
+        onPress={onPress}
       >
         {/* Avatar */}
-        <View
-          className="w-12 h-12 rounded-full bg-primary-100 items-center justify-center mr-3"
-          style={{ height: 40, width: 40 }}
-        >
-          <Text className="text-primary-600 font-semibold text-base">
-            {item.name.charAt(0).toUpperCase()}
-          </Text>
-        </View>
+        {item.avatar ? (
+          <Image
+            source={{ uri: item.avatar }}
+            className="w-12 h-12 rounded-full mr-3"
+            style={{ height: 48, width: 48 }}
+          />
+        ) : (
+          <View
+            className="w-12 h-12 rounded-full bg-primary-100 items-center justify-center mr-3"
+            style={{ height: 48, width: 48 }}
+          >
+            <Text className="text-primary-600 font-semibold text-base">
+              {item.name.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
 
         {/* Content */}
         <View className="flex-1">

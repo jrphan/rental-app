@@ -62,4 +62,12 @@ export const ROUTES = {
     LIST_MY_FILES: '/files/me',
     DELETE_FILE: '/files/:id',
   },
+  CHAT: {
+    GET_MY_CHATS: '/chat/my-chats',
+    GET_CHAT_DETAIL: '/chat/:id',
+    GET_MESSAGES: '/chat/:id/messages',
+    SEND_MESSAGE: '/chat/:id/messages',
+    MARK_READ: '/chat/:id/read',
+    GET_UNREAD_COUNT: '/chat/unread-count',
+  },
 };
