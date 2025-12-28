@@ -164,6 +164,9 @@ model User {
   otps             Otp[] // <--- Thêm dòng này
   files            UserFile[]
   favoriteVehicles VehicleFavorite[] // Xe yêu thích của người dùng
+  messages         Message[]      // Tin nhắn của user
+  renterChats      Chat[]         @relation("RenterChats") // Chats nơi user là renter
+  ownerChats       Chat[]         @relation("OwnerChats")  // Chats nơi user là owner
 
   @@index([phone])
   @@index([email])
@@ -348,6 +351,7 @@ model Rental {
   transactions Transaction[] 
   reviews      Review[]
   dispute      Dispute?
+  chat         Chat?         // Cuộc hội thoại cho đơn thuê này
 
   @@index([renterId])
   @@index([ownerId])
@@ -535,4 +539,46 @@ model VehicleFavorite {
   @@index([userId])
   @@index([vehicleId])
   @@map("vehicle_favorites")
+}
+
+// ==================== CHAT & MESSAGES ====================
+
+model Chat {
+  id        String   @id @default(cuid())
+  rentalId String   @unique // Mỗi rental có 1 chat duy nhất
+  renterId  String   // Người thuê xe
+  ownerId   String   // Chủ xe
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  rental    Rental   @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  renter    User     @relation("RenterChats", fields: [renterId], references: [id])
+  owner     User     @relation("OwnerChats", fields: [ownerId], references: [id])
+  
+  @@index([renterId])
+  @@index([ownerId])
+  @@index([rentalId])
+  @@map("chats")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  senderId  String   // Người gửi tin nhắn
+  content   String   @db.Text
+  isRead    Boolean   @default(false) // Đã đọc chưa
+  readAt    DateTime? // Thời điểm đọc
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id])
+  
+  @@index([chatId, createdAt]) // Index để query messages theo chat và thời gian
+  @@index([senderId])
+  @@index([isRead])
+  @@map("messages")
 }

@@ -77,7 +77,7 @@ export default function FavoritesScreen() {
         }
       >
         {total === 0 ? (
-          <View className="flex-1 items-center justify-center px-4 py-20">
+          <View className="flex-1 items-center justify-center px-4 py-20 mt-4">
             <Text className="text-lg font-medium text-gray-900 mb-2">
               Chưa có xe yêu thích
             </Text>

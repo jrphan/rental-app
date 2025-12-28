@@ -13,7 +13,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { apiVehicle } from "@/services/api.vehicle";
 import { COLORS } from "@/constants/colors";
 import { POPULAR_CITIES } from "@/constants/city.constants";
-import VehicleCard from "@/screens/vehicles/components/VehicleCard";
+import VehiclesList from "@/screens/vehicles/components/VehiclesList";
 import UserHeaderSection from "./components/UserHeaderSection";
 import VehicleSearchBar from "./components/VehicleSearchBar";
 import type { Vehicle } from "@/screens/vehicles/types";
@@ -66,43 +66,8 @@ export default function HomeScreen() {
     { city: POPULAR_CITIES[3].value, query: haiphongQuery },
   ];
 
-  const renderVehicleList = (
-    vehicles: Vehicle[] | undefined,
-    variant: "full" | "compact" = "full",
-    horizontal = false
-  ) => {
-    if (!vehicles || vehicles.length === 0) {
-      return (
-        <View className="py-8 items-center">
-          <Text className="text-gray-500">Chưa có xe nào</Text>
-        </View>
-      );
-    }
-
-    if (horizontal) {
-      return (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="flex-row"
-          contentContainerStyle={{ paddingRight: 16 }}
-        >
-          {vehicles.map((vehicle) => (
-            <View key={vehicle.id} className="mr-4" style={{ width: 280 }}>
-              <VehicleCard vehicle={vehicle} variant={variant} />
-            </View>
-          ))}
-        </ScrollView>
-      );
-    }
-
-    return (
-      <View>
-        {vehicles.map((vehicle) => (
-          <VehicleCard key={vehicle.id} vehicle={vehicle} variant={variant} />
-        ))}
-      </View>
-    );
+  const handleVehiclePress = (vehicle: Vehicle) => {
+    router.push(`/vehicle/${vehicle.id}` as any);
   };
 
   const handleSearch = (filters: {
@@ -163,6 +128,11 @@ export default function HomeScreen() {
           className="flex-1 bg-white"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 24 }}
+          // Android performance optimizations
+          removeClippedSubviews={true}
+          decelerationRate="fast"
+          overScrollMode="never"
+          nestedScrollEnabled={true}
         >
           {/* Search Bar */}
           <View className="px-4 pt-4 pb-2">
@@ -179,9 +149,16 @@ export default function HomeScreen() {
           {/* Popular Vehicles Section */}
           <View className="px-4 mt-4 mb-4">
             <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-xl font-bold text-gray-900">
-                Xe phổ biến
-              </Text>
+              <View className="flex-row items-center">
+                <MaterialIcons
+                  name="trending-up"
+                  size={24}
+                  color={COLORS.primary}
+                />
+                <Text className="text-xl font-bold text-gray-900 ml-2">
+                  Xe phổ biến
+                </Text>
+              </View>
             </View>
 
             {isLoadingPopular ? (
@@ -189,7 +166,11 @@ export default function HomeScreen() {
                 <ActivityIndicator size="large" color={COLORS.primary} />
               </View>
             ) : (
-              renderVehicleList(popularVehicles, "compact", true)
+              <VehiclesList
+                vehicles={popularVehicles || []}
+                variant="compact"
+                onVehiclePress={handleVehiclePress}
+              />
             )}
           </View>
 
@@ -213,7 +194,11 @@ export default function HomeScreen() {
                   </View>
                 </View>
 
-                {renderVehicleList(vehicles, "compact", true)}
+                <VehiclesList
+                  vehicles={vehicles}
+                  variant="compact"
+                  onVehiclePress={handleVehiclePress}
+                />
               </View>
             );
           })}

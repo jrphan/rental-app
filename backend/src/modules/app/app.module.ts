@@ -10,9 +10,21 @@ import { UserModule } from '@/modules/user/user.module';
 import { VehicleModule } from '@/modules/vehicle/vehicle.module';
 import { NotificationModule } from '@/modules/notification/notification.module';
 import { RentalModule } from '@/modules/rental/rental.module';
+import { ChatModule } from '@/modules/chat/chat.module';
 
 @Module({
-  imports: [PrismaModule, LoggerModule, RedisModule, AuthModule, FileModule, UserModule, VehicleModule, NotificationModule, RentalModule],
+  imports: [
+    PrismaModule,
+    LoggerModule,
+    RedisModule,
+    AuthModule,
+    FileModule,
+    UserModule,
+    VehicleModule,
+    NotificationModule,
+    RentalModule,
+    ChatModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
