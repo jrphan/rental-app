@@ -33,7 +33,6 @@ export interface Vehicle {
 	lng: number;
 	pricePerDay: number;
 	depositAmount: number;
-	deliveryBaseFee: number;
 	deliveryFeePerKm: number;
 	deliveryRadiusKm: number;
 	instantBook: boolean;

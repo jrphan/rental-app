@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,9 +17,9 @@ import { PROMOS, type Promo } from "@/constants/promos";
 import { calculateDistanceKm } from "@/lib/geo";
 
 export default function BookingScreen() {
-  const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
-  const router = useRouter();
-  const queryClient = useQueryClient();
+	const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
+	const router = useRouter();
+	const queryClient = useQueryClient();
 
 	const [startDate, setStartDate] = useState<string>("");
 	const [endDate, setEndDate] = useState<string>("");
@@ -78,81 +71,81 @@ export default function BookingScreen() {
 		}
 	};
 
-  // Fetch vehicle details
-  const { data: vehicle, isLoading } = useQuery<Vehicle>({
-    queryKey: ["vehicle", vehicleId],
-    queryFn: () => {
-      if (!vehicleId) throw new Error("Vehicle ID is required");
-      return apiVehicle.getVehicleDetail(vehicleId);
-    },
-    enabled: !!vehicleId,
-  });
+	// Fetch vehicle details
+	const { data: vehicle, isLoading } = useQuery<Vehicle>({
+		queryKey: ["vehicle", vehicleId],
+		queryFn: () => {
+			if (!vehicleId) throw new Error("Vehicle ID is required");
+			return apiVehicle.getVehicleDetail(vehicleId);
+		},
+		enabled: !!vehicleId,
+	});
 
-  // Create rental mutation
-  const createRentalMutation = useMutation({
-    mutationFn: async (data: CreateRentalRequest) => {
-      return apiRental.createRental(data);
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["rental"] });
-      Alert.alert("Thành công", data.message, [
-        {
-          text: "Xem đơn thuê",
-          onPress: () => {
-            router.replace(`/(tabs)/vehicles?rentalId=${data.rental.id}`);
-          },
-        },
-        {
-          text: "OK",
-          style: "cancel",
-          onPress: () => router.back(),
-        },
-      ]);
-    },
-    onError: (error: any) => {
-      Alert.alert("Lỗi", error.message || "Tạo đơn thuê thất bại");
-    },
-  });
+	// Create rental mutation
+	const createRentalMutation = useMutation({
+		mutationFn: async (data: CreateRentalRequest) => {
+			return apiRental.createRental(data);
+		},
+		onSuccess: (data) => {
+			queryClient.invalidateQueries({ queryKey: ["rental"] });
+			Alert.alert("Thành công", data.message, [
+				{
+					text: "Xem đơn thuê",
+					onPress: () => {
+						router.replace(`/(tabs)/vehicles?rentalId=${data.rental.id}`);
+					},
+				},
+				{
+					text: "OK",
+					style: "cancel",
+					onPress: () => router.back(),
+				},
+			]);
+		},
+		onError: (error: any) => {
+			Alert.alert("Lỗi", error.message || "Tạo đơn thuê thất bại");
+		},
+	});
 
-  const handleSubmit = () => {
-    if (!vehicleId || !startDate || !endDate) {
-      Alert.alert("Lỗi", "Vui lòng chọn ngày bắt đầu và ngày kết thúc");
-      return;
-    }
+	const handleSubmit = () => {
+		if (!vehicleId || !startDate || !endDate) {
+			Alert.alert("Lỗi", "Vui lòng chọn ngày bắt đầu và ngày kết thúc");
+			return;
+		}
 
-    // If delivery option selected, require an address
-    if (deliveryOption === "delivery") {
-      if (!vehicle?.deliveryAvailable) {
-        Alert.alert("Lỗi", "Chủ xe không hỗ trợ giao xe tận nơi");
-        return;
-      }
-      if (!deliveryAddress) {
-        Alert.alert("Lỗi", "Vui lòng chọn địa điểm giao xe");
-        return;
-      }
-    }
+		// If delivery option selected, require an address
+		if (deliveryOption === "delivery") {
+			if (!vehicle?.deliveryAvailable) {
+				Alert.alert("Lỗi", "Chủ xe không hỗ trợ giao xe tận nơi");
+				return;
+			}
+			if (!deliveryAddress) {
+				Alert.alert("Lỗi", "Vui lòng chọn địa điểm giao xe");
+				return;
+			}
+		}
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+		const start = new Date(startDate);
+		const end = new Date(endDate);
 
-    if (start >= end) {
-      Alert.alert("Lỗi", "Ngày kết thúc phải sau ngày bắt đầu");
-      return;
-    }
+		if (start >= end) {
+			Alert.alert("Lỗi", "Ngày kết thúc phải sau ngày bắt đầu");
+			return;
+		}
 
-    if (start < new Date()) {
-      Alert.alert("Lỗi", "Ngày bắt đầu không được trong quá khứ");
-      return;
-    }
+		if (start < new Date()) {
+			Alert.alert("Lỗi", "Ngày bắt đầu không được trong quá khứ");
+			return;
+		}
 
-    createRentalMutation.mutate({
-      vehicleId,
-      startDate: start.toISOString(),
-      endDate: end.toISOString(),
-      deliveryFee,
-      discountAmount,
-    });
-  };
+		createRentalMutation.mutate({
+			vehicleId,
+			startDate: start.toISOString(),
+			endDate: end.toISOString(),
+			deliveryFee,
+			discountAmount,
+		});
+	};
 
 	// Calculate price summary
 	const calculateSummary = () => {
@@ -167,112 +160,98 @@ export default function BookingScreen() {
 			};
 		}
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const durationMs = end.getTime() - start.getTime();
-    const durationMinutes = Math.floor(durationMs / (1000 * 60));
-    const durationDays = Math.ceil(durationMinutes / (60 * 24)); // Round up to days
+		const start = new Date(startDate);
+		const end = new Date(endDate);
+		const durationMs = end.getTime() - start.getTime();
+		const durationMinutes = Math.floor(durationMs / (1000 * 60));
+		const durationDays = Math.ceil(durationMinutes / (60 * 24)); // Round up to days
 
-    const basePrice = Number(vehicle.pricePerDay) * durationDays;
-    const totalPrice = basePrice + deliveryFee - discountAmount;
-    const depositAmount = Number(vehicle.depositAmount || 0);
+		const basePrice = Number(vehicle.pricePerDay) * durationDays;
+		const totalPrice = basePrice + deliveryFee - discountAmount;
+		const depositAmount = Number(vehicle.depositAmount || 0);
 
-    return {
-      durationDays,
-      basePrice,
-      deliveryFee,
-      discountAmount,
-      totalPrice,
-      depositAmount,
-    };
-  };
+		return {
+			durationDays,
+			basePrice,
+			deliveryFee,
+			discountAmount,
+			totalPrice,
+			depositAmount,
+		};
+	};
 
-  const summary = calculateSummary();
+	const summary = calculateSummary();
 
-  if (isLoading) {
-    return (
-      <SafeAreaView
-        className="flex-1 bg-white"
-        edges={["top", "left", "right"]}
-      >
-        <HeaderBase title="Đặt xe" showBackButton />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text className="mt-4 text-gray-600">Đang tải thông tin...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+	if (isLoading) {
+		return (
+			<SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
+				<HeaderBase title="Đặt xe" showBackButton />
+				<View className="flex-1 items-center justify-center">
+					<ActivityIndicator size="large" color={COLORS.primary} />
+					<Text className="mt-4 text-gray-600">Đang tải thông tin...</Text>
+				</View>
+			</SafeAreaView>
+		);
+	}
 
-  if (!vehicle) {
-    return (
-      <SafeAreaView
-        className="flex-1 bg-white"
-        edges={["top", "left", "right"]}
-      >
-        <HeaderBase title="Đặt xe" showBackButton />
-        <View className="flex-1 items-center justify-center px-4">
-          <MaterialIcons name="error-outline" size={64} color="#EF4444" />
-          <Text className="mt-4 text-red-600 text-center">
-            Không tìm thấy thông tin xe
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+	if (!vehicle) {
+		return (
+			<SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
+				<HeaderBase title="Đặt xe" showBackButton />
+				<View className="flex-1 items-center justify-center px-4">
+					<MaterialIcons name="error-outline" size={64} color="#EF4444" />
+					<Text className="mt-4 text-red-600 text-center">Không tìm thấy thông tin xe</Text>
+				</View>
+			</SafeAreaView>
+		);
+	}
 
-  return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
-      <HeaderBase title="Đặt xe" showBackButton />
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View className="px-4 pt-4">
-          {/* Vehicle Info Summary */}
-          <View className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
-            <Text className="text-lg font-bold text-gray-900 mb-2">
-              {vehicle.brand} {vehicle.model}
-            </Text>
-            <Text className="text-sm text-gray-600 mb-1">
-              Năm {vehicle.year} • {vehicle.color}
-            </Text>
-            <Text className="text-sm text-gray-600 mb-3">
-              Biển số: {vehicle.licensePlate}
-            </Text>
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm text-gray-600">Giá thuê/ngày:</Text>
-              <Text className="text-lg font-bold text-orange-600">
-                {formatPrice(Number(vehicle.pricePerDay))}
-              </Text>
-            </View>
-          </View>
+	return (
+		<SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
+			<HeaderBase title="Đặt xe" showBackButton />
+			<ScrollView
+				className="flex-1"
+				contentContainerStyle={{ paddingBottom: 24 }}
+				showsVerticalScrollIndicator={false}
+			>
+				<View className="px-4 pt-4">
+					{/* Vehicle Info Summary */}
+					<View className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+						<Text className="text-lg font-bold text-gray-900 mb-2">
+							{vehicle.brand} {vehicle.model}
+						</Text>
+						<Text className="text-sm text-gray-600 mb-1">
+							Năm {vehicle.year} • {vehicle.color}
+						</Text>
+						<Text className="text-sm text-gray-600 mb-3">Biển số: {vehicle.licensePlate}</Text>
+						<View className="flex-row items-center justify-between">
+							<Text className="text-sm text-gray-600">Giá thuê/ngày:</Text>
+							<Text className="text-lg font-bold text-orange-600">
+								{formatPrice(Number(vehicle.pricePerDay))}
+							</Text>
+						</View>
+					</View>
 
-          {/* Date Selection */}
-          <View className="mb-4">
-            <DatePicker
-              label="Ngày bắt đầu"
-              value={startDate}
-              onChange={(value) => setStartDate(value)}
-              placeholder="Chọn ngày bắt đầu"
-              minimumDate={new Date()}
-            />
+					{/* Date Selection */}
+					<View className="mb-4">
+						<DatePicker
+							label="Ngày bắt đầu"
+							value={startDate}
+							onChange={(value) => setStartDate(value)}
+							placeholder="Chọn ngày bắt đầu"
+							minimumDate={new Date()}
+						/>
 
-            <DatePicker
-              label="Ngày kết thúc"
-              value={endDate}
-              onChange={(value) => setEndDate(value)}
-              placeholder="Chọn ngày kết thúc"
-              minimumDate={
-                startDate
-                  ? new Date(
-                      new Date(startDate).getTime() + 24 * 60 * 60 * 1000
-                    )
-                  : new Date()
-              }
-            />
-          </View>
+						<DatePicker
+							label="Ngày kết thúc"
+							value={endDate}
+							onChange={(value) => setEndDate(value)}
+							placeholder="Chọn ngày kết thúc"
+							minimumDate={
+								startDate ? new Date(new Date(startDate).getTime() + 24 * 60 * 60 * 1000) : new Date()
+							}
+						/>
+					</View>
 
 					{/* Delivery / Pickup options */}
 					<View className="mb-4">
@@ -281,7 +260,7 @@ export default function BookingScreen() {
 						<TouchableOpacity
 							onPress={() => setDeliveryOption("pickup")}
 							activeOpacity={0.8}
-							className={`p-4 rounded-xl mb-2 ${deliveryOption === "pickup" ? "border border-gray-200 bg-white" : "bg-gray-50 border border-gray-200"}`}
+							className={`p-4 rounded-xl mb-2 ${deliveryOption === "pickup" ? "bg-white border border-gray-200" : "bg-gray-50 border border-gray-200"}`}
 						>
 							<View className="flex-row items-center">
 								<MaterialIcons
@@ -312,7 +291,7 @@ export default function BookingScreen() {
 							}}
 							activeOpacity={vehicle?.deliveryAvailable ? 0.8 : 1}
 							disabled={!vehicle?.deliveryAvailable}
-							className={`p-4 rounded-xl mb-2 ${deliveryOption === "delivery" ? "border border-gray-200 bg-white" : vehicle?.deliveryAvailable ? "bg-gray-50 border border-gray-200" : "bg-gray-200"}`}
+							className={`p-4 rounded-xl mb-2 ${deliveryOption === "delivery" ? "bg-white border border-gray-200" : vehicle?.deliveryAvailable ? "bg-gray-50 border border-gray-200" : "bg-gray-100 border border-gray-200 opacity-50"}`}
 						>
 							<View className="flex-row items-start">
 								<MaterialIcons
@@ -325,9 +304,13 @@ export default function BookingScreen() {
 									color={deliveryOption === "delivery" ? COLORS.primary : "#6B7280"}
 								/>
 								<View className="ml-3 flex-1">
-									<Text className="font-semibold text-gray-900">Tôi muốn được giao xe tận nơi</Text>
-									{vehicle?.deliveryAvailable ? (
-										deliveryAddress ? (
+									<Text className="font-semibold text-gray-900">
+										{vehicle?.deliveryAvailable
+											? "Tôi muốn được giao xe tận nơi"
+											: "Chủ xe không hỗ trợ giao xe tận nơi"}
+									</Text>
+									{vehicle?.deliveryAvailable &&
+										(deliveryAddress ? (
 											<Text className="text-sm text-gray-700 mt-1">
 												{deliveryAddress.address || ""}
 												{deliveryAddress.ward ? `, ${deliveryAddress.ward}` : ""}
@@ -336,12 +319,7 @@ export default function BookingScreen() {
 											</Text>
 										) : (
 											<Text className="text-sm text-gray-500 mt-1">Chọn địa điểm giao xe</Text>
-										)
-									) : (
-										<Text className="text-sm text-gray-600 mt-1">
-											Chủ xe không hỗ trợ giao xe tận nơi
-										</Text>
-									)}
+										))}
 								</View>
 								{/* show distance when chosen */}
 								{deliveryDistanceKm != null && (
@@ -387,10 +365,10 @@ export default function BookingScreen() {
 								return;
 							}
 
-							// compute fee (ceil km * feePerKm) + base, fallback to 0
+							// compute fee (round km * feePerKm) + base, fallback to 0
 							// feePerKm default 10,000 VND/km
 							const feePerKm = Number((vehicle as any).deliveryFeePerKm ?? 10000);
-							const calc = Math.floor(dist) * feePerKm;
+							const calc = Math.round(dist) * feePerKm;
 
 							setDeliveryOption("delivery");
 							setDeliveryAddress({
@@ -401,7 +379,6 @@ export default function BookingScreen() {
 								lat: Number(lat),
 								lng: Number(lng),
 							});
-							console.log("Calc: ", calc);
 							setDeliveryFee(calc);
 							setDeliveryDistanceKm(dist);
 						}}
@@ -409,133 +386,124 @@ export default function BookingScreen() {
 						initialLng={undefined}
 					/>
 
+					{/* Price Summary */}
 					{/* Coupon preview (demo) */}
-					<View className="mb-4">
-						<TouchableOpacity
-							onPress={() => setShowPromoModal(true)}
-							style={{
-								borderWidth: 1,
-								borderColor: "#E5E7EB",
-								borderRadius: 8,
-								padding: 12,
-								display: "flex",
-								flexDirection: "row",
-								justifyContent: "space-between",
-								alignItems: "center",
-							}}
-						>
-							<Text style={{ color: "#374151" }}>
-								{selectedPromo
-									? `${selectedPromo.title} · ${selectedPromo.code}`
-									: "Chọn mã khuyến mãi"}
-							</Text>
-							{selectedPromo && (
+					{startDate && endDate && (
+						<>
+							<View className="mb-4">
 								<TouchableOpacity
-									onPress={() => {
-										setSelectedPromo(null);
-										setDiscountAmount(0);
+									onPress={() => setShowPromoModal(true)}
+									style={{
+										borderWidth: 1,
+										borderColor: "#E5E7EB",
+										borderRadius: 8,
+										padding: 12,
+										display: "flex",
+										flexDirection: "row",
+										justifyContent: "space-between",
+										alignItems: "center",
 									}}
 								>
-									<MaterialIcons name="close" size={20} />
+									<Text style={{ color: "#374151" }}>
+										{selectedPromo
+											? `${selectedPromo.title} · ${selectedPromo.code}`
+											: "Chọn mã khuyến mãi"}
+									</Text>
+									{selectedPromo && (
+										<TouchableOpacity
+											onPress={() => {
+												setSelectedPromo(null);
+												setDiscountAmount(0);
+											}}
+										>
+											<MaterialIcons name="close" size={20} />
+										</TouchableOpacity>
+									)}
 								</TouchableOpacity>
-							)}
-						</TouchableOpacity>
-					</View>
-					<PromoModal
-						visible={showPromoModal}
-						selected={selectedPromo ?? undefined}
-						onClose={() => setShowPromoModal(false)}
-						onApply={applyPromo}
-					/>
+							</View>
+							<PromoModal
+								visible={showPromoModal}
+								selected={selectedPromo ?? undefined}
+								onClose={() => setShowPromoModal(false)}
+								onApply={applyPromo}
+							/>
+							<View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">
+								<Text className="text-lg font-bold text-gray-900 mb-3">Tóm tắt giá</Text>
 
-          {/* Price Summary */}
-          {startDate && endDate && (
-            <View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">
-              <Text className="text-lg font-bold text-gray-900 mb-3">
-                Tóm tắt giá
-              </Text>
-
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-gray-600">
-                  Giá cơ bản ({summary.durationDays} ngày)
-                </Text>
-                <Text className="text-sm font-semibold text-gray-900">
-                  {formatPrice(summary.basePrice)}
-                </Text>
-              </View>
-
-							{summary.deliveryFee > 0 && (
 								<View className="flex-row justify-between mb-2">
 									<Text className="text-sm text-gray-600">
-										Phí giao xe <Text style={{ color: "#9CA3AF" }}>(10.000đ/km)</Text>
+										Giá cơ bản ({summary.durationDays} ngày)
 									</Text>
 									<Text className="text-sm font-semibold text-gray-900">
-										{formatPrice(summary.deliveryFee)}
+										{formatPrice(summary.basePrice)}
 									</Text>
 								</View>
-							)}
 
-              {summary.discountAmount > 0 && (
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-sm text-gray-600">Giảm giá</Text>
-                  <Text className="text-sm font-semibold text-green-600">
-                    -{formatPrice(summary.discountAmount)}
-                  </Text>
-                </View>
-              )}
+								{summary.deliveryFee > 0 && (
+									<View className="flex-row justify-between mb-2">
+										<Text className="text-sm text-gray-600">
+											Phí giao xe <Text style={{ color: "#9CA3AF" }}>(10.000đ/km)</Text>
+										</Text>
+										<Text className="text-sm font-semibold text-gray-900">
+											{formatPrice(summary.deliveryFee)}
+										</Text>
+									</View>
+								)}
 
-              <View className="border-t border-orange-200 pt-2 mt-2">
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-base font-bold text-gray-900">
-                    Tổng cộng
-                  </Text>
-                  <Text className="text-xl font-bold text-orange-600">
-                    {formatPrice(summary.totalPrice)}
-                  </Text>
-                </View>
+								{summary.discountAmount > 0 && (
+									<View className="flex-row justify-between mb-2">
+										<Text className="text-sm text-gray-600">Giảm giá</Text>
+										<Text className="text-sm font-semibold text-green-600">
+											-{formatPrice(summary.discountAmount)}
+										</Text>
+									</View>
+								)}
 
-                {summary.depositAmount > 0 && (
-                  <View className="flex-row justify-between">
-                    <Text className="text-sm text-gray-600">Tiền cọc</Text>
-                    <Text className="text-sm font-semibold text-gray-900">
-                      {formatPrice(summary.depositAmount)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
+								<View className="border-t border-orange-200 pt-2 mt-2">
+									<View className="flex-row justify-between mb-2">
+										<Text className="text-base font-bold text-gray-900">Tổng cộng</Text>
+										<Text className="text-xl font-bold text-orange-600">
+											{formatPrice(summary.totalPrice)}
+										</Text>
+									</View>
 
-          {/* Submit Button */}
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={!startDate || !endDate || createRentalMutation.isPending}
-            className={`rounded-xl p-4 mb-4 ${
-              !startDate || !endDate || createRentalMutation.isPending
-                ? "bg-gray-300"
-                : "bg-orange-600"
-            }`}
-            style={
-              !startDate || !endDate || createRentalMutation.isPending
-                ? {}
-                : { backgroundColor: COLORS.primary }
-            }
-          >
-            {createRentalMutation.isPending ? (
-              <View className="flex-row items-center justify-center">
-                <ActivityIndicator size="small" color="#FFFFFF" />
-                <Text className="ml-2 text-lg font-semibold text-white">
-                  Đang xử lý...
-                </Text>
-              </View>
-            ) : (
-              <Text className="text-lg font-semibold text-white text-center">
-                Xác nhận đặt xe
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+									{summary.depositAmount > 0 && (
+										<View className="flex-row justify-between">
+											<Text className="text-sm text-gray-600">Tiền cọc</Text>
+											<Text className="text-sm font-semibold text-gray-900">
+												{formatPrice(summary.depositAmount)}
+											</Text>
+										</View>
+									)}
+								</View>
+							</View>
+						</>
+					)}
+
+					{/* Submit Button */}
+					<TouchableOpacity
+						onPress={handleSubmit}
+						disabled={!startDate || !endDate || createRentalMutation.isPending}
+						className={`rounded-xl p-4 mb-4 ${
+							!startDate || !endDate || createRentalMutation.isPending ? "bg-gray-300" : "bg-orange-600"
+						}`}
+						style={
+							!startDate || !endDate || createRentalMutation.isPending
+								? {}
+								: { backgroundColor: COLORS.primary }
+						}
+					>
+						{createRentalMutation.isPending ? (
+							<View className="flex-row items-center justify-center">
+								<ActivityIndicator size="small" color="#FFFFFF" />
+								<Text className="ml-2 text-lg font-semibold text-white">Đang xử lý...</Text>
+							</View>
+						) : (
+							<Text className="text-lg font-semibold text-white text-center">Xác nhận đặt xe</Text>
+						)}
+					</TouchableOpacity>
+				</View>
+			</ScrollView>
+		</SafeAreaView>
+	);
 }

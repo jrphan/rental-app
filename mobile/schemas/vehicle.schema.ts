@@ -81,19 +81,6 @@ export const vehicleSchema = z.object({
 	cavetBack: z.string().optional(),
 	instantBook: z.boolean().optional(),
 	deliveryAvailable: z.boolean().optional(),
-	deliveryBaseFee: z
-		.string()
-		.min(1, "Phí giao cố định không được để trống")
-		.regex(/^\d+$/, "Phí giao cố định phải là số")
-		.refine(
-			(val) => {
-				const amount = parseInt(val, 10);
-				return amount > 0 && amount <= 100000000;
-			},
-			{
-				message: "Phí giao cố định phải từ 1 đến 100,000,000 VNĐ",
-			}
-		),
 	deliveryFeePerKm: z
 		.string()
 		.min(1, "Phí giao (VNĐ/ngày) không được để trống")
@@ -101,10 +88,10 @@ export const vehicleSchema = z.object({
 		.refine(
 			(val) => {
 				const amount = parseInt(val, 10);
-				return amount > 0 && amount <= 100000000;
+				return amount > 0 && amount <= 50000;
 			},
 			{
-				message: "Phí giao (VNĐ/ngày) phải từ 1 đến 100,000,000 VNĐ",
+				message: "Phí giao (VNĐ/ngày) phải từ 1 đến 50,000 VNĐ",
 			}
 		),
 	deliveryRadiusKm: z

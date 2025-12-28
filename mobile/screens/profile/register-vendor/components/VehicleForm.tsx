@@ -72,7 +72,6 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				cavetBack: (vehicleData as any).cavetBack || "",
 				instantBook: vehicleData.instantBook || false,
 				deliveryAvailable: (vehicleData as any).deliveryAvailable || false,
-				deliveryBaseFee: (vehicleData as any).deliveryBaseFee?.toString() ?? "0",
 				deliveryFeePerKm: (vehicleData as any).deliveryFeePerKm?.toString() ?? "10000",
 				deliveryRadiusKm: (vehicleData as any).deliveryRadiusKm?.toString() || "",
 				imageUrls: imageUrls.length > 0 ? imageUrls : [],
@@ -126,7 +125,6 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				instantBook: data.instantBook,
 				deliveryAvailable: data.deliveryAvailable,
 				// system default: fee per km = 10,000 VND if owner doesn't supply
-				deliveryBaseFee: data.deliveryBaseFee ? parseInt(data.deliveryBaseFee, 10) : 0,
 				deliveryFeePerKm: data.deliveryFeePerKm ? parseFloat(data.deliveryFeePerKm) : 10000,
 				deliveryRadiusKm: data.deliveryRadiusKm ? parseInt(data.deliveryRadiusKm, 10) : null,
 				images,

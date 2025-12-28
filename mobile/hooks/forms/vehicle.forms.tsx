@@ -32,8 +32,6 @@ export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
 			instantBook: defaultValues?.instantBook || false,
 			deliveryAvailable: defaultValues?.deliveryAvailable || false,
 			imageUrls: defaultValues?.imageUrls || [],
-			// Default: baseFee = 0 (no base), feePerKm = 10000 (system default)
-			deliveryBaseFee: defaultValues?.deliveryBaseFee ?? "0",
 			deliveryFeePerKm: defaultValues?.deliveryFeePerKm ?? "10000",
 			deliveryRadiusKm: defaultValues?.deliveryRadiusKm || "",
 		},

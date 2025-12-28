@@ -264,7 +264,6 @@ model Vehicle {
   deliveryAvailable Boolean     @default(false)
 
   // delivery config
-  deliveryBaseFee    Decimal?   @default(0) @db.Decimal(15,2)  // cố định (VNĐ)
   deliveryFeePerKm   Decimal?   @default(0) @db.Decimal(10,2)  // VNĐ/km
   deliveryRadiusKm   Int?      // nếu null hoặc 0 => không giới hạn
 
