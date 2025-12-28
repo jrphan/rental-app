@@ -33,6 +33,9 @@ export interface Vehicle {
 	lng: number;
 	pricePerDay: number;
 	depositAmount: number;
+	deliveryBaseFee: number;
+	deliveryFeePerKm: number;
+	deliveryRadiusKm: number;
 	instantBook: boolean;
 	deliveryAvailable?: boolean;
 	status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "MAINTENANCE" | "HIDDEN";

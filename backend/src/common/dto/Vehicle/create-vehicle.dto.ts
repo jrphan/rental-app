@@ -128,4 +128,22 @@ export class CreateVehicleDto {
   @IsBoolean()
   @Type(() => Boolean)
   deliveryAvailable?: boolean;
+
+  @IsNumber()
+  @Min(1)
+  @Max(1000000)
+  @Type(() => Number)
+  deliveryBaseFee: number;
+
+  @IsNumber()
+  @Min(1)
+  @Max(30000)
+  @Type(() => Number)
+  deliveryFeePerKm: number;
+
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  @Type(() => Number)
+  deliveryRadiusKm: number;
 }

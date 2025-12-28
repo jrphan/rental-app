@@ -72,6 +72,9 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				cavetBack: (vehicleData as any).cavetBack || "",
 				instantBook: vehicleData.instantBook || false,
 				deliveryAvailable: (vehicleData as any).deliveryAvailable || false,
+				deliveryBaseFee: (vehicleData as any).deliveryBaseFee?.toString() ?? "0",
+				deliveryFeePerKm: (vehicleData as any).deliveryFeePerKm?.toString() ?? "10000",
+				deliveryRadiusKm: (vehicleData as any).deliveryRadiusKm?.toString() || "",
 				imageUrls: imageUrls.length > 0 ? imageUrls : [],
 			});
 		}
@@ -122,6 +125,10 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				cavetBack: data.cavetBack,
 				instantBook: data.instantBook,
 				deliveryAvailable: data.deliveryAvailable,
+				// system default: fee per km = 10,000 VND if owner doesn't supply
+				deliveryBaseFee: data.deliveryBaseFee ? parseInt(data.deliveryBaseFee, 10) : 0,
+				deliveryFeePerKm: data.deliveryFeePerKm ? parseFloat(data.deliveryFeePerKm) : 10000,
+				deliveryRadiusKm: data.deliveryRadiusKm ? parseInt(data.deliveryRadiusKm, 10) : null,
 				images,
 			};
 
@@ -698,7 +705,8 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 							<View className="flex-1 mr-4">
 								<Text className="text-sm font-medium text-gray-700 mb-1">Giao xe tận nơi</Text>
 								<Text className="text-xs text-gray-500">
-									Bật nếu bạn muốn hỗ trợ giao/nhận xe tận nơi (phí giao sẽ do chủ/khách thỏa thuận).
+									Bật nếu bạn muốn hỗ trợ giao/nhận xe tận nơi. Hệ thống mặc định phí giao:
+									10.000đ/km. Bạn chỉ cần nhập Giới hạn khoảng cách (km).
 								</Text>
 							</View>
 							<Switch
@@ -712,6 +720,25 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 					</View>
 				)}
 			/>
+
+			{/* Delivery settings */}
+			{!isReadOnly && form.watch("deliveryAvailable") && (
+				<Controller
+					control={form.control}
+					name="deliveryRadiusKm"
+					render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => (
+						<Input
+							label="Giới hạn khoảng cách giao (km) - để trống nếu không giới hạn"
+							placeholder="20"
+							value={value}
+							onChangeText={onChange}
+							onBlur={onBlur}
+							keyboardType="numeric"
+							editable={!isReadOnly}
+						/>
+					)}
+				/>
+			)}
 
 			{!isReadOnly && (
 				<>

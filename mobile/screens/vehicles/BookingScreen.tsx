@@ -12,6 +12,9 @@ import type { Vehicle } from "./types";
 import { COLORS } from "@/constants/colors";
 import { formatPrice } from "./utils";
 import MapPickerModal from "@/components/location/MapPickerModal";
+import PromoModal from "@/components/promo/PromoModal";
+import { PROMOS, type Promo } from "@/constants/promos";
+import { calculateDistanceKm } from "@/lib/geo";
 
 export default function BookingScreen() {
 	const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
@@ -21,6 +24,7 @@ export default function BookingScreen() {
 	const [startDate, setStartDate] = useState<string>("");
 	const [endDate, setEndDate] = useState<string>("");
 	const [deliveryFee, setDeliveryFee] = useState<number>(0);
+	const [deliveryDistanceKm, setDeliveryDistanceKm] = useState<number | null>(null);
 	const [discountAmount, setDiscountAmount] = useState<number>(0);
 	const [deliveryOption, setDeliveryOption] = useState<"pickup" | "delivery" | null>("pickup");
 	const [showMapPicker, setShowMapPicker] = useState(false);
@@ -32,6 +36,40 @@ export default function BookingScreen() {
 		lat?: number;
 		lng?: number;
 	} | null>(null);
+	const [showPromoModal, setShowPromoModal] = useState(false);
+	const [selectedPromo, setSelectedPromo] = useState<Promo | null>(null);
+
+	// Promo apply handler (client-side demo)
+	const applyPromo = (promo?: Promo, inputCode?: string) => {
+		setSelectedPromo(promo || null);
+		// Reset discount
+		setDiscountAmount(0);
+		if (!promo && !inputCode) return;
+		// try match inputCode to promos
+		const matched = promo ? promo : PROMOS.find((p) => p.code.toUpperCase() === (inputCode || "").toUpperCase());
+		if (!matched) {
+			Alert.alert("Mã khuyến mại", "Mã không hợp lệ (demo).");
+			return;
+		}
+		// compute discount preview
+		const start = new Date(startDate || "");
+		const end = new Date(endDate || "");
+		const durationDays =
+			startDate && endDate ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) : 1;
+		const base = Number(vehicle?.pricePerDay || 0) * durationDays;
+		if (matched.type === "FREESHIP") {
+			setDiscountAmount(Number(deliveryFee));
+			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
+		} else if (matched.type === "PERCENT") {
+			let disc = Math.floor((base * matched.value) / 100);
+			if (matched.maxAmount) disc = Math.min(disc, matched.maxAmount);
+			setDiscountAmount(disc);
+			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
+		} else if (matched.type === "FIXED") {
+			setDiscountAmount(matched.value);
+			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
+		}
+	};
 
 	// Fetch vehicle details
 	const { data: vehicle, isLoading } = useQuery<Vehicle>({
@@ -120,8 +158,8 @@ export default function BookingScreen() {
 			return {
 				durationDays: 0,
 				basePrice: 0,
-				deliveryFee: 0,
-				discountAmount: 0,
+				deliveryFee: deliveryFee,
+				discountAmount: discountAmount,
 				totalPrice: 0,
 				depositAmount: Number(vehicle?.depositAmount || 0),
 			};
@@ -240,8 +278,10 @@ export default function BookingScreen() {
 								<View className="ml-3">
 									<Text className="font-semibold text-gray-900">Tôi tự đến lấy xe</Text>
 									<Text className="text-sm text-gray-700 mt-1">
+										{vehicle.address || ""}
 										{vehicle.ward ? `, ${vehicle.ward}` : ""}
 										{vehicle.district ? `, ${vehicle.district}` : ""}
+										{vehicle.city ? `, ${vehicle.city}` : ""}
 									</Text>
 								</View>
 							</View>
@@ -287,6 +327,14 @@ export default function BookingScreen() {
 										</Text>
 									)}
 								</View>
+								{/* show distance when chosen */}
+								{deliveryDistanceKm != null && (
+									<View style={{ justifyContent: "center", marginLeft: 8 }}>
+										<Text style={{ color: "#10B981", fontWeight: "700" }}>
+											{deliveryDistanceKm.toFixed(1)} km
+										</Text>
+									</View>
+								)}
 							</View>
 						</TouchableOpacity>
 					</View>
@@ -296,6 +344,38 @@ export default function BookingScreen() {
 						onClose={() => setShowMapPicker(false)}
 						onSelect={(lat, lng, addressParts) => {
 							setShowMapPicker(false);
+							if (!vehicle || vehicle.lat == null || vehicle.lng == null) {
+								// fallback: set address but fee = 0
+								setDeliveryOption("delivery");
+								setDeliveryAddress({
+									address: addressParts?.address || addressParts?.fullAddress || "",
+									ward: addressParts?.ward,
+									district: addressParts?.district,
+									city: addressParts?.city,
+									lat: Number(lat),
+									lng: Number(lng),
+								});
+								return;
+							}
+
+							const dist = calculateDistanceKm(
+								Number(vehicle.lat),
+								Number(vehicle.lng),
+								Number(lat),
+								Number(lng)
+							);
+							// check radius if configured
+							const radius = vehicle.deliveryRadiusKm ?? 0;
+							if (radius > 0 && dist > radius) {
+								Alert.alert("Lỗi", `Vượt giới hạn giao: ${dist.toFixed(1)} km (max ${radius} km)`);
+								return;
+							}
+
+							// compute fee (ceil km * feePerKm) + base, fallback to 0
+							// feePerKm default 10,000 VND/km
+							const feePerKm = Number((vehicle as any).deliveryFeePerKm ?? 10000);
+							const calc = Math.floor(dist) * feePerKm;
+
 							setDeliveryOption("delivery");
 							setDeliveryAddress({
 								address: addressParts?.address || addressParts?.fullAddress || "",
@@ -305,9 +385,51 @@ export default function BookingScreen() {
 								lat: Number(lat),
 								lng: Number(lng),
 							});
+							console.log("Calc: ", calc);
+							setDeliveryFee(calc);
+							setDeliveryDistanceKm(dist);
 						}}
 						initialLat={undefined}
 						initialLng={undefined}
+					/>
+
+					{/* Coupon preview (demo) */}
+					<View className="mb-4">
+						<TouchableOpacity
+							onPress={() => setShowPromoModal(true)}
+							style={{
+								borderWidth: 1,
+								borderColor: "#E5E7EB",
+								borderRadius: 8,
+								padding: 12,
+								display: "flex",
+								flexDirection: "row",
+								justifyContent: "space-between",
+								alignItems: "center",
+							}}
+						>
+							<Text style={{ color: "#374151" }}>
+								{selectedPromo
+									? `${selectedPromo.title} · ${selectedPromo.code}`
+									: "Chọn mã khuyến mãi"}
+							</Text>
+							{selectedPromo && (
+								<TouchableOpacity
+									onPress={() => {
+										setSelectedPromo(null);
+										setDiscountAmount(0);
+									}}
+								>
+									<MaterialIcons name="close" size={20} />
+								</TouchableOpacity>
+							)}
+						</TouchableOpacity>
+					</View>
+					<PromoModal
+						visible={showPromoModal}
+						selected={selectedPromo ?? undefined}
+						onClose={() => setShowPromoModal(false)}
+						onApply={applyPromo}
 					/>
 
 					{/* Price Summary */}
@@ -324,7 +446,9 @@ export default function BookingScreen() {
 
 							{summary.deliveryFee > 0 && (
 								<View className="flex-row justify-between mb-2">
-									<Text className="text-sm text-gray-600">Phí giao xe</Text>
+									<Text className="text-sm text-gray-600">
+										Phí giao xe <Text style={{ color: "#9CA3AF" }}>(10.000đ/km)</Text>
+									</Text>
 									<Text className="text-sm font-semibold text-gray-900">
 										{formatPrice(summary.deliveryFee)}
 									</Text>
