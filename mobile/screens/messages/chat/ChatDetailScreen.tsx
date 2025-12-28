@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -22,6 +23,7 @@ import { COLORS } from "@/constants/colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { formatTimeAgo } from "@/utils/date.utils";
 import SocketDebugPanel from "@/components/chat/SocketDebugPanel";
+import HeaderBase from "@/components/header/HeaderBase";
 
 export default function ChatDetailScreen() {
   const { id: chatId } = useLocalSearchParams<{ id: string }>();
@@ -143,16 +145,22 @@ export default function ChatDetailScreen() {
 
   if (isLoadingChat) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50">
+      <SafeAreaView
+        className="flex-1 items-center justify-center bg-gray-50"
+        edges={["top", "left", "right"]}
+      >
         <ActivityIndicator size="large" color={COLORS.primary} />
         <Text className="mt-4 text-gray-600">Đang tải...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (!chatDetail) {
     return (
-      <View className="flex-1 items-center justify-center bg-gray-50 px-6">
+      <SafeAreaView
+        className="flex-1 items-center justify-center bg-gray-50 px-6"
+        edges={["top", "left", "right"]}
+      >
         <MaterialIcons name="error-outline" size={64} color="#EF4444" />
         <Text className="mt-4 text-lg font-semibold text-gray-900 text-center">
           Không tìm thấy cuộc hội thoại
@@ -164,7 +172,7 @@ export default function ChatDetailScreen() {
         >
           <Text className="text-white font-semibold text-base">Quay lại</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -172,104 +180,107 @@ export default function ChatDetailScreen() {
     chatDetail.renter.id === user?.id ? chatDetail.owner : chatDetail.renter;
 
   return (
-    <KeyboardAvoidingView
+    <SafeAreaView
       className="flex-1 bg-gray-50"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      edges={["top", "left", "right"]}
     >
-      {/* Header */}
-      <View className="bg-white border-b border-gray-200 px-4 py-3 flex-row items-center">
-        <TouchableOpacity onPress={() => router.back()} className="mr-3">
-          <MaterialIcons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <View className="flex-1">
-          <Text className="text-lg font-semibold text-gray-900">
-            {otherUser.fullName || "Người dùng"}
-          </Text>
-          <Text className="text-sm text-gray-500">
-            {chatDetail.vehicle.brand} {chatDetail.vehicle.model}
-          </Text>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+        {/* Header */}
+        <View className="bg-white">
+          <HeaderBase
+            title={otherUser.fullName || "Người dùng"}
+            showBackButton
+            action={
+              <Text className="text-sm text-gray-500">
+                {chatDetail.vehicle.brand} {chatDetail.vehicle.model}
+              </Text>
+            }
+          />
         </View>
-      </View>
 
-      {/* Messages */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const isMyMessage = item.senderId === user?.id;
-          return (
-            <View
-              className={`px-4 py-2 ${
-                isMyMessage ? "items-end" : "items-start"
-              }`}
-            >
+        {/* Messages */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const isMyMessage = item.senderId === user?.id;
+            return (
               <View
-                className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                  isMyMessage
-                    ? "bg-orange-500 rounded-br-sm"
-                    : "bg-white rounded-bl-sm border border-gray-200"
+                className={`px-4 py-2 ${
+                  isMyMessage ? "items-end" : "items-start"
                 }`}
               >
-                <Text
-                  className={`text-base ${
-                    isMyMessage ? "text-white" : "text-gray-900"
+                <View
+                  className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                    isMyMessage
+                      ? "bg-orange-500 rounded-br-sm"
+                      : "bg-white rounded-bl-sm border border-gray-200"
                   }`}
                 >
-                  {item.content}
-                </Text>
-                <Text
-                  className={`text-xs mt-1 ${
-                    isMyMessage ? "text-orange-100" : "text-gray-500"
-                  }`}
-                >
-                  {formatTimeAgo(item.createdAt)}
-                </Text>
+                  <Text
+                    className={`text-base ${
+                      isMyMessage ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    {item.content}
+                  </Text>
+                  <Text
+                    className={`text-xs mt-1 ${
+                      isMyMessage ? "text-orange-100" : "text-gray-500"
+                    }`}
+                  >
+                    {formatTimeAgo(item.createdAt)}
+                  </Text>
+                </View>
               </View>
-            </View>
-          );
-        }}
-        ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
-            <Text className="text-gray-500 text-base">
-              Chưa có tin nhắn nào
-            </Text>
-          </View>
-        }
-        contentContainerStyle={{ paddingVertical: 8 }}
-      />
-
-      {/* Input */}
-      <View className="bg-white border-t border-gray-200 px-4 py-3 flex-row items-center">
-        <TextInput
-          value={message}
-          onChangeText={setMessage}
-          placeholder="Nhập tin nhắn..."
-          className="flex-1 bg-gray-100 rounded-full px-4 py-2 mr-2"
-          multiline
-          maxLength={5000}
-        />
-        <TouchableOpacity
-          onPress={handleSendMessage}
-          disabled={!message.trim() || sendMessageMutation.isPending}
-          className={`rounded-full p-2 ${
-            message.trim() ? "bg-orange-500" : "bg-gray-300"
-          }`}
-          style={{
-            backgroundColor: message.trim() ? COLORS.primary : "#D1D5DB",
+            );
           }}
-        >
-          {sendMessageMutation.isPending ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <MaterialIcons name="send" size={20} color="#FFFFFF" />
-          )}
-        </TouchableOpacity>
-      </View>
+          ListEmptyComponent={
+            <View className="flex-1 items-center justify-center py-20">
+              <Text className="text-gray-500 text-base">
+                Chưa có tin nhắn nào
+              </Text>
+            </View>
+          }
+          contentContainerStyle={{ paddingVertical: 8 }}
+        />
 
-      {/* Socket Debug Panel - Only in development */}
-      {__DEV__ && <SocketDebugPanel chatId={chatId} enabled={!!chatId} />}
-    </KeyboardAvoidingView>
+        {/* Input */}
+        <View className="bg-white border-t border-gray-200 px-4 py-3 flex-row items-center">
+          <TextInput
+            value={message}
+            onChangeText={setMessage}
+            placeholder="Nhập tin nhắn..."
+            className="flex-1 bg-gray-100 rounded-full px-4 py-2 mr-2"
+            multiline
+            maxLength={5000}
+          />
+          <TouchableOpacity
+            onPress={handleSendMessage}
+            disabled={!message.trim() || sendMessageMutation.isPending}
+            className={`rounded-full p-2 ${
+              message.trim() ? "bg-orange-500" : "bg-gray-300"
+            }`}
+            style={{
+              backgroundColor: message.trim() ? COLORS.primary : "#D1D5DB",
+            }}
+          >
+            {sendMessageMutation.isPending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <MaterialIcons name="send" size={20} color="#FFFFFF" />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Socket Debug Panel - Only in development */}
+        {__DEV__ && <SocketDebugPanel chatId={chatId} enabled={!!chatId} />}
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

@@ -53,7 +53,7 @@ export default function UserHeaderSection() {
         backgroundColor: COLORS.primary,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
-        paddingTop: 60,
+        paddingTop: Platform.OS === "ios" ? 60 : 40,
       }}
     >
       <View className="flex-row items-center justify-between">
