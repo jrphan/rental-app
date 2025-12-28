@@ -24,6 +24,7 @@ import {
 } from '@prisma/client';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { NotificationService } from '@/modules/notification/notification.service';
+import { ChatService } from '@/modules/chat/chat.service';
 import { Decimal } from '@prisma/client/runtime/library';
 
 @Injectable()
@@ -37,6 +38,7 @@ export class RentalService {
     private readonly prismaService: PrismaService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationService: NotificationService,
+    private readonly chatService: ChatService,
   ) {}
 
   /**
@@ -282,6 +284,13 @@ export class RentalService {
       })
       .catch(error => {
         this.logger.error('Failed to send notification to owner', error);
+      });
+
+    // Tạo chat cho rental
+    await this.chatService
+      .createChatForRental(rental.id, renterId, vehicle.ownerId)
+      .catch(error => {
+        this.logger.error('Failed to create chat for rental', error);
       });
 
     return {

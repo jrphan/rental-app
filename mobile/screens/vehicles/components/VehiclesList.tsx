@@ -60,6 +60,14 @@ export default function VehiclesList({
             paddingHorizontal: 16,
             paddingVertical: 16,
           }}
+          // Performance optimizations for Android
+          removeClippedSubviews={true}
+          decelerationRate="fast"
+          snapToInterval={280}
+          snapToAlignment="start"
+          disableIntervalMomentum={true}
+          // Reduce over-scroll effect on Android
+          overScrollMode="never"
         >
           {vehicles.map((vehicle) => (
             <VehicleCard
