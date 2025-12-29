@@ -144,9 +144,9 @@ export const apiVehicle = {
     search?: string;
     licensePlate?: string;
     type?: string; // comma separated types
-    minPrice?: number;
-    maxPrice?: number;
-    sortBy?: string;
+    minPrice?: number | null;
+    maxPrice?: number | null;
+    sortBy?: string | null;
     page?: number;
     limit?: number;
   }): Promise<UserVehicleListResponse & { page: number; limit: number }> {

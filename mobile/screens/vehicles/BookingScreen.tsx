@@ -14,7 +14,7 @@ import { formatPrice } from "./utils";
 import MapPickerModal from "@/components/location/MapPickerModal";
 import PromoModal from "@/components/promo/PromoModal";
 import { PROMOS, type Promo } from "@/constants/promos";
-import { calculateDistanceKm } from "@/lib/geo";
+import { calculateDistanceKm } from "@/utils/geo";
 
 export default function BookingScreen() {
 	const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
@@ -145,18 +145,17 @@ export default function BookingScreen() {
 			deliveryFee,
 			discountAmount,
 			// send deliveryAddress only when delivery selected
-			deliveryAddress:
-				deliveryAddress
-					? {
-							fullAddress: deliveryAddress.fullAddress || "",
-							address: deliveryAddress.address || "",
-							ward: deliveryAddress.ward,
-							district: deliveryAddress.district,
-							city: deliveryAddress.city,
-							lat: deliveryAddress.lat ?? null,
-							lng: deliveryAddress.lng ?? null,
-						}
-					: undefined,
+			deliveryAddress: deliveryAddress
+				? {
+						fullAddress: deliveryAddress.fullAddress || "",
+						address: deliveryAddress.address || "",
+						ward: deliveryAddress.ward,
+						district: deliveryAddress.district,
+						city: deliveryAddress.city,
+						lat: deliveryAddress.lat ?? null,
+						lng: deliveryAddress.lng ?? null,
+					}
+				: undefined,
 		});
 	};
 
@@ -277,9 +276,7 @@ export default function BookingScreen() {
 						>
 							<View className="flex-row items-center">
 								<MaterialIcons
-									name={
-										!deliveryAddress ? "radio-button-checked" : "radio-button-unchecked"
-									}
+									name={!deliveryAddress ? "radio-button-checked" : "radio-button-unchecked"}
 									size={20}
 									color={!deliveryAddress ? COLORS.primary : "#6B7280"}
 								/>
@@ -308,11 +305,7 @@ export default function BookingScreen() {
 						>
 							<View className="flex-row items-start">
 								<MaterialIcons
-									name={
-										deliveryAddress
-											? "radio-button-checked"
-											: "radio-button-unchecked"
-									}
+									name={deliveryAddress ? "radio-button-checked" : "radio-button-unchecked"}
 									size={20}
 									color={deliveryAddress ? COLORS.primary : "#6B7280"}
 								/>
@@ -335,7 +328,7 @@ export default function BookingScreen() {
 										))}
 								</View>
 								{/* show distance when chosen */}
-								{deliveryDistanceKm != null && (
+								{deliveryDistanceKm != null && deliveryAddress && (
 									<View style={{ justifyContent: "center", marginLeft: 8 }}>
 										<Text style={{ color: "#10B981", fontWeight: "700" }}>
 											{deliveryDistanceKm.toFixed(1)} km

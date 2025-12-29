@@ -6,13 +6,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import HeaderBase from "@/components/header/HeaderBase";
 import FilterModal, { type SearchFilters } from "@/components/search/FilterModal";
-import { detectLicensePlateTokens } from "@/lib/search.utils";
+import { detectLicensePlateTokens } from "@/utils/search.utils";
 import { apiVehicle } from "@/services/api.vehicle";
 import { COLORS } from "@/constants/colors";
 import VehicleCard from "@/screens/vehicles/components/VehicleCard";
 import VehicleSearchBar from "../home/components/VehicleSearchBar";
 import type { Vehicle } from "@/screens/vehicles/types";
-import { calculateDistanceKm } from "@/lib/geo";
+import { calculateDistanceKm } from "@/utils/geo";
 import VehiclesMap from "@/components/map/VehiclesMap";
 
 export default function SearchResultsScreen() {
@@ -26,6 +26,10 @@ export default function SearchResultsScreen() {
 		lat?: string;
 		lng?: string;
 		radius?: string;
+		type?: string;
+		minPrice?: string;
+		maxPrice?: string;
+		sortBy?: string;
 	}>();
 
 	const [location, setLocation] = useState<{
@@ -240,8 +244,8 @@ export default function SearchResultsScreen() {
 				/* Render map full screen area (below header) */
 				<VehiclesMap
 					vehicles={searchResults?.items || []}
-					initialLat={builtFilters.lat as number | undefined}
-					initialLng={builtFilters.lng as number | undefined}
+					initialLat={builtFilters.lat as number}
+					initialLng={builtFilters.lng as number}
 					fullScreen
 					onToggleFullScreen={() => setMapFullScreen(false)}
 				/>
@@ -316,8 +320,8 @@ export default function SearchResultsScreen() {
 						) : (
 							<VehiclesMap
 								vehicles={searchResults?.items || []}
-								initialLat={builtFilters.lat as number | undefined}
-								initialLng={builtFilters.lng as number | undefined}
+								initialLat={builtFilters.lat as number}
+								initialLng={builtFilters.lng as number}
 								onToggleFullScreen={() => setMapFullScreen(true)}
 							/>
 						)}

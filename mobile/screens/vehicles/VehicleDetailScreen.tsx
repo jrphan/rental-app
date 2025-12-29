@@ -16,7 +16,7 @@ import VehicleImageCarousel from "./components/VehicleImageCarousel";
 import { useToast } from "@/hooks/useToast";
 import VehiclesMap from "@/components/map/VehiclesMap";
 import OwnerInfo from "./components/OwnerInfo";
-import { openExternalMaps } from "@/lib/maps";
+import { openExternalMaps } from "@/utils/maps";
 
 export default function VehicleDetailScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();

@@ -15,7 +15,7 @@ export function normalizeSearchQuery(input: string | undefined) {
 }
 
 // Heuristic: detect license-plate-like token (letters+digits and dash)
-export function detectLicensePlateTokens(input: string) {
+export function detectLicensePlateTokens(input: string | undefined) {
 	if (!input) return undefined;
 	const tokens = input.split(/\s+/).map((t) => t.replace(/[^A-Za-z0-9-]/g, ""));
 	for (const t of tokens) {

@@ -6,12 +6,12 @@ import { COLORS } from "@/constants/colors";
 import { useRouter } from "expo-router";
 import type { Vehicle } from "@/screens/vehicles/types";
 import MiniVehicleCard from "./MiniVehicleCard";
-import { calculateDistanceKm } from "@/lib/geo";
+import { calculateDistanceKm } from "@/utils/geo";
 
 interface VehiclesMapProps {
 	vehicles: Vehicle[];
-	initialLat?: number;
-	initialLng?: number;
+	initialLat: number;
+	initialLng: number;
 	fullScreen?: boolean;
 	viewVehicleLocation?: boolean;
 	onToggleFullScreen?: () => void;

@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { openExternalMaps } from "@/lib/maps"; // added
+import { openExternalMaps } from "@/utils/maps"; // added
 import OwnerInfo from "./OwnerInfo"; // added
 import { apiRental, type RentalStatus } from "@/services/api.rental";
 import type { Rental } from "../types";
