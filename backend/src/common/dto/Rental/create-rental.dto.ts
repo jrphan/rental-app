@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsNumber,
   Min,
+  IsObject,
 } from 'class-validator';
 
 export class CreateRentalDto {
@@ -25,4 +26,9 @@ export class CreateRentalDto {
   @IsNumber()
   @Min(0)
   discountAmount?: number;
+
+  // Optional delivery options payload (address + coords)
+  @IsOptional()
+  @IsObject()
+  deliveryAddress?: Record<string, any>;
 }

@@ -26,9 +26,9 @@ export default function BookingScreen() {
 	const [deliveryFee, setDeliveryFee] = useState<number>(0);
 	const [deliveryDistanceKm, setDeliveryDistanceKm] = useState<number | null>(null);
 	const [discountAmount, setDiscountAmount] = useState<number>(0);
-	const [deliveryOption, setDeliveryOption] = useState<"pickup" | "delivery" | null>("pickup");
 	const [showMapPicker, setShowMapPicker] = useState(false);
 	const [deliveryAddress, setDeliveryAddress] = useState<{
+		fullAddress?: string;
 		address?: string;
 		ward?: string;
 		district?: string;
@@ -114,7 +114,7 @@ export default function BookingScreen() {
 		}
 
 		// If delivery option selected, require an address
-		if (deliveryOption === "delivery") {
+		if (deliveryAddress) {
 			if (!vehicle?.deliveryAvailable) {
 				Alert.alert("Lỗi", "Chủ xe không hỗ trợ giao xe tận nơi");
 				return;
@@ -144,6 +144,19 @@ export default function BookingScreen() {
 			endDate: end.toISOString(),
 			deliveryFee,
 			discountAmount,
+			// send deliveryAddress only when delivery selected
+			deliveryAddress:
+				deliveryAddress
+					? {
+							fullAddress: deliveryAddress.fullAddress || "",
+							address: deliveryAddress.address || "",
+							ward: deliveryAddress.ward,
+							district: deliveryAddress.district,
+							city: deliveryAddress.city,
+							lat: deliveryAddress.lat ?? null,
+							lng: deliveryAddress.lng ?? null,
+						}
+					: undefined,
 		});
 	};
 
@@ -258,17 +271,17 @@ export default function BookingScreen() {
 						<Text className="text-sm text-gray-600 mb-2">Hình thức nhận/giao xe</Text>
 						{/* Pickup */}
 						<TouchableOpacity
-							onPress={() => setDeliveryOption("pickup")}
+							onPress={() => setDeliveryAddress(null)}
 							activeOpacity={0.8}
-							className={`p-4 rounded-xl mb-2 ${deliveryOption === "pickup" ? "bg-white border border-gray-200" : "bg-gray-50 border border-gray-200"}`}
+							className={`p-4 rounded-xl mb-2 ${!deliveryAddress ? "bg-white border border-gray-200" : "bg-gray-50 border border-gray-200"}`}
 						>
 							<View className="flex-row items-center">
 								<MaterialIcons
 									name={
-										deliveryOption === "pickup" ? "radio-button-checked" : "radio-button-unchecked"
+										!deliveryAddress ? "radio-button-checked" : "radio-button-unchecked"
 									}
 									size={20}
-									color={deliveryOption === "pickup" ? COLORS.primary : "#6B7280"}
+									color={!deliveryAddress ? COLORS.primary : "#6B7280"}
 								/>
 								<View className="ml-3">
 									<Text className="font-semibold text-gray-900">Tôi tự đến lấy xe</Text>
@@ -291,17 +304,17 @@ export default function BookingScreen() {
 							}}
 							activeOpacity={vehicle?.deliveryAvailable ? 0.8 : 1}
 							disabled={!vehicle?.deliveryAvailable}
-							className={`p-4 rounded-xl mb-2 ${deliveryOption === "delivery" ? "bg-white border border-gray-200" : vehicle?.deliveryAvailable ? "bg-gray-50 border border-gray-200" : "bg-gray-100 border border-gray-200 opacity-50"}`}
+							className={`p-4 rounded-xl mb-2 ${deliveryAddress ? "bg-white border border-gray-200" : vehicle?.deliveryAvailable ? "bg-gray-50 border border-gray-200" : "bg-gray-100 border border-gray-200 opacity-50"}`}
 						>
 							<View className="flex-row items-start">
 								<MaterialIcons
 									name={
-										deliveryOption === "delivery"
+										deliveryAddress
 											? "radio-button-checked"
 											: "radio-button-unchecked"
 									}
 									size={20}
-									color={deliveryOption === "delivery" ? COLORS.primary : "#6B7280"}
+									color={deliveryAddress ? COLORS.primary : "#6B7280"}
 								/>
 								<View className="ml-3 flex-1">
 									<Text className="font-semibold text-gray-900">
@@ -340,9 +353,9 @@ export default function BookingScreen() {
 							setShowMapPicker(false);
 							if (!vehicle || vehicle.lat == null || vehicle.lng == null) {
 								// fallback: set address but fee = 0
-								setDeliveryOption("delivery");
 								setDeliveryAddress({
-									address: addressParts?.address || addressParts?.fullAddress || "",
+									fullAddress: addressParts?.fullAddress,
+									address: addressParts?.address,
 									ward: addressParts?.ward,
 									district: addressParts?.district,
 									city: addressParts?.city,
@@ -370,9 +383,9 @@ export default function BookingScreen() {
 							const feePerKm = Number((vehicle as any).deliveryFeePerKm ?? 10000);
 							const calc = Math.round(dist) * feePerKm;
 
-							setDeliveryOption("delivery");
 							setDeliveryAddress({
-								address: addressParts?.address || addressParts?.fullAddress || "",
+								fullAddress: addressParts?.fullAddress,
+								address: addressParts?.address,
 								ward: addressParts?.ward,
 								district: addressParts?.district,
 								city: addressParts?.city,

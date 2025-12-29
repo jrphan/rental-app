@@ -17,7 +17,7 @@ export const VEHICLE_BRANDS: { label: string; value: string; icon?: string }[] =
 	{
 		label: "Piaggio",
 		value: "Piaggio",
-		icon: "https://www.nicepng.com/png/full/307-3070639_piaggio-logos-symbol-vector-free-download-piaggio-motorcycle.png",
+		icon: "https://e7.pngegg.com/pngimages/12/680/png-clipart-piaggio-car-bmw-scooter-motorcycle-car-emblem-trademark-thumbnail.png",
 	},
 	{
 		label: "SYM",
@@ -54,7 +54,7 @@ export const VEHICLE_BRANDS: { label: string; value: string; icon?: string }[] =
 	{
 		label: "Kymco",
 		value: "Kymco",
-		icon: "https://upload.wikimedia.org/wikipedia/commons/2/26/Kymco-logo.jpg",
+		icon: "https://listcarbrands.com/wp-content/uploads/2022/12/Kymco-Logo.png",
 	},
 	{
 		label: "Daelim",

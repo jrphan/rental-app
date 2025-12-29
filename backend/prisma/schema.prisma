@@ -317,18 +317,21 @@ model Rental {
   renterId          String
   ownerId           String
   vehicleId         String
-  
+
   startDate         DateTime
   endDate           DateTime
   durationMinutes   Int          // Đổi sang phút để chính xác
-  
+
   // MONEY SNAPSHOTS (Lưu cứng mọi thứ tại thời điểm đặt)
   currency          String       @default("VND")
   pricePerDay       Decimal      @db.Decimal(15, 2) // Giá gốc
-  
+
   deliveryFee       Decimal      @default(0) @db.Decimal(15, 2) // Phí giao xe
   discountAmount    Decimal      @default(0) @db.Decimal(15, 2) // Mã giảm giá
-  
+
+  // deliveryAddress lưu object { address, ward, district, city, lat, lng, ... }
+  deliveryAddress   Json?        // optional, future-proof
+
   totalPrice        Decimal      @db.Decimal(15, 2) // = (Price * Duration) + Delivery - Discount
   depositPrice      Decimal      @db.Decimal(15, 2) // Tiền cọc giữ
   

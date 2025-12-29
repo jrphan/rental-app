@@ -13,6 +13,18 @@ export interface VehicleOwner {
 	avatar?: string | null;
 }
 
+// add deliveryAddress type
+export interface deliveryAddress {
+	fullAddress?: string;
+	address?: string;
+	ward?: string | null;
+	district?: string | null;
+	city?: string | null;
+	lat?: number | null;
+	lng?: number | null;
+	[key: string]: any;
+}
+
 export interface Vehicle {
 	id: string;
 	ownerId: string;
@@ -50,6 +62,13 @@ export interface RentalVehicle {
 	brand: string;
 	model: string;
 	licensePlate: string;
+	fullAddress: string;
+	address: string;
+	ward: string;
+	district: string;
+	city: string;
+	lat: number;
+	lng: number;
 	images: {
 		id?: string;
 		url: string;
@@ -62,6 +81,7 @@ export interface Rental {
 	id: string;
 	renterId: string;
 	ownerId: string;
+	owner: VehicleOwner;
 	vehicleId: string;
 	vehicle: RentalVehicle;
 	startDate: string;
@@ -77,6 +97,7 @@ export interface Rental {
 	platformFee: number;
 	ownerEarning: number;
 	status: "PENDING_PAYMENT" | "AWAIT_APPROVAL" | "CONFIRMED" | "ON_TRIP" | "COMPLETED" | "CANCELLED" | "DISPUTED";
+	deliveryAddress?: deliveryAddress | null;
 	createdAt: string;
 	updatedAt: string;
 	startOdometer?: number;

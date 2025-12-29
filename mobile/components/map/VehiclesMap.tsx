@@ -65,7 +65,7 @@ export default function VehiclesMap({
 	const containerStyle = fullScreen
 		? { flex: 1 }
 		: {
-				height: Dimensions.get("window").height * (viewVehicleLocation ? 0.2 : 0.6),
+				height: Dimensions.get("window").height * (viewVehicleLocation ? 0.2 : 0.5),
 				borderRadius: 16,
 				overflow: "hidden",
 			};

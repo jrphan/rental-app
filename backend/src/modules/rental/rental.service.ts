@@ -155,6 +155,7 @@ export class RentalService {
       endDate,
       deliveryFee = 0,
       discountAmount = 0,
+      deliveryAddress = null,
     } = createRentalDto;
 
     // Parse dates
@@ -241,6 +242,10 @@ export class RentalService {
         pricePerDay: vehicle.pricePerDay,
         deliveryFee: new Decimal(deliveryFee),
         discountAmount: new Decimal(discountAmount),
+        // persist deliveryAddress JSON (use undefined when absent and cast to Prisma.InputJsonValue)
+        deliveryAddress: deliveryAddress
+          ? (deliveryAddress as Prisma.InputJsonValue)
+          : undefined,
         totalPrice: priceCalculation.totalPrice,
         depositPrice: priceCalculation.depositPrice,
         platformFeeRatio: this.PLATFORM_FEE_RATIO,

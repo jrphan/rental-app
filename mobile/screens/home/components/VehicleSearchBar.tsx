@@ -89,7 +89,7 @@ export default function VehicleSearchBar({
         <MaterialIcons name="search" size={24} color="#6B7280" />
         <TextInput
           className="flex-1 ml-3 text-base text-gray-900"
-          placeholder="Tìm kiếm thông tin xe..."
+          placeholder="Tìm kiếm thông tin xe"
           placeholderTextColor="#9CA3AF"
           value={searchText}
           onChangeText={setSearchText}

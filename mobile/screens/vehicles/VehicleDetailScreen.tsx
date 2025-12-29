@@ -15,6 +15,7 @@ import { useAuthStore } from "@/store/auth";
 import VehicleImageCarousel from "./components/VehicleImageCarousel";
 import { useToast } from "@/hooks/useToast";
 import VehiclesMap from "@/components/map/VehiclesMap";
+import OwnerInfo from "./components/OwnerInfo";
 import { openExternalMaps } from "@/lib/maps";
 
 export default function VehicleDetailScreen() {
@@ -286,65 +287,7 @@ export default function VehicleDetailScreen() {
 					</View>
 
 					{/* Owner Information */}
-					{vehicle.owner && !isOwner && (
-						<View className="mb-4">
-							<Text className="text-lg font-semibold text-gray-900 mb-3">Chủ xe</Text>
-							<TouchableOpacity
-								onPress={() => {
-									if (!vehicle.owner) return;
-									const params = new URLSearchParams({
-										ownerName: vehicle.owner.fullName || "Chủ xe",
-									});
-									if (vehicle.owner.avatar) {
-										params.append("ownerAvatar", vehicle.owner.avatar);
-									}
-									router.push(`/owner/${vehicle.ownerId}?${params.toString()}`);
-								}}
-								activeOpacity={0.7}
-								className="bg-gray-50 rounded-xl p-4 border border-gray-200"
-							>
-								<View className="flex-row items-center">
-									{vehicle.owner?.avatar ? (
-										<Image
-											source={{ uri: vehicle.owner.avatar }}
-											className="w-16 h-16 rounded-full mr-3"
-										/>
-									) : (
-										<View className="w-16 h-16 rounded-full mr-3 bg-gray-300 items-center justify-center">
-											<MaterialIcons name="account-circle" size={40} color="#9CA3AF" />
-										</View>
-									)}
-									<View className="flex-1">
-										<View className="flex-row items-center justify-between">
-											<Text className="text-base font-semibold text-gray-900">
-												{vehicle.owner?.fullName || "Chủ xe"}
-											</Text>
-											<MaterialIcons name="chevron-right" size={24} color="#6B7280" />
-										</View>
-										<View className="flex-row items-center mt-1">
-											<MaterialIcons name="phone" size={16} color="#6B7280" />
-											<Text className="ml-1 text-sm text-gray-600">
-												{vehicle.owner?.phone || ""}
-											</Text>
-										</View>
-										{vehicle.owner?.email && (
-											<View className="flex-row items-center mt-1">
-												<MaterialIcons name="email" size={16} color="#6B7280" />
-												<Text className="ml-1 text-sm text-gray-600">
-													{vehicle.owner.email}
-												</Text>
-											</View>
-										)}
-										<View className="flex-row items-center mt-2">
-											<Text className="text-sm text-primary-600 font-medium">
-												Xem tất cả xe cho thuê
-											</Text>
-										</View>
-									</View>
-								</View>
-							</TouchableOpacity>
-						</View>
-					)}
+					{vehicle.owner && !isOwner && <OwnerInfo owner={vehicle.owner} ownerId={vehicle.ownerId} />}
 
 					{/* Description */}
 					{vehicle.description && (

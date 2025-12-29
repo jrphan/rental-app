@@ -1,497 +1,503 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  Modal,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  Alert,
-  TextInput,
+	View,
+	Text,
+	Modal,
+	ScrollView,
+	TouchableOpacity,
+	Image,
+	ActivityIndicator,
+	Alert,
+	TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { openExternalMaps } from "@/lib/maps"; // added
+import OwnerInfo from "./OwnerInfo"; // added
 import { apiRental, type RentalStatus } from "@/services/api.rental";
 import type { Rental } from "../types";
-import {
-  formatPrice,
-  formatDate,
-  getRentalStatusColor,
-  getRentalStatusLabel,
-} from "../utils";
+import { formatPrice, formatDate, getRentalStatusColor, getRentalStatusLabel } from "../utils";
 import { COLORS } from "@/constants/colors";
 import { useAuthStore } from "@/store/auth";
 
 interface RentalDetailDrawerProps {
-  visible: boolean;
-  rental: Rental | null;
-  onClose: () => void;
-  showOwnerActions?: boolean;
+	visible: boolean;
+	rental: Rental | null;
+	onClose: () => void;
+	showOwnerActions?: boolean;
 }
 
 export default function RentalDetailDrawer({
-  visible,
-  rental,
-  onClose,
-  showOwnerActions = false,
+	visible,
+	rental,
+	onClose,
+	showOwnerActions = false,
 }: RentalDetailDrawerProps) {
-  const { user } = useAuthStore();
-  const queryClient = useQueryClient();
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
+	const { user } = useAuthStore();
+	const queryClient = useQueryClient();
+	const [showCancelModal, setShowCancelModal] = useState(false);
+	const [cancelReason, setCancelReason] = useState("");
 
-  const isOwner = showOwnerActions && user?.id === rental?.ownerId;
+	const isOwner = showOwnerActions && user?.id === rental?.ownerId;
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({
-      status,
-      reason,
-    }: {
-      status: RentalStatus;
-      reason?: string;
-    }) => {
-      if (!rental) throw new Error("Rental not found");
-      return apiRental.updateRentalStatus(rental.id, {
-        status,
-        cancelReason: reason,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["myRentals"] });
-      Alert.alert("Thành công", "Trạng thái đơn thuê đã được cập nhật");
-      setShowCancelModal(false);
-      setCancelReason("");
-      onClose();
-    },
-    onError: (error: any) => {
-      Alert.alert("Lỗi", error.message || "Không thể cập nhật trạng thái");
-    },
-  });
+	const updateStatusMutation = useMutation({
+		mutationFn: async ({ status, reason }: { status: RentalStatus; reason?: string }) => {
+			if (!rental) throw new Error("Rental not found");
+			return apiRental.updateRentalStatus(rental.id, {
+				status,
+				cancelReason: reason,
+			});
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["myRentals"] });
+			Alert.alert("Thành công", "Trạng thái đơn thuê đã được cập nhật");
+			setShowCancelModal(false);
+			setCancelReason("");
+			onClose();
+		},
+		onError: (error: any) => {
+			Alert.alert("Lỗi", error.message || "Không thể cập nhật trạng thái");
+		},
+	});
 
-  const handleApprove = () => {
-    if (!rental) return;
-    Alert.alert(
-      "Xác nhận đơn thuê",
-      "Bạn có chắc chắn muốn xác nhận đơn thuê này?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xác nhận",
-          onPress: () => {
-            updateStatusMutation.mutate({ status: "CONFIRMED" });
-          },
-        },
-      ]
-    );
-  };
+	const handleApprove = () => {
+		if (!rental) return;
+		Alert.alert("Xác nhận đơn thuê", "Bạn có chắc chắn muốn xác nhận đơn thuê này?", [
+			{ text: "Hủy", style: "cancel" },
+			{
+				text: "Xác nhận",
+				onPress: () => {
+					updateStatusMutation.mutate({ status: "CONFIRMED" });
+				},
+			},
+		]);
+	};
 
-  const handleCancel = () => {
-    setShowCancelModal(true);
-  };
+	const handleCancel = () => {
+		setShowCancelModal(true);
+	};
 
-  const handleConfirmCancel = () => {
-    if (!rental || !cancelReason.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập lý do hủy");
-      return;
-    }
-    updateStatusMutation.mutate({
-      status: "CANCELLED",
-      reason: cancelReason.trim(),
-    });
-  };
+	const handleConfirmCancel = () => {
+		if (!rental || !cancelReason.trim()) {
+			Alert.alert("Lỗi", "Vui lòng nhập lý do hủy");
+			return;
+		}
+		updateStatusMutation.mutate({
+			status: "CANCELLED",
+			reason: cancelReason.trim(),
+		});
+	};
 
-  const handleStatusUpdate = (newStatus: RentalStatus) => {
-    if (!rental) return;
-    updateStatusMutation.mutate({ status: newStatus });
-  };
+	const handleStatusUpdate = (newStatus: RentalStatus) => {
+		if (!rental) return;
+		updateStatusMutation.mutate({ status: newStatus });
+	};
 
-  if (!rental) return null;
+	if (!rental) return null;
 
-  // Check if owner can perform actions
-  const canApprove = isOwner && rental.status === "AWAIT_APPROVAL";
-  const canUpdateToOnTrip = isOwner && rental.status === "CONFIRMED";
-  const canUpdateToCompleted = isOwner && rental.status === "ON_TRIP";
-  const canCancel =
-    isOwner &&
-    (rental.status === "AWAIT_APPROVAL" ||
-      rental.status === "CONFIRMED" ||
-      rental.status === "ON_TRIP");
+	// Insert OwnerInfo for non-owner viewers
+	// Check if owner can perform actions
+	const canApprove = isOwner && rental.status === "AWAIT_APPROVAL";
+	const canUpdateToOnTrip = isOwner && rental.status === "CONFIRMED";
+	const canUpdateToCompleted = isOwner && rental.status === "ON_TRIP";
+	const canCancel =
+		isOwner && (rental.status === "AWAIT_APPROVAL" || rental.status === "CONFIRMED" || rental.status === "ON_TRIP");
 
-  const primaryImage =
-    rental.vehicle.images?.find((img) => img.isPrimary)?.url ||
-    rental.vehicle.images?.[0]?.url ||
-    "https://via.placeholder.com/300x200?text=No+Image";
+	const primaryImage =
+		rental.vehicle.images?.find((img) => img.isPrimary)?.url ||
+		rental.vehicle.images?.[0]?.url ||
+		"https://via.placeholder.com/300x200?text=No+Image";
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
-          <Text className="text-lg font-bold text-gray-900">
-            Chi tiết đơn thuê
-          </Text>
-          <TouchableOpacity onPress={onClose}>
-            <MaterialIcons name="close" size={24} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
+	return (
+		<Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+			<SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+				{/* Header */}
+				<View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
+					<Text className="text-lg font-bold text-gray-900">Chi tiết đơn thuê</Text>
+					<TouchableOpacity onPress={onClose}>
+						<MaterialIcons name="close" size={24} color="#6B7280" />
+					</TouchableOpacity>
+				</View>
 
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 24 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Vehicle Image */}
-          <View className="w-full h-48 bg-gray-200">
-            <Image
-              source={{ uri: primaryImage }}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
-          </View>
+				<ScrollView
+					className="flex-1"
+					contentContainerStyle={{ paddingBottom: 24 }}
+					showsVerticalScrollIndicator={false}
+				>
+					{/* Vehicle Image */}
+					<View className="w-full h-48 bg-gray-200">
+						<Image source={{ uri: primaryImage }} className="w-full h-full" resizeMode="cover" />
+					</View>
 
-          <View className="px-4 pt-4">
-            {/* Vehicle Info */}
-            <View className="mb-4">
-              <Text className="text-xl font-bold text-gray-900 mb-1">
-                {rental.vehicle.brand} {rental.vehicle.model}
-              </Text>
-              <Text className="text-sm text-gray-600 mb-2">
-                Biển số: {rental.vehicle.licensePlate}
-              </Text>
-              <View
-                className={`self-start px-3 py-1 rounded-full ${getRentalStatusColor(
-                  rental.status
-                )}`}
-              >
-                <Text className="text-xs font-medium">
-                  {getRentalStatusLabel(rental.status)}
-                </Text>
-              </View>
-            </View>
+					<View className="px-4 pt-4">
+						{/* Vehicle Info */}
+						<View className="mb-4">
+							<Text className="text-xl font-bold text-gray-900 mb-1">
+								{rental.vehicle.brand} {rental.vehicle.model}
+							</Text>
+							<Text className="text-sm text-gray-600 mb-2">Biển số: {rental.vehicle.licensePlate}</Text>
+							<View
+								className={`self-start px-3 py-1 rounded-full ${getRentalStatusColor(rental.status)}`}
+							>
+								<Text className="text-xs font-medium">{getRentalStatusLabel(rental.status)}</Text>
+							</View>
+						</View>
 
-            {/* Rental Period */}
-            <View className="bg-gray-50 rounded-xl p-4 mb-4">
-              <Text className="text-base font-semibold text-gray-900 mb-3">
-                Thời gian thuê
-              </Text>
-              <View className="flex-row items-center mb-2">
-                <MaterialIcons
-                  name="calendar-today"
-                  size={20}
-                  color="#6B7280"
-                />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Ngày bắt đầu</Text>
-                  <Text className="text-base font-medium text-gray-900">
-                    {formatDate(rental.startDate)}
-                  </Text>
-                </View>
-              </View>
-              <View className="flex-row items-center">
-                <MaterialIcons name="event" size={20} color="#6B7280" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Ngày kết thúc</Text>
-                  <Text className="text-base font-medium text-gray-900">
-                    {formatDate(rental.endDate)}
-                  </Text>
-                </View>
-              </View>
-            </View>
+						{/* Owner Info: show only when viewer is renter (not owner) */}
+						{!isOwner && rental.owner && <OwnerInfo owner={rental.owner} ownerId={rental.ownerId} />}
 
-            {/* Price Breakdown */}
-            <View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">
-              <Text className="text-base font-semibold text-gray-900 mb-3">
-                Chi tiết giá
-              </Text>
+						{/* Rental Period */}
+						<View className="bg-gray-50 rounded-xl p-4 mb-4">
+							<Text className="text-base font-semibold text-gray-900 mb-3">Thời gian thuê</Text>
+							<View className="flex-row items-center mb-2">
+								<MaterialIcons name="calendar-today" size={20} color="#6B7280" />
+								<View className="ml-3 flex-1">
+									<Text className="text-sm text-gray-600">Ngày bắt đầu</Text>
+									<Text className="text-base font-medium text-gray-900">
+										{formatDate(rental.startDate)}
+									</Text>
+								</View>
+							</View>
+							<View className="flex-row items-center">
+								<MaterialIcons name="event" size={20} color="#6B7280" />
+								<View className="ml-3 flex-1">
+									<Text className="text-sm text-gray-600">Ngày kết thúc</Text>
+									<Text className="text-base font-medium text-gray-900">
+										{formatDate(rental.endDate)}
+									</Text>
+								</View>
+							</View>
+						</View>
 
-              <View className="flex-row justify-between mb-2">
-                <Text className="text-sm text-gray-600">Giá cơ bản</Text>
-                <Text className="text-sm font-medium text-gray-900">
-                  {formatPrice(
-                    Number(rental.pricePerDay) *
-                      Math.ceil(rental.durationMinutes / (60 * 24))
-                  )}
-                </Text>
-              </View>
+						{/* Pickup / Delivery block */}
+						{(() => {
+							// Use persisted deliveryAddress (backend) if exists,
+							// otherwise fall back to vehicle address (pickup)
+							const deliveryAddress = rental.deliveryAddress ?? null;
+							const isDelivery = Boolean(deliveryAddress) || Number(rental.deliveryFee) > 0;
+							const displayParts = deliveryAddress
+								? {
+										fullAddress: deliveryAddress.fullAddress || "",
+										address: deliveryAddress.address || "",
+										ward: deliveryAddress.ward,
+										district: deliveryAddress.district,
+										city: deliveryAddress.city,
+										lat: deliveryAddress.lat,
+										lng: deliveryAddress.lng,
+									}
+								: {
+										fullAddress: rental.vehicle?.fullAddress || "",
+										address: rental.vehicle?.address || "",
+										ward: (rental.vehicle as any)?.ward,
+										district: (rental.vehicle as any)?.district,
+										city: (rental.vehicle as any)?.city,
+										lat: (rental.vehicle as any)?.lat,
+										lng: (rental.vehicle as any)?.lng,
+									};
+							const label = isDelivery ? "Giao xe tại" : "Nhận xe tại";
+							const fullAddress =
+								[
+									displayParts.address,
+									displayParts.ward ? `, ${displayParts.ward}` : "",
+									displayParts.district ? `, ${displayParts.district}` : "",
+									displayParts.city ? `, ${displayParts.city}` : "",
+								]
+									.join("")
+									.trim() ||
+								displayParts.fullAddress ||
+								"—";
 
-              {rental.deliveryFee > 0 && (
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-sm text-gray-600">Phí giao xe</Text>
-                  <Text className="text-sm font-medium text-gray-900">
-                    {formatPrice(rental.deliveryFee)}
-                  </Text>
-                </View>
-              )}
+							return (
+								<View className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+									<View className="flex-row items-center justify-between">
+										<View style={{ flex: 1 }}>
+											<Text className="text-base font-semibold text-gray-900 mb-2">{label}</Text>
+											<Text className="text-sm text-gray-700">{fullAddress}</Text>
+										</View>
+										<TouchableOpacity
+											onPress={() => {
+												const lat = Number(displayParts.lat);
+												const lng = Number(displayParts.lng);
+												if (!isFinite(lat) || !isFinite(lng)) {
+													Alert.alert("Lỗi", "Không có tọa độ để mở chỉ đường");
+													return;
+												}
+												openExternalMaps(lat, lng, fullAddress);
+											}}
+											activeOpacity={0.8}
+										>
+											<MaterialIcons name="directions" size={27} color="#1F8A70" />
+										</TouchableOpacity>
+									</View>
+								</View>
+							);
+						})()}
 
-              {rental.discountAmount > 0 && (
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-sm text-gray-600">Giảm giá</Text>
-                  <Text className="text-sm font-medium text-green-600">
-                    -{formatPrice(rental.discountAmount)}
-                  </Text>
-                </View>
-              )}
+						{/* Price Breakdown */}
+						<View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">
+							<Text className="text-base font-semibold text-gray-900 mb-3">Chi tiết giá</Text>
 
-              <View className="border-t border-orange-200 pt-2 mt-2">
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-base font-bold text-gray-900">
-                    Tổng cộng
-                  </Text>
-                  <Text className="text-lg font-bold text-orange-600">
-                    {formatPrice(rental.totalPrice)}
-                  </Text>
-                </View>
+							<View className="flex-row justify-between mb-2">
+								<Text className="text-sm text-gray-600">Giá cơ bản</Text>
+								<Text className="text-sm font-medium text-gray-900">
+									{formatPrice(
+										Number(rental.pricePerDay) * Math.ceil(rental.durationMinutes / (60 * 24))
+									)}
+								</Text>
+							</View>
 
-                {rental.depositPrice > 0 && (
-                  <View className="flex-row justify-between">
-                    <Text className="text-sm text-gray-600">Tiền cọc</Text>
-                    <Text className="text-sm font-medium text-gray-900">
-                      {formatPrice(rental.depositPrice)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
+							{rental.deliveryFee > 0 && (
+								<View className="flex-row justify-between mb-2">
+									<Text className="text-sm text-gray-600">Phí giao xe</Text>
+									<Text className="text-sm font-medium text-gray-900">
+										{formatPrice(rental.deliveryFee)}
+									</Text>
+								</View>
+							)}
 
-            {/* Additional Info */}
-            {rental.cancelReason && (
-              <View className="bg-red-50 rounded-xl p-4 mb-4 border border-red-200">
-                <Text className="text-sm font-semibold text-red-900 mb-2">
-                  Lý do hủy
-                </Text>
-                <Text className="text-sm text-red-700">
-                  {rental.cancelReason}
-                </Text>
-              </View>
-            )}
+							{rental.discountAmount > 0 && (
+								<View className="flex-row justify-between mb-2">
+									<Text className="text-sm text-gray-600">Giảm giá</Text>
+									<Text className="text-sm font-medium text-green-600">
+										-{formatPrice(rental.discountAmount)}
+									</Text>
+								</View>
+							)}
 
-            {/* Rental Info */}
-            <View className="bg-gray-50 rounded-xl p-4 mb-4">
-              <Text className="text-base font-semibold text-gray-900 mb-3">
-                Thông tin đơn thuê
-              </Text>
+							<View className="border-t border-orange-200 pt-2 mt-2">
+								<View className="flex-row justify-between mb-2">
+									<Text className="text-base font-bold text-gray-900">Tổng cộng</Text>
+									<Text className="text-lg font-bold text-orange-600">
+										{formatPrice(rental.totalPrice)}
+									</Text>
+								</View>
 
-              <View className="flex-row items-center mb-2">
-                <MaterialIcons name="access-time" size={20} color="#6B7280" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Thời lượng</Text>
-                  <Text className="text-base font-medium text-gray-900">
-                    {Math.ceil(rental.durationMinutes / (60 * 24))} ngày
-                  </Text>
-                </View>
-              </View>
+								{rental.depositPrice > 0 && (
+									<View className="flex-row justify-between">
+										<Text className="text-sm text-gray-600">Tiền cọc</Text>
+										<Text className="text-sm font-medium text-gray-900">
+											{formatPrice(rental.depositPrice)}
+										</Text>
+									</View>
+								)}
+							</View>
+						</View>
 
-              <View className="flex-row items-center mb-2">
-                <MaterialIcons name="today" size={20} color="#6B7280" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Ngày tạo đơn</Text>
-                  <Text className="text-base font-medium text-gray-900">
-                    {formatDate(rental.createdAt)}
-                  </Text>
-                </View>
-              </View>
+						{/* Additional Info */}
+						{rental.cancelReason && (
+							<View className="bg-red-50 rounded-xl p-4 mb-4 border border-red-200">
+								<Text className="text-sm font-semibold text-red-900 mb-2">Lý do hủy</Text>
+								<Text className="text-sm text-red-700">{rental.cancelReason}</Text>
+							</View>
+						)}
 
-              {rental.startOdometer !== undefined &&
-                rental.startOdometer !== null && (
-                  <View className="flex-row items-center mb-2">
-                    <MaterialIcons name="speed" size={20} color="#6B7280" />
-                    <View className="ml-3 flex-1">
-                      <Text className="text-sm text-gray-600">
-                        Số km bắt đầu
-                      </Text>
-                      <Text className="text-base font-medium text-gray-900">
-                        {rental.startOdometer.toLocaleString("vi-VN")} km
-                      </Text>
-                    </View>
-                  </View>
-                )}
+						{/* Rental Info */}
+						<View className="bg-gray-50 rounded-xl p-4 mb-4">
+							<Text className="text-base font-semibold text-gray-900 mb-3">Thông tin đơn thuê</Text>
 
-              {rental.endOdometer !== undefined &&
-                rental.endOdometer !== null && (
-                  <View className="flex-row items-center">
-                    <MaterialIcons name="speed" size={20} color="#6B7280" />
-                    <View className="ml-3 flex-1">
-                      <Text className="text-sm text-gray-600">
-                        Số km kết thúc
-                      </Text>
-                      <Text className="text-base font-medium text-gray-900">
-                        {rental.endOdometer.toLocaleString("vi-VN")} km
-                      </Text>
-                    </View>
-                  </View>
-                )}
-            </View>
+							<View className="flex-row items-center mb-2">
+								<MaterialIcons name="access-time" size={20} color="#6B7280" />
+								<View className="ml-3 flex-1">
+									<Text className="text-sm text-gray-600">Thời lượng</Text>
+									<Text className="text-base font-medium text-gray-900">
+										{Math.ceil(rental.durationMinutes / (60 * 24))} ngày
+									</Text>
+								</View>
+							</View>
 
-            {/* Owner Actions */}
-            {isOwner &&
-              (canApprove ||
-                canUpdateToOnTrip ||
-                canUpdateToCompleted ||
-                canCancel) && (
-                <View className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
-                  <Text className="text-base font-semibold text-gray-900 mb-3">
-                    Hành động
-                  </Text>
+							<View className="flex-row items-center mb-2">
+								<MaterialIcons name="today" size={20} color="#6B7280" />
+								<View className="ml-3 flex-1">
+									<Text className="text-sm text-gray-600">Ngày tạo đơn</Text>
+									<Text className="text-base font-medium text-gray-900">
+										{formatDate(rental.createdAt)}
+									</Text>
+								</View>
+							</View>
 
-                  {canApprove && (
-                    <TouchableOpacity
-                      onPress={handleApprove}
-                      disabled={updateStatusMutation.isPending}
-                      className="bg-green-600 rounded-xl p-3 mb-2"
-                    >
-                      <View className="flex-row items-center justify-center">
-                        <MaterialIcons
-                          name="check-circle"
-                          size={20}
-                          color="#FFFFFF"
-                        />
-                        <Text className="ml-2 text-base font-semibold text-white">
-                          Xác nhận đơn thuê
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
+							{rental.startOdometer !== undefined && rental.startOdometer !== null && (
+								<View className="flex-row items-center mb-2">
+									<MaterialIcons name="speed" size={20} color="#6B7280" />
+									<View className="ml-3 flex-1">
+										<Text className="text-sm text-gray-600">Số km bắt đầu</Text>
+										<Text className="text-base font-medium text-gray-900">
+											{rental.startOdometer.toLocaleString("vi-VN")} km
+										</Text>
+									</View>
+								</View>
+							)}
 
-                  {canUpdateToOnTrip && (
-                    <TouchableOpacity
-                      onPress={() => handleStatusUpdate("ON_TRIP")}
-                      disabled={updateStatusMutation.isPending}
-                      className="bg-blue-600 rounded-xl p-3 mb-2"
-                    >
-                      <View className="flex-row items-center justify-center">
-                        <MaterialIcons
-                          name="directions-bike"
-                          size={20}
-                          color="#FFFFFF"
-                        />
-                        <Text className="ml-2 text-base font-semibold text-white">
-                          Bắt đầu chuyến đi
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
+							{rental.endOdometer !== undefined && rental.endOdometer !== null && (
+								<View className="flex-row items-center">
+									<MaterialIcons name="speed" size={20} color="#6B7280" />
+									<View className="ml-3 flex-1">
+										<Text className="text-sm text-gray-600">Số km kết thúc</Text>
+										<Text className="text-base font-medium text-gray-900">
+											{rental.endOdometer.toLocaleString("vi-VN")} km
+										</Text>
+									</View>
+								</View>
+							)}
+						</View>
 
-                  {canUpdateToCompleted && (
-                    <TouchableOpacity
-                      onPress={() => handleStatusUpdate("COMPLETED")}
-                      disabled={updateStatusMutation.isPending}
-                      className="bg-purple-600 rounded-xl p-3 mb-2"
-                    >
-                      <View className="flex-row items-center justify-center">
-                        <MaterialIcons
-                          name="check-circle-outline"
-                          size={20}
-                          color="#FFFFFF"
-                        />
-                        <Text className="ml-2 text-base font-semibold text-white">
-                          Hoàn thành đơn thuê
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
+						{/* Owner Actions */}
+						{isOwner && (canApprove || canUpdateToOnTrip || canUpdateToCompleted || canCancel) && (
+							<View className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+								<Text className="text-base font-semibold text-gray-900 mb-3">Hành động</Text>
 
-                  {canCancel && (
-                    <TouchableOpacity
-                      onPress={handleCancel}
-                      disabled={updateStatusMutation.isPending}
-                      className="bg-red-600 rounded-xl p-3"
-                    >
-                      <View className="flex-row items-center justify-center">
-                        <MaterialIcons
-                          name="cancel"
-                          size={20}
-                          color="#FFFFFF"
-                        />
-                        <Text className="ml-2 text-base font-semibold text-white">
-                          Hủy đơn thuê
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
+								{canApprove && (
+									<TouchableOpacity
+										onPress={handleApprove}
+										disabled={updateStatusMutation.isPending}
+										style={{
+											backgroundColor: "#fff",
+											borderWidth: 1,
+											borderColor: "#10B981",
+											borderRadius: 12,
+											padding: 12,
+											marginBottom: 8,
+										}}
+									>
+										<View className="flex-row items-center justify-center">
+											<MaterialIcons name="check-circle" size={20} color="#10B981" />
+											<Text style={{ marginLeft: 8, color: "#10B981", fontWeight: "600" }}>
+												Xác nhận đơn thuê
+											</Text>
+										</View>
+									</TouchableOpacity>
+								)}
 
-                  {updateStatusMutation.isPending && (
-                    <View className="mt-2 items-center">
-                      <ActivityIndicator size="small" color={COLORS.primary} />
-                    </View>
-                  )}
-                </View>
-              )}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+								{canUpdateToOnTrip && (
+									<TouchableOpacity
+										onPress={() => handleStatusUpdate("ON_TRIP")}
+										disabled={updateStatusMutation.isPending}
+										style={{
+											backgroundColor: "#fff",
+											borderWidth: 1,
+											borderColor: "#2563EB",
+											borderRadius: 12,
+											padding: 12,
+											marginBottom: 8,
+										}}
+									>
+										<View className="flex-row items-center justify-center">
+											<MaterialIcons name="directions-bike" size={20} color="#2563EB" />
+											<Text style={{ marginLeft: 8, color: "#2563EB", fontWeight: "600" }}>
+												Bắt đầu chuyến đi
+											</Text>
+										</View>
+									</TouchableOpacity>
+								)}
 
-      {/* Cancel Modal */}
-      <Modal
-        visible={showCancelModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCancelModal(false)}
-      >
-        <View className="flex-1 bg-black/50 justify-center items-center px-4">
-          <View className="bg-white rounded-2xl w-full max-w-md p-6">
-            <Text className="text-xl font-bold text-gray-900 mb-4">
-              Hủy đơn thuê
-            </Text>
+								{canUpdateToCompleted && (
+									<TouchableOpacity
+										onPress={() => handleStatusUpdate("COMPLETED")}
+										disabled={updateStatusMutation.isPending}
+										style={{
+											backgroundColor: "#fff",
+											borderWidth: 1,
+											borderColor: "#8B5CF6",
+											borderRadius: 12,
+											padding: 12,
+											marginBottom: 8,
+										}}
+									>
+										<View className="flex-row items-center justify-center">
+											<MaterialIcons name="check-circle-outline" size={20} color="#8B5CF6" />
+											<Text style={{ marginLeft: 8, color: "#8B5CF6", fontWeight: "600" }}>
+												Hoàn thành đơn thuê
+											</Text>
+										</View>
+									</TouchableOpacity>
+								)}
 
-            <Text className="text-sm text-gray-600 mb-3">
-              Vui lòng nhập lý do hủy đơn thuê:
-            </Text>
+								{canCancel && (
+									<TouchableOpacity
+										onPress={handleCancel}
+										disabled={updateStatusMutation.isPending}
+										style={{
+											backgroundColor: "#fff",
+											borderWidth: 1,
+											borderColor: "#EF4444",
+											borderRadius: 12,
+											padding: 12,
+											marginBottom: 8,
+										}}
+									>
+										<View className="flex-row items-center justify-center">
+											<MaterialIcons name="cancel" size={20} color="#EF4444" />
+											<Text style={{ marginLeft: 8, color: "#EF4444", fontWeight: "600" }}>
+												Hủy đơn thuê
+											</Text>
+										</View>
+									</TouchableOpacity>
+								)}
 
-            <TextInput
-              value={cancelReason}
-              onChangeText={setCancelReason}
-              placeholder="Nhập lý do hủy..."
-              multiline
-              numberOfLines={4}
-              className="border border-gray-300 rounded-lg p-3 text-base min-h-[100px]"
-              textAlignVertical="top"
-            />
+								{updateStatusMutation.isPending && (
+									<View className="mt-2 items-center">
+										<ActivityIndicator size="small" color={COLORS.primary} />
+									</View>
+								)}
+							</View>
+						)}
+					</View>
+				</ScrollView>
+			</SafeAreaView>
 
-            <View className="flex-row gap-3 mt-4">
-              <TouchableOpacity
-                onPress={() => {
-                  setShowCancelModal(false);
-                  setCancelReason("");
-                }}
-                disabled={updateStatusMutation.isPending}
-                className="flex-1 py-3 px-4 rounded-lg border border-gray-300 bg-white"
-              >
-                <Text className="text-center font-medium text-gray-700">
-                  Hủy
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleConfirmCancel}
-                disabled={
-                  updateStatusMutation.isPending || !cancelReason.trim()
-                }
-                className="flex-1 py-3 px-4 rounded-lg bg-red-600"
-                style={{
-                  opacity:
-                    updateStatusMutation.isPending || !cancelReason.trim()
-                      ? 0.5
-                      : 1,
-                }}
-              >
-                {updateStatusMutation.isPending ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text className="text-center font-medium text-white">
-                    Xác nhận hủy
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </Modal>
-  );
+			{/* Cancel Modal */}
+			<Modal
+				visible={showCancelModal}
+				transparent
+				animationType="fade"
+				onRequestClose={() => setShowCancelModal(false)}
+			>
+				<View className="flex-1 bg-black/50 justify-center items-center px-4">
+					<View className="bg-white rounded-2xl w-full max-w-md p-6">
+						<Text className="text-xl font-bold text-gray-900 mb-4">Hủy đơn thuê</Text>
+
+						<Text className="text-sm text-gray-600 mb-3">Vui lòng nhập lý do hủy đơn thuê:</Text>
+
+						<TextInput
+							value={cancelReason}
+							onChangeText={setCancelReason}
+							placeholder="Nhập lý do hủy..."
+							placeholderTextColor="#9CA3AF"
+							multiline
+							numberOfLines={4}
+							className="border border-gray-300 rounded-lg p-3 text-base min-h-[100px]"
+							textAlignVertical="top"
+						/>
+
+						<View className="flex-row gap-3 mt-4">
+							<TouchableOpacity
+								onPress={() => {
+									setShowCancelModal(false);
+									setCancelReason("");
+								}}
+								disabled={updateStatusMutation.isPending}
+								className="flex-1 py-3 px-4 rounded-lg border border-gray-300 bg-white"
+							>
+								<Text className="text-center font-medium text-gray-700">Hủy</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								onPress={handleConfirmCancel}
+								disabled={updateStatusMutation.isPending || !cancelReason.trim()}
+								className="flex-1 py-3 px-4 rounded-lg bg-red-600"
+								style={{
+									opacity: updateStatusMutation.isPending || !cancelReason.trim() ? 0.5 : 1,
+								}}
+							>
+								{updateStatusMutation.isPending ? (
+									<ActivityIndicator color="#FFFFFF" />
+								) : (
+									<Text className="text-center font-medium text-white">Xác nhận hủy</Text>
+								)}
+							</TouchableOpacity>
+						</View>
+					</View>
+				</View>
+			</Modal>
+		</Modal>
+	);
 }
