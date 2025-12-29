@@ -108,8 +108,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      // Verify user has access to this chat
-      await this.chatService.getChatById(data.chatId, client.userId);
+      // Verify user has access to this chat (chỉ check quyền, không cần full data)
+      const hasAccess = await this.chatService.verifyChatAccess(
+        data.chatId,
+        client.userId,
+      );
+
+      if (!hasAccess) {
+        return { error: 'Unauthorized' };
+      }
 
       // Join chat room
       await client.join(`chat:${data.chatId}`);
@@ -161,35 +168,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     try {
       const dto: SendMessageDto = { content: data.content };
-      const message = await this.chatService.sendMessage(
+      const result = await this.chatService.sendMessage(
         data.chatId,
         client.userId,
         dto,
       );
 
+      // Extract message và metadata (renterId, ownerId)
+      const { _metadata, ...message } = result as typeof result & {
+        _metadata?: { renterId: string; ownerId: string };
+      };
+
       // Emit to all users in the chat room
       this.server.to(`chat:${data.chatId}`).emit('new_message', message);
 
       // Also notify the other user if they're not in the chat room
-      const chat = await this.chatService.getChatById(
-        data.chatId,
-        client.userId,
-      );
-      // Type assertion needed because getChatById returns transformed object
-      const chatWithIds = chat as typeof chat & {
-        renterId: string;
-        ownerId: string;
-      };
-      const otherUserId =
-        chatWithIds.renterId === client.userId
-          ? chatWithIds.ownerId
-          : chatWithIds.renterId;
+      // Sử dụng metadata từ sendMessage thay vì query lại
+      if (_metadata) {
+        const otherUserId =
+          _metadata.renterId === client.userId
+            ? _metadata.ownerId
+            : _metadata.renterId;
 
-      // Send to user's personal room for notification
-      this.server.to(`user:${otherUserId}`).emit('chat_message', {
-        chatId: data.chatId,
-        message,
-      });
+        // Send to user's personal room for notification
+        this.server.to(`user:${otherUserId}`).emit('chat_message', {
+          chatId: data.chatId,
+          message,
+        });
+      }
 
       return { success: true, message };
     } catch (error) {

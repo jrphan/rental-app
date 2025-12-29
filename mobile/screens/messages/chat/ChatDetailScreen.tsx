@@ -5,18 +5,13 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  apiChat,
-  type ChatMessage,
-  type ChatDetail,
-} from "@/services/api.chat";
+import { apiChat, type ChatMessage } from "@/services/api.chat";
 import { useChatSocket } from "@/hooks/chat/useChatSocket";
 import { useAuthStore } from "@/store/auth";
 import { COLORS } from "@/constants/colors";
@@ -31,6 +26,7 @@ export default function ChatDetailScreen() {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const flatListRef = useRef<FlatList>(null);
+  const tempMessageIdRef = useRef<string | null>(null);
 
   const { data: chatDetail, isLoading: isLoadingChat } = useQuery({
     queryKey: ["chat", chatId, "detail"],
@@ -38,11 +34,7 @@ export default function ChatDetailScreen() {
     enabled: !!chatId,
   });
 
-  const {
-    data: messages = [],
-    isLoading: isLoadingMessages,
-    refetch: refetchMessages,
-  } = useQuery({
+  const { data: messages = [] } = useQuery({
     queryKey: ["chat", chatId, "messages"],
     queryFn: () => apiChat.getMessages(chatId!, { page: 1, limit: 100 }),
     enabled: !!chatId,
@@ -50,10 +42,7 @@ export default function ChatDetailScreen() {
 
   const sendMessageMutation = useMutation({
     mutationFn: (content: string) => apiChat.sendMessage(chatId!, content),
-    onSuccess: () => {
-      setMessage("");
-      refetchMessages();
-    },
+    // onSuccess is handled in handleSendMessage to prevent duplicates
   });
 
   const markAsReadMutation = useMutation({
@@ -78,6 +67,15 @@ export default function ChatDetailScreen() {
             if (old.some((m) => m.id === newMessage.id)) {
               return old;
             }
+            // If we have a temp message and this is our message, replace it
+            if (tempMessageIdRef.current && newMessage.senderId === user?.id) {
+              // Remove temp message and add real message
+              const filtered = old.filter(
+                (m) => m.id !== tempMessageIdRef.current
+              );
+              tempMessageIdRef.current = null;
+              return [...filtered, newMessage];
+            }
             return [...old, newMessage];
           }
         );
@@ -94,6 +92,7 @@ export default function ChatDetailScreen() {
       markAsReadMutation.mutate();
       markAsReadWS();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, messages.length]);
 
   useEffect(() => {
@@ -108,12 +107,17 @@ export default function ChatDetailScreen() {
   const handleSendMessage = () => {
     if (!message.trim() || sendMessageMutation.isPending) return;
 
+    const messageContent = message.trim();
+    setMessage("");
+
     // Optimistically add message
+    const tempId = `temp-${Date.now()}`;
+    tempMessageIdRef.current = tempId;
     const tempMessage: ChatMessage = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       chatId: chatId!,
       senderId: user?.id || "",
-      content: message.trim(),
+      content: messageContent,
       isRead: false,
       readAt: null,
       createdAt: new Date().toISOString(),
@@ -131,11 +135,15 @@ export default function ChatDetailScreen() {
     );
 
     // Send via WebSocket first (faster)
-    sendMessageWS(message.trim());
+    sendMessageWS(messageContent);
 
-    // Also send via API (for persistence)
-    sendMessageMutation.mutate(message.trim());
-    setMessage("");
+    // Also send via API (for persistence) - but don't refetch to avoid duplicates
+    sendMessageMutation.mutate(messageContent, {
+      onSuccess: () => {
+        // Don't refetch here, let WebSocket handle the update
+        // This prevents duplicate messages
+      },
+    });
 
     // Scroll to bottom
     setTimeout(() => {
@@ -186,8 +194,8 @@ export default function ChatDetailScreen() {
     >
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+        behavior="padding"
+        style={{ flex: 1 }}
       >
         {/* Header */}
         <View className="bg-white">
@@ -203,52 +211,54 @@ export default function ChatDetailScreen() {
         </View>
 
         {/* Messages */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const isMyMessage = item.senderId === user?.id;
-            return (
-              <View
-                className={`px-4 py-2 ${
-                  isMyMessage ? "items-end" : "items-start"
-                }`}
-              >
+        <View style={{ flex: 1 }}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => {
+              const isMyMessage = item.senderId === user?.id;
+              return (
                 <View
-                  className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                    isMyMessage
-                      ? "bg-orange-500 rounded-br-sm"
-                      : "bg-white rounded-bl-sm border border-gray-200"
+                  className={`px-4 py-2 ${
+                    isMyMessage ? "items-end" : "items-start"
                   }`}
                 >
-                  <Text
-                    className={`text-base ${
-                      isMyMessage ? "text-white" : "text-gray-900"
+                  <View
+                    className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                      isMyMessage
+                        ? "bg-orange-500 rounded-br-sm"
+                        : "bg-white rounded-bl-sm border border-gray-200"
                     }`}
                   >
-                    {item.content}
-                  </Text>
-                  <Text
-                    className={`text-xs mt-1 ${
-                      isMyMessage ? "text-orange-100" : "text-gray-500"
-                    }`}
-                  >
-                    {formatTimeAgo(item.createdAt)}
-                  </Text>
+                    <Text
+                      className={`text-base ${
+                        isMyMessage ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {item.content}
+                    </Text>
+                    <Text
+                      className={`text-xs mt-1 ${
+                        isMyMessage ? "text-orange-100" : "text-gray-500"
+                      }`}
+                    >
+                      {formatTimeAgo(item.createdAt)}
+                    </Text>
+                  </View>
                 </View>
+              );
+            }}
+            ListEmptyComponent={
+              <View className="flex-1 items-center justify-center py-20">
+                <Text className="text-gray-500 text-base">
+                  Chưa có tin nhắn nào
+                </Text>
               </View>
-            );
-          }}
-          ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-20">
-              <Text className="text-gray-500 text-base">
-                Chưa có tin nhắn nào
-              </Text>
-            </View>
-          }
-          contentContainerStyle={{ paddingVertical: 8 }}
-        />
+            }
+            contentContainerStyle={{ paddingVertical: 8 }}
+          />
+        </View>
 
         {/* Input */}
         <View className="bg-white border-t border-gray-200 px-4 py-3 flex-row items-center">

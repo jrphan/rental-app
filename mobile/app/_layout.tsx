@@ -10,6 +10,7 @@ import {
 } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { queryClient } from "@/lib/queryClient";
 import { ToastContainer } from "@/components/ui/toast";
 import { useSyncUser } from "@/hooks/user/useSyncUser";
@@ -42,15 +43,17 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationThemeProvider value={DefaultTheme}>
-        <SafeAreaProvider>
-          <QueryClientProvider client={queryClient}>
-            <RootLayoutNav />
-            <ToastContainer />
-            <StatusBar style="dark" translucent={false} />
-          </QueryClientProvider>
-        </SafeAreaProvider>
-      </NavigationThemeProvider>
+      <KeyboardProvider>
+        <NavigationThemeProvider value={DefaultTheme}>
+          <SafeAreaProvider>
+            <QueryClientProvider client={queryClient}>
+              <RootLayoutNav />
+              <ToastContainer />
+              <StatusBar style="dark" translucent={false} />
+            </QueryClientProvider>
+          </SafeAreaProvider>
+        </NavigationThemeProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }
