@@ -391,46 +391,68 @@ export class ChatService {
 
   /**
    * Gửi tin nhắn
+   * Tối ưu: Sử dụng transaction để giảm số queries và connection pool usage
    */
   async sendMessage(chatId: string, senderId: string, dto: SendMessageDto) {
-    // Kiểm tra quyền truy cập và lấy chat info (chỉ lấy IDs để tránh query phức tạp)
-    const chat = await this.prismaService.chat.findUnique({
-      where: { id: chatId },
-      select: {
-        renterId: true,
-        ownerId: true,
-        rentalId: true,
-      },
-    });
-
-    if (!chat) {
-      throw new NotFoundException('Không tìm thấy cuộc hội thoại');
-    }
-
-    // Kiểm tra quyền truy cập
-    if (chat.renterId !== senderId && chat.ownerId !== senderId) {
-      throw new ForbiddenException(
-        'Bạn không có quyền truy cập cuộc hội thoại này',
-      );
-    }
-
-    // Tạo message và lấy sender info trong 1 query
-    const message = await this.prismaService.message.create({
-      data: {
-        chatId,
-        senderId,
-        content: dto.content,
-      },
-      include: {
-        sender: {
+    // Sử dụng transaction để combine tất cả queries vào 1 connection
+    // Điều này giúp giảm connection pool usage đáng kể
+    const result = await this.prismaService.$transaction(
+      async (tx) => {
+        // Kiểm tra quyền truy cập và lấy chat info
+        const chat = await tx.chat.findUnique({
+          where: { id: chatId },
           select: {
-            id: true,
-            fullName: true,
-            avatar: true,
+            renterId: true,
+            ownerId: true,
+            rentalId: true,
           },
-        },
+        });
+
+        if (!chat) {
+          throw new NotFoundException('Không tìm thấy cuộc hội thoại');
+        }
+
+        // Kiểm tra quyền truy cập
+        if (chat.renterId !== senderId && chat.ownerId !== senderId) {
+          throw new ForbiddenException(
+            'Bạn không có quyền truy cập cuộc hội thoại này',
+          );
+        }
+
+        // Tạo message trước
+        const message = await tx.message.create({
+          data: {
+            chatId,
+            senderId,
+            content: dto.content,
+          },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                fullName: true,
+                avatar: true,
+              },
+            },
+          },
+        });
+
+        // Update chat updatedAt trong cùng transaction
+        // Không cần await riêng vì transaction sẽ đảm bảo cả 2 queries hoàn thành
+        await tx.chat.update({
+          where: { id: chatId },
+          data: { updatedAt: new Date() },
+        });
+
+        return { message, chat };
       },
-    });
+      {
+        // Timeout sau 5 giây để tránh hanging
+        timeout: 5000,
+      },
+    );
+
+    const { message, chat } = result;
 
     // Transform message to match frontend interface
     const transformedMessage = {
@@ -448,16 +470,6 @@ export class ChatService {
         avatar: message.sender.avatar,
       },
     };
-
-    // Cập nhật updatedAt của chat (không cần await, có thể chạy async)
-    this.prismaService.chat
-      .update({
-        where: { id: chatId },
-        data: { updatedAt: new Date() },
-      })
-      .catch(error => {
-        this.logger.error('Failed to update chat updatedAt', error);
-      });
 
     // Gửi push notification cho người nhận (async, không block)
     const receiverId =
@@ -498,6 +510,8 @@ export class ChatService {
 
   /**
    * Đánh dấu tin nhắn là đã đọc
+   * Note: updateMany với where condition sẽ không làm gì nếu không có records match
+   * nên không cần check trước, giúp giảm số queries
    */
   async markMessagesAsRead(chatId: string, userId: string) {
     await this.prismaService.message.updateMany({

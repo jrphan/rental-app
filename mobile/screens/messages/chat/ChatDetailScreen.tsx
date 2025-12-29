@@ -40,10 +40,7 @@ export default function ChatDetailScreen() {
     enabled: !!chatId,
   });
 
-  const sendMessageMutation = useMutation({
-    mutationFn: (content: string) => apiChat.sendMessage(chatId!, content),
-    // onSuccess is handled in handleSendMessage to prevent duplicates
-  });
+  // Removed sendMessageMutation - using WebSocket only to prevent duplicates
 
   const markAsReadMutation = useMutation({
     mutationFn: () => apiChat.markAsRead(chatId!),
@@ -105,7 +102,7 @@ export default function ChatDetailScreen() {
   }, [messages.length]);
 
   const handleSendMessage = () => {
-    if (!message.trim() || sendMessageMutation.isPending) return;
+    if (!message.trim()) return;
 
     const messageContent = message.trim();
     setMessage("");
@@ -134,16 +131,9 @@ export default function ChatDetailScreen() {
       (old) => [...(old || []), tempMessage]
     );
 
-    // Send via WebSocket first (faster)
+    // Send via WebSocket only - it already handles persistence in the database
+    // Don't send via API to avoid duplicate messages
     sendMessageWS(messageContent);
-
-    // Also send via API (for persistence) - but don't refetch to avoid duplicates
-    sendMessageMutation.mutate(messageContent, {
-      onSuccess: () => {
-        // Don't refetch here, let WebSocket handle the update
-        // This prevents duplicate messages
-      },
-    });
 
     // Scroll to bottom
     setTimeout(() => {
@@ -272,7 +262,7 @@ export default function ChatDetailScreen() {
           />
           <TouchableOpacity
             onPress={handleSendMessage}
-            disabled={!message.trim() || sendMessageMutation.isPending}
+            disabled={!message.trim()}
             className={`rounded-full p-2 ${
               message.trim() ? "bg-orange-500" : "bg-gray-300"
             }`}
@@ -280,11 +270,7 @@ export default function ChatDetailScreen() {
               backgroundColor: message.trim() ? COLORS.primary : "#D1D5DB",
             }}
           >
-            {sendMessageMutation.isPending ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <MaterialIcons name="send" size={20} color="#FFFFFF" />
-            )}
+            <MaterialIcons name="send" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
