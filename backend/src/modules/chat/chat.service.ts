@@ -455,7 +455,7 @@ export class ChatService {
         where: { id: chatId },
         data: { updatedAt: new Date() },
       })
-      .catch((error) => {
+      .catch(error => {
         this.logger.error('Failed to update chat updatedAt', error);
       });
 
@@ -478,7 +478,7 @@ export class ChatService {
             rentalId: chat.rentalId,
           },
         )
-        .catch((error: ) => {
+        .catch((error: any) => {
           this.logger.error(
             'Failed to send push notification for message',
             error,
