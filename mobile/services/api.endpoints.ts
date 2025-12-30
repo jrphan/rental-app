@@ -59,6 +59,10 @@ const API_ENDPOINTS = {
     MARK_READ: "/chat/:id/read",
     GET_UNREAD_COUNT: "/chat/unread-count",
   },
+  REVIEW: {
+    CREATE: "/rental/:id/review",
+    GET_RENTAL_REVIEWS: "/rental/:id/reviews",
+  },
 };
 
 export default API_ENDPOINTS;

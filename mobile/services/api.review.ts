@@ -50,14 +50,28 @@ export const apiReview = {
   },
 
   async createReview(data: CreateReviewRequest): Promise<CreateReviewResponse> {
-    const response = await apiClient.post<CreateReviewResponse>(
-      API_ENDPOINTS.REVIEW?.CREATE || "/review/create",
-      data
-    );
+    const { rentalId, ...rest } = data;
+    const url = API_ENDPOINTS.REVIEW.CREATE.replace(":id", rentalId);
+    const response = await apiClient.post<CreateReviewResponse>(url, rest);
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data;
     }
     throw new Error(response.message || "Tạo đánh giá thất bại");
+  },
+
+  async getRentalReviews(rentalId: string): Promise<{
+    reviews: Review[];
+    userHasReviewed: boolean;
+  }> {
+    const url = API_ENDPOINTS.REVIEW.GET_RENTAL_REVIEWS.replace(":id", rentalId);
+    const response = await apiClient.get<{
+      reviews: Review[];
+      userHasReviewed: boolean;
+    }>(url);
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Lấy đánh giá thất bại");
   },
 };
 

@@ -70,4 +70,8 @@ export const ROUTES = {
     MARK_READ: '/chat/:id/read',
     GET_UNREAD_COUNT: '/chat/unread-count',
   },
+  REVIEW: {
+    CREATE: '/rental/:id/review',
+    GET_RENTAL_REVIEWS: '/rental/:id/reviews',
+  },
 };
