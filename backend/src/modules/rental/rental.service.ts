@@ -9,6 +9,11 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { CreateRentalDto } from '@/common/dto/Rental/create-rental.dto';
 import { UpdateRentalStatusDto } from '@/common/dto/Rental/update-rental-status.dto';
 import {
+  UploadEvidenceDto,
+  UploadMultipleEvidenceDto,
+} from '@/common/dto/Rental/upload-evidence.dto';
+import { CreateDisputeDto } from '@/common/dto/Rental/create-dispute.dto';
+import {
   CreateRentalResponse,
   RentalListResponse,
   RentalDetailResponse,
@@ -339,12 +344,9 @@ export class RentalService {
   }
 
   /**
-   * Lấy chi tiết đơn thuê
+   * Helper method to get rental by ID and verify access
    */
-  async getRentalDetail(
-    userId: string,
-    rentalId: string,
-  ): Promise<RentalDetailResponse> {
+  private async getRentalById(rentalId: string, userId: string) {
     const rental = await this.prismaService.rental.findUnique({
       where: { id: rentalId },
       select: selectRental,
@@ -356,9 +358,20 @@ export class RentalService {
 
     // Check if user has access (must be renter or owner)
     if (rental.renterId !== userId && rental.ownerId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền xem đơn thuê này');
+      throw new ForbiddenException('Bạn không có quyền truy cập đơn thuê này');
     }
 
+    return rental;
+  }
+
+  /**
+   * Lấy chi tiết đơn thuê
+   */
+  async getRentalDetail(
+    userId: string,
+    rentalId: string,
+  ): Promise<RentalDetailResponse> {
+    const rental = await this.getRentalById(rentalId, userId);
     return { rental };
   }
 
@@ -486,6 +499,186 @@ export class RentalService {
     return {
       message: statusMessages[status] || 'Trạng thái đơn thuê đã được cập nhật',
       rental: updated,
+    };
+  }
+
+  /**
+   * Upload evidence (ảnh hiện trạng) cho rental
+   */
+  async uploadEvidence(
+    rentalId: string,
+    userId: string,
+    dto: UploadEvidenceDto,
+  ) {
+    // Verify rental exists and user has access
+    const rental = await this.getRentalById(rentalId, userId);
+
+    // Only renter can upload pickup evidence, both can upload return evidence
+    const isRenter = rental.renterId === userId;
+    const isOwner = rental.ownerId === userId;
+
+    if (!isRenter && !isOwner) {
+      throw new ForbiddenException(
+        'Bạn không có quyền upload evidence cho đơn thuê này',
+      );
+    }
+
+    // Check if evidence type matches user role
+    const isPickupType = dto.type.startsWith('PICKUP_');
+
+    if (isPickupType && !isRenter) {
+      throw new ForbiddenException(
+        'Chỉ người thuê mới có thể upload ảnh khi nhận xe',
+      );
+    }
+
+    // Create evidence
+    const evidence = await this.prismaService.rentalEvidence.create({
+      data: {
+        rentalId,
+        url: dto.url,
+        type: dto.type,
+        note: dto.note,
+        order: dto.order || 0,
+      },
+    });
+
+    // Update rental updatedAt
+    await this.prismaService.rental.update({
+      where: { id: rentalId },
+      data: { updatedAt: new Date() },
+    });
+
+    return {
+      message: 'Upload evidence thành công',
+      evidence,
+    };
+  }
+
+  /**
+   * Upload multiple evidences
+   */
+  async uploadMultipleEvidences(
+    rentalId: string,
+    userId: string,
+    dto: UploadMultipleEvidenceDto,
+  ) {
+    // Verify rental exists and user has access
+    const rental = await this.getRentalById(rentalId, userId);
+
+    const isRenter = rental.renterId === userId;
+    const isOwner = rental.ownerId === userId;
+
+    if (!isRenter && !isOwner) {
+      throw new ForbiddenException(
+        'Bạn không có quyền upload evidence cho đơn thuê này',
+      );
+    }
+
+    // Validate and create evidences
+    const evidences = await Promise.all(
+      dto.evidences.map(async (evidenceData, index) => {
+        const isPickupType = evidenceData.type.startsWith('PICKUP_');
+        if (isPickupType && !isRenter) {
+          throw new ForbiddenException(
+            'Chỉ người thuê mới có thể upload ảnh khi nhận xe',
+          );
+        }
+
+        return this.prismaService.rentalEvidence.create({
+          data: {
+            rentalId,
+            url: evidenceData.url,
+            type: evidenceData.type,
+            note: evidenceData.note,
+            order: evidenceData.order ?? index,
+          },
+        });
+      }),
+    );
+
+    // Update rental updatedAt
+    await this.prismaService.rental.update({
+      where: { id: rentalId },
+      data: { updatedAt: new Date() },
+    });
+
+    return {
+      message: 'Upload evidences thành công',
+      evidences,
+    };
+  }
+
+  /**
+   * Tạo dispute (phàn nàn) cho rental
+   */
+  async createDispute(rentalId: string, userId: string, dto: CreateDisputeDto) {
+    // Verify rental exists and user has access
+    const rental = await this.getRentalById(rentalId, userId);
+
+    const isRenter = rental.renterId === userId;
+    const isOwner = rental.ownerId === userId;
+
+    if (!isRenter && !isOwner) {
+      throw new ForbiddenException(
+        'Bạn không có quyền tạo dispute cho đơn thuê này',
+      );
+    }
+
+    // Check if rental is completed
+    if (rental.status !== RentalStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Chỉ có thể tạo dispute cho đơn thuê đã hoàn thành',
+      );
+    }
+
+    // Check if dispute already exists
+    const existingDispute = await this.prismaService.dispute.findUnique({
+      where: { rentalId },
+    });
+
+    if (existingDispute) {
+      throw new BadRequestException('Đơn thuê này đã có dispute');
+    }
+
+    // Create dispute
+    const dispute = await this.prismaService.dispute.create({
+      data: {
+        rentalId,
+        reason: dto.reason,
+        description: dto.description,
+        status: 'OPEN',
+      },
+    });
+
+    // Update rental status to DISPUTED
+    const updatedRental = await this.prismaService.rental.update({
+      where: { id: rentalId },
+      data: { status: RentalStatus.DISPUTED },
+      select: selectRental,
+    });
+
+    // Send notification to the other party
+    const otherPartyId = isRenter ? rental.ownerId : rental.renterId;
+    await this.notificationService
+      .createNotification({
+        userId: otherPartyId,
+        title: 'Có phàn nàn về đơn thuê',
+        message: `Đơn thuê ${rental.vehicle.brand} ${rental.vehicle.model} có phàn nàn mới`,
+        type: 'RENTAL_UPDATE',
+        data: {
+          rentalId,
+          disputeId: dispute.id,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to send dispute notification', error);
+      });
+
+    return {
+      message: 'Tạo dispute thành công',
+      dispute,
+      rental: updatedRental,
     };
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   Alert,
   TextInput,
   Modal,
+  Image,
 } from "react-native";
+import ImageViewing from "react-native-image-viewing";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,8 +19,15 @@ import HeaderBase from "@/components/header/HeaderBase";
 import { openExternalMaps } from "@/utils/maps";
 import OwnerInfo from "./components/OwnerInfo";
 import VehicleImageCarousel from "./components/VehicleImageCarousel";
-import { apiRental, type RentalStatus } from "@/services/api.rental";
+import {
+  apiRental,
+  type RentalStatus,
+  type EvidenceType,
+  type UploadEvidenceRequest,
+} from "@/services/api.rental";
 import { apiReview } from "@/services/api.review";
+import { useUploadUserFile } from "@/hooks/files/useUserFiles";
+import * as ImagePicker from "expo-image-picker";
 import {
   formatPrice,
   formatDate,
@@ -27,6 +36,200 @@ import {
 } from "./utils";
 import { COLORS } from "@/constants/colors";
 import { useAuthStore } from "@/store/auth";
+
+// Evidence Upload Form Component
+function EvidenceUploadForm({
+  rentalId,
+  onSuccess,
+  onCancel,
+}: {
+  rentalId: string;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const uploadFile = useUploadUserFile("rental-evidence");
+  const [evidenceUrls, setEvidenceUrls] = useState<
+    Record<EvidenceType, string>
+  >({
+    PICKUP_FRONT: "",
+    PICKUP_BACK: "",
+    PICKUP_LEFT: "",
+    PICKUP_RIGHT: "",
+    PICKUP_DASHBOARD: "",
+    RETURN_FRONT: "",
+    RETURN_BACK: "",
+    RETURN_LEFT: "",
+    RETURN_RIGHT: "",
+    RETURN_DASHBOARD: "",
+    DAMAGE_DETAIL: "",
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      const evidences: UploadEvidenceRequest[] = [];
+      let order = 0;
+
+      // Add pickup evidences
+      const pickupTypes: EvidenceType[] = [
+        "PICKUP_FRONT",
+        "PICKUP_BACK",
+        "PICKUP_LEFT",
+        "PICKUP_RIGHT",
+        "PICKUP_DASHBOARD",
+      ];
+
+      for (const type of pickupTypes) {
+        if (evidenceUrls[type]) {
+          evidences.push({
+            type,
+            url: evidenceUrls[type],
+            order: order++,
+          });
+        }
+      }
+
+      if (evidences.length === 0) {
+        throw new Error("Vui lòng chụp ít nhất 1 ảnh");
+      }
+
+      return apiRental.uploadEvidence(rentalId, { evidences });
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh rental data with new evidences
+      queryClient.invalidateQueries({ queryKey: ["rental", rentalId] });
+      queryClient.invalidateQueries({ queryKey: ["rental"] });
+      Alert.alert("Thành công", "Đã upload ảnh hiện trạng thành công");
+      onSuccess();
+    },
+    onError: (error: any) => {
+      Alert.alert("Lỗi", error.message || "Không thể upload ảnh");
+    },
+  });
+
+  const handleImageSelect = async (type: EvidenceType) => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Lỗi", "Cần quyền truy cập thư viện ảnh");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: "images",
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      const uploaded = await uploadFile.mutateAsync({
+        uri: asset.uri,
+        name: asset.fileName || "evidence.jpg",
+        type: asset.mimeType || "image/jpeg",
+      });
+
+      setEvidenceUrls((prev) => ({ ...prev, [type]: uploaded.url }));
+    } catch (error: any) {
+      Alert.alert("Lỗi", error.message || "Không thể upload ảnh");
+    }
+  };
+
+  const evidenceLabels: Record<EvidenceType, string> = {
+    PICKUP_FRONT: "Mặt trước",
+    PICKUP_BACK: "Mặt sau",
+    PICKUP_LEFT: "Bên trái",
+    PICKUP_RIGHT: "Bên phải",
+    PICKUP_DASHBOARD: "Dashboard",
+    RETURN_FRONT: "Mặt trước (trả)",
+    RETURN_BACK: "Mặt sau (trả)",
+    RETURN_LEFT: "Bên trái (trả)",
+    RETURN_RIGHT: "Bên phải (trả)",
+    RETURN_DASHBOARD: "Dashboard (trả)",
+    DAMAGE_DETAIL: "Chi tiết hư hỏng",
+  };
+
+  const pickupTypes: EvidenceType[] = [
+    "PICKUP_FRONT",
+    "PICKUP_BACK",
+    "PICKUP_LEFT",
+    "PICKUP_RIGHT",
+    "PICKUP_DASHBOARD",
+  ];
+
+  return (
+    <View>
+      {pickupTypes.map((type) => (
+        <View key={type} className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            {evidenceLabels[type]} *
+          </Text>
+          {evidenceUrls[type] ? (
+            <View className="relative">
+              <Image
+                source={{ uri: evidenceUrls[type] }}
+                className="w-full h-48 rounded-lg"
+                resizeMode="cover"
+              />
+              <TouchableOpacity
+                onPress={() =>
+                  setEvidenceUrls((prev) => ({ ...prev, [type]: "" }))
+                }
+                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 items-center justify-center"
+              >
+                <MaterialIcons name="close" size={18} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={() => handleImageSelect(type)}
+              disabled={uploadFile.isPending}
+              className="h-48 rounded-lg border-2 border-dashed border-gray-300 items-center justify-center bg-gray-50"
+            >
+              {uploadFile.isPending ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <>
+                  <MaterialIcons name="add-a-photo" size={32} color="#9CA3AF" />
+                  <Text className="mt-2 text-sm text-gray-500">
+                    Chọn ảnh {evidenceLabels[type]}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      ))}
+
+      <View className="flex-row gap-3 mt-4">
+        <TouchableOpacity
+          onPress={onCancel}
+          disabled={uploadMutation.isPending}
+          className="flex-1 py-3 px-4 rounded-lg border border-gray-300 bg-white"
+        >
+          <Text className="text-center font-medium text-gray-700">Hủy</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => uploadMutation.mutate()}
+          disabled={uploadMutation.isPending || uploadFile.isPending}
+          className="flex-1 py-3 px-4 rounded-lg"
+          style={{
+            opacity: uploadMutation.isPending || uploadFile.isPending ? 0.5 : 1,
+            backgroundColor: "#3B82F6",
+          }}
+        >
+          {uploadMutation.isPending ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text className="text-center font-medium text-white">Xác nhận</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 export default function RentalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,6 +240,14 @@ export default function RentalDetailScreen() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewContent, setReviewContent] = useState("");
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [disputeDescription, setDisputeDescription] = useState("");
+  const [galleryImageIndex, setGalleryImageIndex] = useState<number | null>(
+    null
+  );
+  const [galleryImages, setGalleryImages] = useState<{ uri: string }[]>([]);
 
   // Fetch rental detail
   const { data: rentalData, isLoading } = useQuery({
@@ -65,6 +276,32 @@ export default function RentalDetailScreen() {
   const isRenter = user?.id === rental?.renterId;
   const hasReviewed = rentalReviewsData?.userHasReviewed || false;
   const canReview = isRenter && rental?.status === "COMPLETED" && !hasReviewed;
+
+  // Memoize grouped evidences to avoid recalculation on every render (performance optimization for Android)
+  // Must be called before any early returns
+  const groupedEvidences = useMemo(() => {
+    if (!rental?.evidences || rental.evidences.length === 0) {
+      return {
+        pickup: [],
+        return: [],
+        damage: [],
+      };
+    }
+
+    const pickup = rental.evidences
+      .filter((e) => e.type.startsWith("PICKUP_"))
+      .sort((a, b) => a.order - b.order);
+
+    const returnEv = rental.evidences
+      .filter((e) => e.type.startsWith("RETURN_"))
+      .sort((a, b) => a.order - b.order);
+
+    const damage = rental.evidences
+      .filter((e) => e.type === "DAMAGE_DETAIL")
+      .sort((a, b) => a.order - b.order);
+
+    return { pickup, return: returnEv, damage };
+  }, [rental?.evidences]);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({
@@ -167,6 +404,36 @@ export default function RentalDetailScreen() {
     });
   };
 
+  // Create dispute mutation
+  const createDisputeMutation = useMutation({
+    mutationFn: async (data: { reason: string; description?: string }) => {
+      if (!rental) throw new Error("Rental not found");
+      return apiRental.createDispute(rental.id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rental", id] });
+      queryClient.invalidateQueries({ queryKey: ["myRentals"] });
+      Alert.alert("Thành công", "Đã gửi phàn nàn thành công");
+      setShowDisputeModal(false);
+      setDisputeReason("");
+      setDisputeDescription("");
+    },
+    onError: (error: any) => {
+      Alert.alert("Lỗi", error.message || "Không thể tạo phàn nàn");
+    },
+  });
+
+  const handleSubmitDispute = () => {
+    if (!disputeReason.trim()) {
+      Alert.alert("Lỗi", "Vui lòng nhập lý do phàn nàn");
+      return;
+    }
+    createDisputeMutation.mutate({
+      reason: disputeReason.trim(),
+      description: disputeDescription.trim() || undefined,
+    });
+  };
+
   const renderStars = (
     rating: number,
     interactive = false,
@@ -233,6 +500,15 @@ export default function RentalDetailScreen() {
     (rental.status === "AWAIT_APPROVAL" ||
       rental.status === "CONFIRMED" ||
       rental.status === "ON_TRIP");
+
+  // Check if renter can upload pickup evidence
+  const canUploadPickupEvidence =
+    isRenter && (rental.status === "CONFIRMED" || rental.status === "ON_TRIP");
+
+  // Check if user can create dispute (after completion)
+  // Only allow if status is COMPLETED (not DISPUTED)
+  const canCreateDispute =
+    (isRenter || isOwner) && rental?.status === "COMPLETED";
 
   // Convert vehicle images to VehicleImage format
   const vehicleImages =
@@ -517,6 +793,154 @@ export default function RentalDetailScreen() {
               )}
           </View>
 
+          {/* Evidence Section - Show uploaded evidences */}
+          {(() => {
+            if (
+              groupedEvidences.pickup.length === 0 &&
+              groupedEvidences.return.length === 0 &&
+              groupedEvidences.damage.length === 0
+            ) {
+              return null;
+            }
+
+            const renderEvidenceItem = (
+              evidence: (typeof rental.evidences)[0],
+              index: number,
+              allEvidences: typeof rental.evidences,
+              onPress: () => void
+            ) => (
+              <TouchableOpacity
+                key={evidence.id}
+                onPress={onPress}
+                activeOpacity={0.7}
+                style={{ marginRight: 12 }}
+              >
+                <Image
+                  source={{ uri: evidence.url }}
+                  style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 8,
+                  }}
+                  resizeMode="cover"
+                />
+                {evidence.note && (
+                  <Text
+                    className="text-xs text-gray-500 mt-1"
+                    numberOfLines={2}
+                    style={{ width: 100 }}
+                  >
+                    {evidence.note}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            );
+
+            return (
+              <View className="bg-gray-50 rounded-xl p-4 mb-4">
+                <Text className="text-base font-semibold text-gray-900 mb-3">
+                  Ảnh hiện trạng xe
+                </Text>
+
+                {groupedEvidences.pickup.length > 0 && (
+                  <View className="mb-4">
+                    <Text className="text-sm font-medium text-gray-700 mb-2">
+                      Ảnh khi nhận xe
+                    </Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ paddingRight: 4 }}
+                      removeClippedSubviews={true}
+                      nestedScrollEnabled={true}
+                    >
+                      {groupedEvidences.pickup.map((evidence, index) =>
+                        renderEvidenceItem(
+                          evidence,
+                          index,
+                          groupedEvidences.pickup,
+                          () => {
+                            const allImages = groupedEvidences.pickup.map(
+                              (e) => ({
+                                uri: e.url,
+                              })
+                            );
+                            setGalleryImages(allImages);
+                            setGalleryImageIndex(index);
+                          }
+                        )
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {groupedEvidences.return.length > 0 && (
+                  <View className="mb-4">
+                    <Text className="text-sm font-medium text-gray-700 mb-2">
+                      Ảnh khi trả xe
+                    </Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ paddingRight: 4 }}
+                      removeClippedSubviews={true}
+                      nestedScrollEnabled={true}
+                    >
+                      {groupedEvidences.return.map((evidence, index) =>
+                        renderEvidenceItem(
+                          evidence,
+                          index,
+                          groupedEvidences.return,
+                          () => {
+                            const allImages = groupedEvidences.return.map(
+                              (e) => ({
+                                uri: e.url,
+                              })
+                            );
+                            setGalleryImages(allImages);
+                            setGalleryImageIndex(index);
+                          }
+                        )
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {groupedEvidences.damage.length > 0 && (
+                  <View>
+                    <Text className="text-sm font-medium text-gray-700 mb-2">
+                      Ảnh hư hỏng
+                    </Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ paddingRight: 4 }}
+                      removeClippedSubviews={true}
+                      nestedScrollEnabled={true}
+                    >
+                      {groupedEvidences.damage.map((evidence, index) =>
+                        renderEvidenceItem(
+                          evidence,
+                          index,
+                          groupedEvidences.damage,
+                          () => {
+                            const allImages = groupedEvidences.damage.map(
+                              (e) => ({
+                                uri: e.url,
+                              })
+                            );
+                            setGalleryImages(allImages);
+                            setGalleryImageIndex(index);
+                          }
+                        )
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            );
+          })()}
+
           {/* Owner Actions */}
           {isOwner &&
             (canApprove ||
@@ -659,6 +1083,136 @@ export default function RentalDetailScreen() {
                 )}
               </View>
             )}
+
+          {/* Upload Pickup Evidence Section - Renter only */}
+          {canUploadPickupEvidence && (
+            <View className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+              <Text className="text-base font-semibold text-gray-900 mb-3">
+                Chụp ảnh hiện trạng xe khi nhận
+              </Text>
+              <Text className="text-sm text-gray-600 mb-3">
+                Vui lòng chụp ảnh hiện trạng xe (mặt trước, sau, trái, phải,
+                dashboard) để bảo vệ quyền lợi của bạn
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowEvidenceModal(true)}
+                style={{
+                  backgroundColor: "#fff",
+                  borderWidth: 1,
+                  borderColor: "#3B82F6",
+                  borderRadius: 12,
+                  padding: 12,
+                }}
+              >
+                <View className="flex-row items-center justify-center">
+                  <MaterialIcons name="camera-alt" size={20} color="#3B82F6" />
+                  <Text
+                    style={{
+                      marginLeft: 8,
+                      color: "#3B82F6",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Chụp ảnh hiện trạng
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Dispute Section - Show existing dispute or allow creating new one */}
+          {rental.dispute ? (
+            <View className="bg-red-50 rounded-xl p-4 mb-4 border border-red-200">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-base font-semibold text-gray-900">
+                  Phàn nàn về đơn thuê
+                </Text>
+                <View
+                  className={`px-2 py-1 rounded-full ${
+                    rental.dispute.status === "OPEN"
+                      ? "bg-amber-100"
+                      : rental.dispute.status === "RESOLVED"
+                        ? "bg-green-100"
+                        : "bg-gray-100"
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-medium ${
+                      rental.dispute.status === "OPEN"
+                        ? "text-amber-700"
+                        : rental.dispute.status === "RESOLVED"
+                          ? "text-green-700"
+                          : "text-gray-700"
+                    }`}
+                  >
+                    {rental.dispute.status === "OPEN"
+                      ? "Đang xử lý"
+                      : rental.dispute.status === "RESOLVED"
+                        ? "Đã giải quyết"
+                        : "Đã đóng"}
+                  </Text>
+                </View>
+              </View>
+              <View className="mb-2">
+                <Text className="text-sm font-medium text-gray-700 mb-1">
+                  Lý do phàn nàn:
+                </Text>
+                <Text className="text-sm text-gray-900">
+                  {rental.dispute.reason}
+                </Text>
+              </View>
+              {rental.dispute.description && (
+                <View className="mb-2">
+                  <Text className="text-sm font-medium text-gray-700 mb-1">
+                    Mô tả chi tiết:
+                  </Text>
+                  <Text className="text-sm text-gray-900">
+                    {rental.dispute.description}
+                  </Text>
+                </View>
+              )}
+              <Text className="text-xs text-gray-500 mt-2">
+                Tạo lúc: {formatDate(rental.dispute.createdAt)}
+              </Text>
+            </View>
+          ) : canCreateDispute ? (
+            <View className="bg-amber-50 rounded-xl p-4 mb-4 border border-amber-200">
+              <Text className="text-base font-semibold text-gray-900 mb-3">
+                Phàn nàn về đơn thuê
+              </Text>
+              <Text className="text-sm text-gray-600 mb-3">
+                Nếu bạn có phàn nàn về đơn thuê này, vui lòng gửi phàn nàn để
+                chúng tôi xử lý
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowDisputeModal(true)}
+                style={{
+                  backgroundColor: "#fff",
+                  borderWidth: 1,
+                  borderColor: "#F59E0B",
+                  borderRadius: 12,
+                  padding: 12,
+                }}
+              >
+                <View className="flex-row items-center justify-center">
+                  <MaterialIcons
+                    name="report-problem"
+                    size={20}
+                    color="#F59E0B"
+                  />
+                  <Text
+                    style={{
+                      marginLeft: 8,
+                      color: "#F59E0B",
+                      fontWeight: "600",
+                    }}
+                  >
+                    Gửi phàn nàn
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           {/* Renter Review Section */}
           {canReview && (
@@ -838,6 +1392,140 @@ export default function RentalDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Evidence Upload Modal */}
+      <Modal
+        visible={showEvidenceModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEvidenceModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-3xl max-h-[90%] p-6">
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-xl font-bold text-gray-900">
+                Chụp ảnh hiện trạng xe
+              </Text>
+              <TouchableOpacity onPress={() => setShowEvidenceModal(false)}>
+                <MaterialIcons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text className="text-sm text-gray-600 mb-4">
+                Vui lòng chụp ảnh các góc của xe để ghi nhận hiện trạng khi nhận
+                xe
+              </Text>
+
+              <EvidenceUploadForm
+                rentalId={rental?.id || ""}
+                onSuccess={() => {
+                  setShowEvidenceModal(false);
+                  queryClient.invalidateQueries({ queryKey: ["rental", id] });
+                }}
+                onCancel={() => setShowEvidenceModal(false)}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Dispute Modal */}
+      <Modal
+        visible={showDisputeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDisputeModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-4">
+          <View className="bg-white rounded-2xl w-full max-w-md p-6">
+            <Text className="text-xl font-bold text-gray-900 mb-4">
+              Gửi phàn nàn
+            </Text>
+
+            <Text className="text-sm text-gray-600 mb-3">
+              Vui lòng mô tả chi tiết vấn đề bạn gặp phải:
+            </Text>
+
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Lý do phàn nàn *
+            </Text>
+            <TextInput
+              value={disputeReason}
+              onChangeText={setDisputeReason}
+              placeholder="Ví dụ: Xe bị hỏng, không đúng mô tả..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={3}
+              className="border border-gray-300 rounded-lg p-3 text-base min-h-[80px] mb-4"
+              textAlignVertical="top"
+            />
+
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Mô tả chi tiết (tùy chọn)
+            </Text>
+            <TextInput
+              value={disputeDescription}
+              onChangeText={setDisputeDescription}
+              placeholder="Mô tả chi tiết vấn đề..."
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={4}
+              className="border border-gray-300 rounded-lg p-3 text-base min-h-[100px]"
+              textAlignVertical="top"
+            />
+
+            <View className="flex-row gap-3 mt-4">
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDisputeModal(false);
+                  setDisputeReason("");
+                  setDisputeDescription("");
+                }}
+                disabled={createDisputeMutation.isPending}
+                className="flex-1 py-3 px-4 rounded-lg border border-gray-300 bg-white"
+              >
+                <Text className="text-center font-medium text-gray-700">
+                  Hủy
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSubmitDispute}
+                disabled={
+                  createDisputeMutation.isPending || !disputeReason.trim()
+                }
+                className="flex-1 py-3 px-4 rounded-lg"
+                style={{
+                  opacity:
+                    createDisputeMutation.isPending || !disputeReason.trim()
+                      ? 0.5
+                      : 1,
+                  backgroundColor: "#F59E0B",
+                }}
+              >
+                {createDisputeMutation.isPending ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text className="text-center font-medium text-white">
+                    Gửi phàn nàn
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Image Gallery Viewer - Using ImageViewing like VehicleImageCarousel */}
+      <ImageViewing
+        images={galleryImages}
+        imageIndex={galleryImageIndex ?? 0}
+        visible={galleryImageIndex !== null}
+        onRequestClose={() => setGalleryImageIndex(null)}
+        swipeToCloseEnabled={true}
+        doubleTapToZoomEnabled={true}
+        presentationStyle="overFullScreen"
+      />
     </SafeAreaView>
   );
 }
