@@ -6,6 +6,7 @@ interface HeaderBaseProps {
   title: string;
   showBackButton?: boolean;
   onBackPress?: () => void;
+  onTitlePress?: () => void;
   action?: React.ReactNode;
 }
 
@@ -13,6 +14,7 @@ export default function HeaderBase({
   title,
   showBackButton,
   onBackPress,
+  onTitlePress,
   action,
 }: HeaderBaseProps) {
   const router = useRouter();
@@ -33,7 +35,13 @@ export default function HeaderBase({
       ) : (
         <View style={{ width: 24 }} />
       )}
-      <Text className="text-xl font-bold text-gray-900">{title}</Text>
+      {onTitlePress ? (
+        <TouchableOpacity onPress={onTitlePress} activeOpacity={0.7}>
+          <Text className="text-xl font-bold text-gray-900">{title}</Text>
+        </TouchableOpacity>
+      ) : (
+        <Text className="text-xl font-bold text-gray-900">{title}</Text>
+      )}
       {action ? <View>{action}</View> : <View style={{ width: 24 }} />}
     </View>
   );
