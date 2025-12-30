@@ -443,7 +443,19 @@ export class VehicleService {
       throw new NotFoundException('Xe không tồn tại hoặc chưa được duyệt');
     }
 
-    return vehicle;
+    // Lấy các khoảng thời gian xe không khả dụng và gắn vào response
+    const unavailabilities =
+      await this.prismaService.vehicleUnavailability.findMany({
+        where: { vehicleId: id },
+        orderBy: { startDate: 'asc' },
+        select: { id: true, startDate: true, endDate: true, reason: true },
+      });
+
+    // Trả về object vehicle kèm trường unavailabilities
+    return {
+      ...vehicle,
+      unavailabilities,
+    } as unknown as VehicleResponse;
   }
 
   /**

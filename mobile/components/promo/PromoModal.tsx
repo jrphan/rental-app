@@ -42,6 +42,7 @@ export default function PromoModal({ visible, onClose, onApply, selected }: Prop
 
 					<TextInput
 						placeholder="Nhập mã giảm giá"
+						placeholderTextColor="#9CA3AF"
 						value={input}
 						onChangeText={setInput}
 						style={{

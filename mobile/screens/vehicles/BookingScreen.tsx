@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,8 @@ import MapPickerModal from "@/components/location/MapPickerModal";
 import PromoModal from "@/components/promo/PromoModal";
 import { PROMOS, type Promo } from "@/constants/promos";
 import { calculateDistanceKm } from "@/utils/geo";
+import UnavailabilityNotice from "@/components/unavailability/UnavailabilityNotice";
+import UnavailabilityModal from "@/components/unavailability/UnavailabilityModal";
 
 export default function BookingScreen() {
 	const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
@@ -38,6 +40,7 @@ export default function BookingScreen() {
 	} | null>(null);
 	const [showPromoModal, setShowPromoModal] = useState(false);
 	const [selectedPromo, setSelectedPromo] = useState<Promo | null>(null);
+	const [unavailModalVisible, setUnavailModalVisible] = useState(false);
 
 	// Promo apply handler (client-side demo)
 	const applyPromo = (promo?: Promo, inputCode?: string) => {
@@ -264,6 +267,22 @@ export default function BookingScreen() {
 							}
 						/>
 					</View>
+
+					{/* Unavailability notice (show only when vehicle has unavailabilities) */}
+					{vehicle?.unavailabilities && vehicle.unavailabilities.length > 0 && (
+						<>
+							<UnavailabilityNotice
+								count={vehicle.unavailabilities.length}
+								onPress={() => setUnavailModalVisible(true)}
+							/>
+
+							<UnavailabilityModal
+								visible={unavailModalVisible}
+								onClose={() => setUnavailModalVisible(false)}
+								items={vehicle.unavailabilities}
+							/>
+						</>
+					)}
 
 					{/* Delivery / Pickup options */}
 					<View className="mb-4">
