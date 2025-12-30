@@ -291,18 +291,6 @@ export default function VehiclesScreen() {
       <Tabs
         tabs={[
           {
-            label: "Tất cả",
-            value: "all",
-            route: "",
-            // Use contentFactory for lazy loading
-            contentFactory: () => (
-              <RentalsList
-                rentals={mappedAllRentals}
-                showOwnerActions={false}
-              />
-            ),
-          },
-          {
             label: "Xe được thuê",
             value: "owner",
             route: "",
@@ -326,7 +314,7 @@ export default function VehiclesScreen() {
           },
         ]}
         variant="inline"
-        defaultActiveTab="all"
+        defaultActiveTab="owner"
       />
     );
   };

@@ -412,11 +412,11 @@ export default function ChatDetailScreen() {
           title={otherUser.fullName || "Người dùng"}
           showBackButton
           onTitlePress={handleTitlePress}
-          action={
-            <Text className="text-sm text-gray-500">
-              {chatDetail.vehicle.brand} {chatDetail.vehicle.model}
-            </Text>
-          }
+          // action={
+          //   <Text className="text-sm text-gray-500">
+          //     {chatDetail.vehicle.brand} {chatDetail.vehicle.model}
+          //   </Text>
+          // }
         />
       </View>
 

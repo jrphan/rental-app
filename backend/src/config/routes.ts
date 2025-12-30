@@ -44,6 +44,8 @@ export const ROUTES = {
     GET_MY_RENTALS: '/rental/my-rentals',
     GET_RENTAL_DETAIL: '/rental/:id',
     UPDATE_RENTAL_STATUS: '/rental/:id/status',
+    UPLOAD_EVIDENCE: '/rental/:id/evidence',
+    CREATE_DISPUTE: '/rental/:id/dispute',
   },
   ADMIN: {
     LIST_USERS: '/admin/users',
