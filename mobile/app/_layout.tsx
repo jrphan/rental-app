@@ -34,6 +34,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="vehicle/[id]" />
+      <Stack.Screen name="rental/[id]" />
       <Stack.Screen name="owner/[ownerId]" />
       <Stack.Screen name="search" />
     </Stack>

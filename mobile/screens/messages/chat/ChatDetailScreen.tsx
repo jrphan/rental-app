@@ -35,6 +35,9 @@ import { formatTimeAgo } from "@/utils/date.utils";
 import HeaderBase from "@/components/header/HeaderBase";
 import SocketDebugPanel from "@/components/chat/SocketDebugPanel";
 
+// Estimated message height for getItemLayout optimization
+const ESTIMATED_MESSAGE_HEIGHT = 80;
+
 export default function ChatDetailScreen() {
   const { id: chatId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuthStore();
@@ -42,10 +45,11 @@ export default function ChatDetailScreen() {
   const [message, setMessage] = useState("");
   const flatListRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
-  const [hasScrolledToTop, setHasScrolledToTop] = useState(false);
-  const previousMessagesLengthRef = useRef(0);
-  const scrollOffsetBeforeLoadRef = useRef<number | null>(null);
-  const isMaintainingScrollPositionRef = useRef(false);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+  const isLoadingOlderRef = useRef(false);
+  const shouldScrollToBottomRef = useRef(true);
+  const isInitialLoadRef = useRef(true);
+  const previousMessagesCountRef = useRef(0);
 
   const { data: chatDetail, isLoading: isLoadingChat } = useQuery({
     queryKey: ["chat", chatId, "detail"],
@@ -53,7 +57,7 @@ export default function ChatDetailScreen() {
     enabled: !!chatId,
   });
 
-  // Infinite query for lazy loading messages (20 per page)
+  // Infinite query for lazy loading messages
   const {
     data: messagesData,
     fetchNextPage,
@@ -66,82 +70,57 @@ export default function ChatDetailScreen() {
     enabled: !!chatId,
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      // If last page has messages, there might be more
-      // Load next page if last page has full limit (20 messages)
-      if (lastPage.length === 20) {
+      // Load next page if last page has full limit (50 messages)
+      if (lastPage.length === 50) {
         return allPages.length + 1;
       }
       return undefined; // No more pages
     },
   });
 
-  // Flatten all pages into a single array
-  // Backend returns each page as [oldest...newest] within the page
-  // Pages are ordered: page1 (newest overall), page2 (older), page3 (oldest)
-  // We need to reverse the pages array to get [oldest...newest] overall
-  const messages = useMemo(
-    () => messagesData?.pages.slice().reverse().flat() || [],
-    [messagesData?.pages]
-  );
+  // Flatten and sort messages properly
+  // Backend returns: page1 (newest), page2 (older), page3 (oldest)
+  // Each page is already reversed by backend: [oldest...newest] within page
+  // We need: [oldest...newest] overall
+  const messages = useMemo(() => {
+    if (!messagesData?.pages.length) return [];
 
-  // Maintain scroll position when loading older messages
-  // Use onContentSizeChange to track actual content height changes
-  const contentHeightRef = useRef<number | null>(null);
-  const previousMessagesLengthForScrollRef = useRef(0);
+    // Reverse pages array to get oldest first, then flatten
+    const allMessages = messagesData.pages.slice().reverse().flat();
 
-  const handleContentSizeChange = useCallback(
-    (contentWidth: number, contentHeight: number) => {
-      // If we're waiting to restore scroll position and messages count increased
-      if (
-        scrollOffsetBeforeLoadRef.current !== null &&
-        messages.length > previousMessagesLengthForScrollRef.current
-      ) {
-        // First call: store current content height
-        if (contentHeightRef.current === null) {
-          contentHeightRef.current = contentHeight;
-          previousMessagesLengthForScrollRef.current = messages.length;
-          return;
-        }
+    // Sort by createdAt to ensure correct order (defensive)
+    return allMessages.sort((a, b) => {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  }, [messagesData?.pages]);
 
-        // Second call (after new messages rendered): restore scroll position
-        const heightDifference = contentHeight - contentHeightRef.current;
-
-        // New messages are added at the beginning, so we need to add the height difference
-        const newScrollOffset =
-          scrollOffsetBeforeLoadRef.current + heightDifference;
-
-        // Restore scroll position
-        setTimeout(() => {
-          flatListRef.current?.scrollToOffset({
-            offset: newScrollOffset,
-            animated: false,
-          });
-          scrollOffsetBeforeLoadRef.current = null;
-          contentHeightRef.current = null;
-          // Reset flag after restoring scroll position
-          isMaintainingScrollPositionRef.current = false;
-        }, 50);
-      }
-    },
-    [messages.length]
-  );
-
+  // Track message count changes
   useEffect(() => {
-    previousMessagesLengthRef.current = messages.length;
-  }, [messages.length]);
+    const currentCount = messages.length;
+    const previousCount = previousMessagesCountRef.current;
 
-  // Note: We only use WebSocket to send messages to avoid duplicates
-  // WebSocket already handles persistence on the backend
+    // If new messages added at the end (newer messages), scroll to bottom
+    if (currentCount > previousCount && shouldScrollToBottomRef.current) {
+      // Only auto-scroll if user is near bottom or it's initial load
+      if (isInitialLoadRef.current) {
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+          isInitialLoadRef.current = false;
+        }, 100);
+      }
+    }
+
+    previousMessagesCountRef.current = currentCount;
+  }, [messages.length]);
 
   const markAsReadMutation = useMutation({
     mutationFn: () => apiChat.markAsRead(chatId!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
-      queryClient.invalidateQueries({ queryKey: ["chat", chatId, "messages"] });
     },
   });
 
-  // WebSocket connection
+  // WebSocket connection with optimized message handling
   const { sendMessage: sendMessageWS, markAsRead: markAsReadWS } =
     useChatSocket({
       enabled: !!chatId,
@@ -157,22 +136,24 @@ export default function ChatDetailScreen() {
               };
             }
 
-            // Flatten all pages to check for duplicates and temp messages
+            // Check all pages for duplicates
             const allMessages = old.pages.flat();
-
-            // Check if message already exists (by ID)
             if (allMessages.some((m) => m.id === newMessage.id)) {
-              return old;
+              return old; // Already exists
             }
 
-            // Find temp message with same content and sender
+            // Find and replace temp message
             let tempMessageFound = false;
             const updatedPages = old.pages.map((page) => {
               const tempIndex = page.findIndex(
                 (m) =>
                   m.id.startsWith("temp-") &&
                   m.content === newMessage.content &&
-                  m.senderId === newMessage.senderId
+                  m.senderId === newMessage.senderId &&
+                  Math.abs(
+                    new Date(m.createdAt).getTime() -
+                      new Date(newMessage.createdAt).getTime()
+                  ) < 5000 // Within 5 seconds
               );
               if (tempIndex !== -1) {
                 tempMessageFound = true;
@@ -190,9 +171,14 @@ export default function ChatDetailScreen() {
               };
             }
 
-            // Otherwise, add new message to the first page (newest messages)
+            // Add new message to the first page (newest page)
+            // Since pages are [newest, older, oldest], we add to page 0
             const newPages = [...old.pages];
-            newPages[0] = [newMessage, ...newPages[0]];
+            if (newPages[0]) {
+              newPages[0] = [...newPages[0], newMessage];
+            } else {
+              newPages[0] = [newMessage];
+            }
 
             return {
               pages: newPages,
@@ -200,15 +186,17 @@ export default function ChatDetailScreen() {
             };
           }
         );
-        // Scroll to bottom (only if not maintaining scroll position)
-        if (!isMaintainingScrollPositionRef.current) {
-          scrollToBottom(true);
-        }
+
+        // Auto-scroll to bottom for new messages (only if user is near bottom)
+        shouldScrollToBottomRef.current = true;
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       },
     });
 
+  // Mark messages as read when screen is focused
   useEffect(() => {
-    // Mark messages as read when screen is focused
     if (chatId && messages.length > 0) {
       markAsReadMutation.mutate();
       markAsReadWS();
@@ -216,38 +204,48 @@ export default function ChatDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, messages.length]);
 
-  // Scroll to bottom when messages load or screen is focused
-  const scrollToBottom = useCallback(
-    (animated = false) => {
-      // Don't scroll to bottom if we're maintaining scroll position (loading older messages)
-      if (isMaintainingScrollPositionRef.current) {
-        return;
-      }
-      if (flatListRef.current && messages.length > 0) {
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated });
-        }, 100);
-      }
-    },
-    [messages.length]
-  );
-
-  useEffect(() => {
-    // Scroll to bottom when messages load (but not when maintaining scroll position)
-    if (!isMaintainingScrollPositionRef.current) {
-      scrollToBottom(false);
-    }
-  }, [scrollToBottom]);
-
   // Scroll to bottom when screen is focused
   useFocusEffect(
     useCallback(() => {
-      // Delay để đảm bảo FlatList đã render xong
-      const timer = setTimeout(() => {
-        scrollToBottom(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }, [scrollToBottom])
+      if (messages.length > 0) {
+        const timer = setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+          isInitialLoadRef.current = false;
+        }, 200);
+        return () => clearTimeout(timer);
+      }
+    }, [messages.length])
+  );
+
+  // Handle scroll events to detect if user is near bottom
+  const handleScroll = useCallback(
+    (event: any) => {
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
+      const distanceFromBottom =
+        contentSize.height - layoutMeasurement.height - contentOffset.y;
+
+      // User is near bottom (within 200px) - auto-scroll for new messages
+      shouldScrollToBottomRef.current = distanceFromBottom < 200;
+
+      // Load older messages when near top
+      if (
+        contentOffset.y < 300 &&
+        hasNextPage &&
+        !isFetchingNextPage &&
+        !isLoadingOlderRef.current
+      ) {
+        isLoadingOlderRef.current = true;
+        setIsLoadingOlder(true);
+        fetchNextPage().finally(() => {
+          setTimeout(() => {
+            isLoadingOlderRef.current = false;
+            setIsLoadingOlder(false);
+          }, 500);
+        });
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage]
   );
 
   const handleSendMessage = () => {
@@ -273,7 +271,7 @@ export default function ChatDetailScreen() {
       },
     };
 
-    // Add temp message to infinite query structure (first page = newest messages)
+    // Add temp message to infinite query structure
     queryClient.setQueryData<InfiniteData<ChatMessage[]>>(
       ["chat", chatId, "messages"],
       (old) => {
@@ -285,8 +283,12 @@ export default function ChatDetailScreen() {
         }
 
         const newPages = [...old.pages];
-        // Add to first page (newest messages)
-        newPages[0] = [...newPages[0], tempMessage];
+        // Add to first page (newest messages page)
+        if (newPages[0]) {
+          newPages[0] = [...newPages[0], tempMessage];
+        } else {
+          newPages[0] = [tempMessage];
+        }
 
         return {
           pages: newPages,
@@ -296,11 +298,63 @@ export default function ChatDetailScreen() {
     );
 
     // Scroll to bottom immediately
-    setTimeout(() => scrollToBottom(true), 50);
+    shouldScrollToBottomRef.current = true;
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 50);
 
     // Send via WebSocket - will replace temp message when real message arrives
     sendMessageWS(messageContent);
   };
+
+  // Optimize FlatList with getItemLayout
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: ESTIMATED_MESSAGE_HEIGHT,
+      offset: ESTIMATED_MESSAGE_HEIGHT * index,
+      index,
+    }),
+    []
+  );
+
+  // Memoize render item for performance
+  const renderMessage = useCallback(
+    ({ item }: { item: ChatMessage }) => {
+      const isMyMessage = item.senderId === user?.id;
+      return (
+        <View
+          className={`px-4 py-2 ${isMyMessage ? "items-end" : "items-start"}`}
+        >
+          <View
+            className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+              isMyMessage
+                ? "rounded-br-sm"
+                : "bg-white rounded-bl-sm border border-gray-200"
+            }`}
+            style={
+              isMyMessage ? { backgroundColor: COLORS.primary } : undefined
+            }
+          >
+            <Text
+              className={`text-base ${
+                isMyMessage ? "text-white" : "text-gray-900"
+              }`}
+            >
+              {item.content}
+            </Text>
+            <Text
+              className={`text-xs mt-1 ${
+                isMyMessage ? "text-white opacity-90" : "text-gray-500"
+              }`}
+            >
+              {formatTimeAgo(item.createdAt)}
+            </Text>
+          </View>
+        </View>
+      );
+    },
+    [user?.id]
+  );
 
   if (isLoadingChat) {
     return (
@@ -372,31 +426,17 @@ export default function ChatDetailScreen() {
         data={messages}
         keyExtractor={(item) => item.id}
         inverted={false}
-        onScroll={(event) => {
-          const { contentOffset } = event.nativeEvent;
-          // Load more when scrolled near top (within 200px)
-          if (
-            contentOffset.y <= 200 &&
-            hasNextPage &&
-            !isFetchingNextPage &&
-            !hasScrolledToTop
-          ) {
-            setHasScrolledToTop(true);
-            // Mark that we're maintaining scroll position
-            isMaintainingScrollPositionRef.current = true;
-            // Store current scroll offset and reset content height ref
-            scrollOffsetBeforeLoadRef.current = contentOffset.y;
-            contentHeightRef.current = null; // Reset to track new content height
-
-            fetchNextPage().finally(() => {
-              // Reset after a delay to allow loading again
-              setTimeout(() => setHasScrolledToTop(false), 1000);
-            });
-          }
-        }}
-        scrollEventThrottle={400}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        renderItem={renderMessage}
+        getItemLayout={getItemLayout}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={15}
+        windowSize={10}
         ListHeaderComponent={
-          isFetchingNextPage ? (
+          isFetchingNextPage || isLoadingOlder ? (
             <View className="py-4 items-center">
               <ActivityIndicator size="small" color={COLORS.primary} />
               <Text className="text-xs text-gray-500 mt-2">
@@ -405,42 +445,6 @@ export default function ChatDetailScreen() {
             </View>
           ) : null
         }
-        renderItem={({ item }) => {
-          const isMyMessage = item.senderId === user?.id;
-          return (
-            <View
-              className={`px-4 py-2 ${
-                isMyMessage ? "items-end" : "items-start"
-              }`}
-            >
-              <View
-                className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                  isMyMessage
-                    ? "rounded-br-sm"
-                    : "bg-white rounded-bl-sm border border-gray-200"
-                }`}
-                style={
-                  isMyMessage ? { backgroundColor: COLORS.primary } : undefined
-                }
-              >
-                <Text
-                  className={`text-base ${
-                    isMyMessage ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  {item.content}
-                </Text>
-                <Text
-                  className={`text-xs mt-1 ${
-                    isMyMessage ? "text-white opacity-90" : "text-gray-500"
-                  }`}
-                >
-                  {formatTimeAgo(item.createdAt)}
-                </Text>
-              </View>
-            </View>
-          );
-        }}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
             <Text className="text-gray-500 text-base">
@@ -451,7 +455,10 @@ export default function ChatDetailScreen() {
         contentContainerStyle={{ paddingVertical: 8 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        onContentSizeChange={handleContentSizeChange}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 100,
+        }}
       />
 
       {/* Input - Sticky với keyboard */}
