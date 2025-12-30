@@ -44,6 +44,8 @@ export const ROUTES = {
     GET_MY_RENTALS: '/rental/my-rentals',
     GET_RENTAL_DETAIL: '/rental/:id',
     UPDATE_RENTAL_STATUS: '/rental/:id/status',
+    UPLOAD_EVIDENCE: '/rental/:id/evidence',
+    CREATE_DISPUTE: '/rental/:id/dispute',
   },
   ADMIN: {
     LIST_USERS: '/admin/users',
@@ -69,5 +71,9 @@ export const ROUTES = {
     SEND_MESSAGE: '/chat/:id/messages',
     MARK_READ: '/chat/:id/read',
     GET_UNREAD_COUNT: '/chat/unread-count',
+  },
+  REVIEW: {
+    CREATE: '/rental/:id/review',
+    GET_RENTAL_REVIEWS: '/rental/:id/reviews',
   },
 };

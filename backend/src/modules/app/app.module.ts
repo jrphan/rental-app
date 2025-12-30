@@ -11,6 +11,7 @@ import { VehicleModule } from '@/modules/vehicle/vehicle.module';
 import { NotificationModule } from '@/modules/notification/notification.module';
 import { RentalModule } from '@/modules/rental/rental.module';
 import { ChatModule } from '@/modules/chat/chat.module';
+import { ReviewModule } from '@/modules/review/review.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ChatModule } from '@/modules/chat/chat.module';
     NotificationModule,
     RentalModule,
     ChatModule,
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -18,6 +18,11 @@ import { AuthenticatedRequest } from '@/types/response.type';
 import { CreateRentalDto } from '@/common/dto/Rental/create-rental.dto';
 import { UpdateRentalStatusDto } from '@/common/dto/Rental/update-rental-status.dto';
 import {
+  UploadEvidenceDto,
+  UploadMultipleEvidenceDto,
+} from '@/common/dto/Rental/upload-evidence.dto';
+import { CreateDisputeDto } from '@/common/dto/Rental/create-dispute.dto';
+import {
   CreateRentalResponse,
   RentalListResponse,
   RentalDetailResponse,
@@ -55,11 +60,7 @@ export class RentalController {
       throw new UnauthorizedException('Người dùng không tồn tại');
     }
 
-    return this.rentalService.getMyRentals(
-      userId,
-      role || 'all',
-      status,
-    );
+    return this.rentalService.getMyRentals(userId, role || 'all', status);
   }
 
   @Get(ROUTES.RENTAL.GET_RENTAL_DETAIL)
@@ -90,5 +91,43 @@ export class RentalController {
 
     return this.rentalService.updateRentalStatus(userId, id, updateStatusDto);
   }
-}
 
+  @Post(ROUTES.RENTAL.UPLOAD_EVIDENCE)
+  @UseGuards(AuthGuard)
+  uploadEvidence(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() uploadEvidenceDto: UploadEvidenceDto | UploadMultipleEvidenceDto,
+  ) {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    // Check if it's multiple evidences
+    if ('evidences' in uploadEvidenceDto) {
+      return this.rentalService.uploadMultipleEvidences(
+        id,
+        userId,
+        uploadEvidenceDto,
+      );
+    }
+
+    return this.rentalService.uploadEvidence(id, userId, uploadEvidenceDto);
+  }
+
+  @Post(ROUTES.RENTAL.CREATE_DISPUTE)
+  @UseGuards(AuthGuard)
+  createDispute(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() createDisputeDto: CreateDisputeDto,
+  ) {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.rentalService.createDispute(id, userId, createDisputeDto);
+  }
+}

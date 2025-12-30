@@ -25,6 +25,7 @@ export class ChatService {
 
   /**
    * Tạo chat mới khi có rental mới
+   * Nếu đã có chat giữa owner-renter này, dùng lại chat đó
    */
   async createChatForRental(
     rentalId: string,
@@ -32,16 +33,60 @@ export class ChatService {
     ownerId: string,
   ) {
     try {
-      // Kiểm tra xem đã có chat chưa
-      const existingChat = await this.prismaService.chat.findUnique({
-        where: { rentalId },
+      // Kiểm tra xem đã có chat giữa owner-renter này chưa (không quan tâm rentalId)
+      const existingChat = await this.prismaService.chat.findFirst({
+        where: {
+          renterId,
+          ownerId,
+        },
+        include: {
+          renter: {
+            select: {
+              id: true,
+              fullName: true,
+              avatar: true,
+            },
+          },
+          owner: {
+            select: {
+              id: true,
+              fullName: true,
+              avatar: true,
+            },
+          },
+          rental: {
+            select: {
+              id: true,
+              vehicle: {
+                select: {
+                  id: true,
+                  brand: true,
+                  model: true,
+                  images: {
+                    where: { isPrimary: true },
+                    take: 1,
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          updatedAt: 'desc', // Lấy chat mới nhất
+        },
       });
 
       if (existingChat) {
+        // Đã có chat giữa owner-renter này, dùng lại chat đó
+        // Không cập nhật rentalId vì có unique constraint
+        // Chat sẽ được group lại trong getMyChats
+        this.logger.log(
+          `Reusing existing chat ${existingChat.id} for rental ${rentalId} (owner-renter pair)`,
+        );
         return existingChat;
       }
 
-      // Tạo chat mới
+      // Tạo chat mới nếu chưa có
       const chat = await this.prismaService.chat.create({
         data: {
           rentalId,
@@ -92,6 +137,7 @@ export class ChatService {
 
   /**
    * Lấy danh sách chats của user
+   * Group các chat giữa cùng owner-renter pair thành 1 chat
    */
   async getMyChats(userId: string) {
     const chats = await this.prismaService.chat.findMany({
@@ -156,8 +202,63 @@ export class ChatService {
       },
     });
 
-    return chats.map(chat => {
-      const lastMessage = chat.messages[0];
+    // Group chats theo owner-renter pair
+    // Key: "ownerId-renterId" (sắp xếp để đảm bảo thứ tự không quan trọng)
+    const chatGroups = new Map<
+      string,
+      {
+        chats: typeof chats;
+        totalUnread: number;
+        latestMessage: (typeof chats)[0]['messages'][0] | null;
+        latestChat: (typeof chats)[0];
+      }
+    >();
+
+    for (const chat of chats) {
+      // Tạo key từ ownerId và renterId (sắp xếp để đảm bảo thứ tự không quan trọng)
+      const key = [chat.ownerId, chat.renterId].sort().join('-');
+
+      const group = chatGroups.get(key);
+
+      if (!group) {
+        // Chưa có group cho pair này, tạo mới
+        chatGroups.set(key, {
+          chats: [chat],
+          totalUnread: chat._count.messages,
+          latestMessage: chat.messages[0] || null,
+          latestChat: chat,
+        });
+      } else {
+        // Đã có group, thêm chat vào và cập nhật thông tin
+        group.chats.push(chat);
+        group.totalUnread += chat._count.messages;
+
+        // So sánh để tìm tin nhắn mới nhất
+        const currentLastMessage = chat.messages[0];
+        const existingLastMessage = group.latestMessage;
+
+        if (currentLastMessage) {
+          if (
+            !existingLastMessage ||
+            currentLastMessage.createdAt > existingLastMessage.createdAt
+          ) {
+            group.latestMessage = currentLastMessage;
+            group.latestChat = chat;
+          }
+        }
+
+        // Cập nhật latestChat nếu chat này mới hơn
+        if (chat.updatedAt > group.latestChat.updatedAt) {
+          group.latestChat = chat;
+        }
+      }
+    }
+
+    // Chuyển groups thành array và transform
+    return Array.from(chatGroups.values()).map(group => {
+      const chat = group.latestChat;
+      const lastMessage = group.latestMessage;
+
       return {
         id: chat.id,
         rentalId: chat.rentalId,
@@ -188,7 +289,7 @@ export class ChatService {
                   : chat.owner,
             }
           : null,
-        unreadCount: chat._count.messages,
+        unreadCount: group.totalUnread,
         updatedAt: chat.updatedAt.toISOString(),
       };
     });

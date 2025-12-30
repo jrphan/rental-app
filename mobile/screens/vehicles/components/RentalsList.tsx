@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback } from "react";
 import { View, Text, FlatList, ListRenderItem } from "react-native";
+import { useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import RentalCard from "./RentalCard";
-import RentalDetailDrawer from "./RentalDetailDrawer";
 import type { Rental } from "../types";
 
 interface RentalsListProps {
@@ -16,25 +16,18 @@ export default function RentalsList({
   onRentalPress,
   showOwnerActions = false,
 }: RentalsListProps) {
-  const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
-  const [drawerVisible, setDrawerVisible] = useState(false);
+  const router = useRouter();
 
   const handleRentalPress = useCallback(
     (rental: Rental) => {
       if (onRentalPress) {
         onRentalPress(rental);
       } else {
-        setSelectedRental(rental);
-        setDrawerVisible(true);
+        router.push(`/rental/${rental.id}`);
       }
     },
-    [onRentalPress]
+    [onRentalPress, router]
   );
-
-  const handleCloseDrawer = useCallback(() => {
-    setDrawerVisible(false);
-    setSelectedRental(null);
-  }, []);
 
   // Memoize render item to avoid recreating on every render
   const renderItem: ListRenderItem<Rental> = useCallback(
@@ -48,7 +41,7 @@ export default function RentalsList({
   const keyExtractor = useCallback((item: Rental) => item.id, []);
 
   // Item separator component
-  const ItemSeparator = useCallback(() => <View style={{ height: 16 }} />, []);
+  const ItemSeparator = useCallback(() => <View style={{ height: 8 }} />, []);
 
   if (rentals.length === 0) {
     return (
@@ -57,7 +50,7 @@ export default function RentalsList({
           name="receipt"
           size={64}
           color="#D1D5DB"
-          style={{ marginTop: 50 }}
+          style={{ marginTop: 20 }}
         />
         <Text className="text-gray-500 mt-4 text-center">
           Không có đơn thuê nào ở trạng thái này
@@ -67,33 +60,23 @@ export default function RentalsList({
   }
 
   return (
-    <>
-      <FlatList
-        data={rentals}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        ItemSeparatorComponent={ItemSeparator}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 16,
-          paddingTop: 16,
-        }}
-        showsVerticalScrollIndicator={false}
-        className="bg-gray-50"
-        // Performance optimizations
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={10}
-        windowSize={10}
-      />
-
-      <RentalDetailDrawer
-        visible={drawerVisible}
-        rental={selectedRental}
-        onClose={handleCloseDrawer}
-        showOwnerActions={showOwnerActions}
-      />
-    </>
+    <FlatList
+      data={rentals}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      ItemSeparatorComponent={ItemSeparator}
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingTop: 16,
+      }}
+      showsVerticalScrollIndicator={false}
+      className="bg-gray-50"
+      // Performance optimizations
+      removeClippedSubviews={true}
+      maxToRenderPerBatch={10}
+      updateCellsBatchingPeriod={50}
+      initialNumToRender={10}
+      windowSize={10}
+    />
   );
 }

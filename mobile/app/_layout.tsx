@@ -10,6 +10,7 @@ import {
 } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { queryClient } from "@/lib/queryClient";
 import { ToastContainer } from "@/components/ui/toast";
 import { useSyncUser } from "@/hooks/user/useSyncUser";
@@ -33,6 +34,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="vehicle/[id]" />
+      <Stack.Screen name="rental/[id]" />
       <Stack.Screen name="owner/[ownerId]" />
       <Stack.Screen name="search" />
     </Stack>
@@ -44,11 +46,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationThemeProvider value={DefaultTheme}>
         <SafeAreaProvider>
-          <QueryClientProvider client={queryClient}>
-            <RootLayoutNav />
-            <ToastContainer />
-            <StatusBar style="dark" translucent={false} />
-          </QueryClientProvider>
+          <KeyboardProvider>
+            <QueryClientProvider client={queryClient}>
+              <RootLayoutNav />
+              <ToastContainer />
+              <StatusBar style="dark" translucent={false} />
+            </QueryClientProvider>
+          </KeyboardProvider>
         </SafeAreaProvider>
       </NavigationThemeProvider>
     </GestureHandlerRootView>

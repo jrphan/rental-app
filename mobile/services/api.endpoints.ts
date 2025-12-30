@@ -50,6 +50,8 @@ const API_ENDPOINTS = {
     GET_MY_RENTALS: "/rental/my-rentals",
     GET_RENTAL_DETAIL: "/rental/:id",
     UPDATE_RENTAL_STATUS: "/rental/:id/status",
+    UPLOAD_EVIDENCE: "/rental/:id/evidence",
+    CREATE_DISPUTE: "/rental/:id/dispute",
   },
   CHAT: {
     GET_MY_CHATS: "/chat/my-chats",
@@ -58,6 +60,10 @@ const API_ENDPOINTS = {
     SEND_MESSAGE: "/chat/:id/messages",
     MARK_READ: "/chat/:id/read",
     GET_UNREAD_COUNT: "/chat/unread-count",
+  },
+  REVIEW: {
+    CREATE: "/rental/:id/review",
+    GET_RENTAL_REVIEWS: "/rental/:id/reviews",
   },
 };
 

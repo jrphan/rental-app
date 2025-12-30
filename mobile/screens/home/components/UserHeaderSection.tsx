@@ -53,7 +53,7 @@ export default function UserHeaderSection() {
         backgroundColor: COLORS.primary,
         borderBottomLeftRadius: 24,
         borderBottomRightRadius: 24,
-        paddingTop: Platform.OS === "ios" ? 60 : 40,
+        paddingTop: Platform.OS === "ios" ? 60 : 35,
       }}
     >
       <View className="flex-row items-center justify-between">
@@ -120,7 +120,7 @@ export default function UserHeaderSection() {
             {unreadCount > 0 && (
               <View
                 className="absolute -top-1 -right-1 w-5 h-5 rounded-full items-center justify-center"
-                style={{ backgroundColor: "#EF4444" }}
+                style={{ backgroundColor: "#EF4444", height: 16, width: 16 }}
               >
                 <Text className="text-white text-xs font-bold">
                   {unreadCount > 9 ? "9+" : unreadCount}

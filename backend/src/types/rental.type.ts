@@ -86,6 +86,17 @@ export const selectRental = {
       order: 'asc' as Prisma.SortOrder,
     },
   },
+  dispute: {
+    select: {
+      id: true,
+      rentalId: true,
+      reason: true,
+      description: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
 } satisfies Prisma.RentalSelect;
 
 export type RentalResponse = Prisma.RentalGetPayload<{
