@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, ActivityIndicator, Image } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, Image, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import HeaderBase from "@/components/header/HeaderBase";
 import { apiVehicle } from "@/services/api.vehicle";
+import { apiChat } from "@/services/api.chat";
+import { useAuthStore } from "@/store/auth";
 import { COLORS } from "@/constants/colors";
 import VehicleCard from "./components/VehicleCard";
 
 export default function OwnerVehiclesScreen() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [avatarError, setAvatarError] = useState(false);
   const { ownerId, ownerName, ownerAvatar } = useLocalSearchParams<{
     ownerId: string;
@@ -31,6 +34,18 @@ export default function OwnerVehiclesScreen() {
     },
     enabled: !!ownerId,
   });
+
+  // Fetch user's chats to find chat with this owner
+  const { data: myChats } = useQuery({
+    queryKey: ["chats"],
+    queryFn: () => apiChat.getMyChats(),
+    enabled: !!user && !!ownerId,
+  });
+
+  // Find chat with this owner
+  const chatWithOwner = myChats?.find(
+    (chat) => chat.otherUser.id === ownerId
+  );
 
   const vehicles = vehiclesData?.items || [];
 
@@ -178,6 +193,21 @@ export default function OwnerVehiclesScreen() {
                 <Text className="text-sm text-gray-600 mt-1">Xe cho thuê</Text>
               </View>
             </View>
+
+            {/* Message Button - Only show if user is logged in, not viewing own profile, and chat exists */}
+            {user && user.id !== ownerId && chatWithOwner && (
+              <TouchableOpacity
+                onPress={() => router.push(`/messages/chat/${chatWithOwner.id}`)}
+                className="mt-4 flex-row items-center justify-center px-6 py-3 rounded-xl"
+                style={{ backgroundColor: COLORS.primary }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="message" size={20} color="#FFFFFF" />
+                <Text className="text-white font-semibold text-base ml-2">
+                  Nhắn tin
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Divider */}

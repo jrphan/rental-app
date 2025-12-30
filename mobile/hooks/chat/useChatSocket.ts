@@ -151,12 +151,16 @@ export function useChatSocket(options: UseChatSocketOptions = {}) {
           });
           if (onNewMessage) {
             onNewMessage(message);
+            // If onNewMessage callback is provided, it handles the cache update
+            // Only invalidate the chats list, not individual messages (to avoid duplicates)
+            queryClient.invalidateQueries({ queryKey: ["chats"] });
+          } else {
+            // If no callback, invalidate to trigger refetch
+            queryClient.invalidateQueries({
+              queryKey: ["chat", chatId, "messages"],
+            });
+            queryClient.invalidateQueries({ queryKey: ["chats"] });
           }
-          // Invalidate chat messages query
-          queryClient.invalidateQueries({
-            queryKey: ["chat", chatId, "messages"],
-          });
-          queryClient.invalidateQueries({ queryKey: ["chats"] });
         });
 
         socket.on(
