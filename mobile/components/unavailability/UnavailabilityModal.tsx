@@ -22,7 +22,7 @@ export default function UnavailabilityModal({ visible, onClose, items }: Props) 
 				<TouchableOpacity
 					activeOpacity={1}
 					onPress={(e) => e.stopPropagation()}
-					className="w-full bg-white rounded-t-3xl p-4 max-h-[70%]"
+					className="w-full bg-white rounded-t-3xl p-6 min-h-[70%]"
 				>
 					<View className="flex-row items-center justify-between mb-4">
 						<Text className="text-lg font-semibold text-gray-900">Xe không khả dụng vào các ngày</Text>
@@ -38,6 +38,7 @@ export default function UnavailabilityModal({ visible, onClose, items }: Props) 
 							items.map((it, idx) => {
 								const from = formatDate(String(it.startDate));
 								const to = formatDate(String(it.endDate));
+								console.log("Unavailability item:", String(it.startDate), String(it.endDate), from, to);
 								return (
 									<View key={idx} className="mb-3">
 										<Text className="text-sm text-red-600">

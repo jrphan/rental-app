@@ -7,10 +7,18 @@ export interface VehicleImage {
 
 export interface VehicleOwner {
 	id: string;
-	phone: string;
+	vehicleId: string;
 	fullName?: string | null;
 	email?: string | null;
 	avatar?: string | null;
+}
+
+export interface VehicleUnavailability {
+	id: string;
+	vehicleId: string;
+	startDate: string;
+	endDate: string;
+	reason?: string | null;
 }
 
 // add deliveryAddress type
@@ -53,6 +61,7 @@ export interface Vehicle {
 	description: string;
 	images: VehicleImage[];
 	owner?: VehicleOwner;
+	unavailabilities: VehicleUnavailability[];
 	createdAt: string;
 	updatedAt: string;
 }

@@ -30,7 +30,7 @@ export default function MiniVehicleCard({ vehicle, distanceKm, onPress }: Props)
 					{vehicle.brand} {vehicle.model}
 				</Text>
 				<Text numberOfLines={1} style={styles.sub}>
-					{vehicle.ward ? `${vehicle.ward}, ${vehicle.district}` : vehicle.district || "-"}
+					{vehicle.ward ? `${vehicle.ward}, ${vehicle.district}` : vehicle.district || vehicle.address || "-"}
 				</Text>
 				{/* rating + trips (small) */}
 				<View style={{ flexDirection: "row", alignItems: "center" }}>
