@@ -22,9 +22,9 @@ import InsuranceInfoModal from "@/components/insurance/InsuranceInfoModal";
 import { DELIVERY_FEE_PER_KM } from "@/constants/deliveryFee";
 
 export default function BookingScreen() {
-	const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
-	const router = useRouter();
-	const queryClient = useQueryClient();
+  const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
 	const [startDate, setStartDate] = useState<string>("");
 	const [endDate, setEndDate] = useState<string>("");
@@ -47,104 +47,115 @@ export default function BookingScreen() {
 	const [insuranceSelected, setInsuranceSelected] = useState(false);
 	const [showInsuranceInfo, setShowInsuranceInfo] = useState(false);
 
-	// Promo apply handler (client-side demo)
-	const applyPromo = (promo?: Promo, inputCode?: string) => {
-		setSelectedPromo(promo || null);
-		// Reset discount
-		setDiscountAmount(0);
-		if (!promo && !inputCode) return;
-		// try match inputCode to promos
-		const matched = promo ? promo : PROMOS.find((p) => p.code.toUpperCase() === (inputCode || "").toUpperCase());
-		if (!matched) {
-			Alert.alert("Mã khuyến mại", "Mã không hợp lệ (demo).");
-			return;
-		}
-		// compute discount preview
-		const start = new Date(startDate || "");
-		const end = new Date(endDate || "");
-		const durationDays =
-			startDate && endDate ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) : 1;
-		const base = Number(vehicle?.pricePerDay || 0) * durationDays;
-		if (matched.type === "FREESHIP") {
-			setDiscountAmount(Number(deliveryFee));
-			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
-		} else if (matched.type === "PERCENT") {
-			let disc = Math.floor((base * matched.value) / 100);
-			if (matched.maxAmount) disc = Math.min(disc, matched.maxAmount);
-			setDiscountAmount(disc);
-			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
-		} else if (matched.type === "FIXED") {
-			setDiscountAmount(matched.value);
-			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
-		}
-	};
+  // Promo apply handler (client-side demo)
+  const applyPromo = (promo?: Promo, inputCode?: string) => {
+    setSelectedPromo(promo || null);
+    // Reset discount
+    setDiscountAmount(0);
+    if (!promo && !inputCode) return;
+    // try match inputCode to promos
+    const matched = promo
+      ? promo
+      : PROMOS.find(
+          (p) => p.code.toUpperCase() === (inputCode || "").toUpperCase()
+        );
+    if (!matched) {
+      Alert.alert("Mã khuyến mại", "Mã không hợp lệ (demo).");
+      return;
+    }
+    // compute discount preview
+    const start = new Date(startDate || "");
+    const end = new Date(endDate || "");
+    const durationDays =
+      startDate && endDate
+        ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+        : 1;
+    const base = Number(vehicle?.pricePerDay || 0) * durationDays;
+    if (matched.type === "FREESHIP") {
+      setDiscountAmount(Number(deliveryFee));
+      Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
+    } else if (matched.type === "PERCENT") {
+      let disc = Math.floor((base * matched.value) / 100);
+      if (matched.maxAmount) disc = Math.min(disc, matched.maxAmount);
+      setDiscountAmount(disc);
+      Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
+    } else if (matched.type === "FIXED") {
+      setDiscountAmount(matched.value);
+      Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
+    }
+  };
 
-	// Fetch vehicle details
-	const { data: vehicle, isLoading } = useQuery<Vehicle>({
-		queryKey: ["vehicle", vehicleId],
-		queryFn: () => {
-			if (!vehicleId) throw new Error("Vehicle ID is required");
-			return apiVehicle.getVehicleDetail(vehicleId);
-		},
-		enabled: !!vehicleId,
-	});
+  // Fetch vehicle details
+  const { data: vehicle, isLoading } = useQuery<Vehicle>({
+    queryKey: ["vehicle", vehicleId],
+    queryFn: () => {
+      if (!vehicleId) throw new Error("Vehicle ID is required");
+      return apiVehicle.getVehicleDetail(vehicleId);
+    },
+    enabled: !!vehicleId,
+  });
 
-	// Create rental mutation
-	const createRentalMutation = useMutation({
-		mutationFn: async (data: CreateRentalRequest) => {
-			return apiRental.createRental(data);
-		},
-		onSuccess: (data) => {
-			queryClient.invalidateQueries({ queryKey: ["rental"] });
-			Alert.alert("Thành công", data.message, [
-				{
-					text: "Xem đơn thuê",
-					onPress: () => {
-						router.replace(`/(tabs)/vehicles?rentalId=${data.rental.id}`);
-					},
-				},
-				{
-					text: "OK",
-					style: "cancel",
-					onPress: () => router.back(),
-				},
-			]);
-		},
-		onError: (error: any) => {
-			Alert.alert("Lỗi", error.message || "Tạo đơn thuê thất bại");
-		},
-	});
+  // Create rental mutation
+  const createRentalMutation = useMutation({
+    mutationFn: async (data: CreateRentalRequest) => {
+      return apiRental.createRental(data);
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["rental"] });
+      Alert.alert("Thành công", data.message, [
+        {
+          text: "Xem đơn thuê",
+          onPress: () => {
+            router.replace(`/(tabs)/vehicles?rentalId=${data.rental.id}`);
+          },
+        },
+        {
+          text: "OK",
+          style: "cancel",
+          onPress: () => router.back(),
+        },
+      ]);
+    },
+    onError: (error: any) => {
+      Alert.alert("Lỗi", error.message || "Tạo đơn thuê thất bại");
+    },
+  });
 
-	const handleSubmit = () => {
-		if (!vehicleId || !startDate || !endDate) {
-			Alert.alert("Lỗi", "Vui lòng chọn ngày bắt đầu và ngày kết thúc");
-			return;
-		}
+  const handleSubmit = () => {
+    if (!vehicleId || !startDate || !endDate) {
+      Alert.alert("Lỗi", "Vui lòng chọn ngày bắt đầu và ngày kết thúc");
+      return;
+    }
 
-		// If delivery option selected, require an address
-		if (deliveryAddress) {
-			if (!vehicle?.deliveryAvailable) {
-				Alert.alert("Lỗi", "Chủ xe không hỗ trợ giao xe tận nơi");
-				return;
-			}
-			if (!deliveryAddress) {
-				Alert.alert("Lỗi", "Vui lòng chọn địa điểm giao xe");
-				return;
-			}
-		}
+    // If delivery option selected, require an address
+    if (deliveryAddress) {
+      if (!vehicle?.deliveryAvailable) {
+        Alert.alert("Lỗi", "Chủ xe không hỗ trợ giao xe tận nơi");
+        return;
+      }
+      if (!deliveryAddress) {
+        Alert.alert("Lỗi", "Vui lòng chọn địa điểm giao xe");
+        return;
+      }
+    }
 
-		const start = new Date(startDate);
-		const end = new Date(endDate);
+    // Normalize dates to start/end of day (date-only, no time)
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
 
-		if (start >= end) {
-			Alert.alert("Lỗi", "Ngày kết thúc phải sau ngày bắt đầu");
-			return;
-		}
+    if (start > end) {
+      Alert.alert("Lỗi", "Ngày kết thúc không được trước ngày bắt đầu");
+      return;
+    }
 
-		if (start < new Date()) {
-			Alert.alert("Lỗi", "Ngày bắt đầu không được trong quá khứ");
-			return;
-		}
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (start < today) {
+      Alert.alert("Lỗi", "Ngày bắt đầu không được trong quá khứ");
+      return;
+    }
 
 		createRentalMutation.mutate({
 			vehicleId,
@@ -182,11 +193,11 @@ export default function BookingScreen() {
 			};
 		}
 
-		const start = new Date(startDate);
-		const end = new Date(endDate);
-		const durationMs = end.getTime() - start.getTime();
-		const durationMinutes = Math.floor(durationMs / (1000 * 60));
-		const durationDays = Math.ceil(durationMinutes / (60 * 24)); // Round up to days
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const durationMs = end.getTime() - start.getTime();
+    const durationMinutes = Math.floor(durationMs / (1000 * 60));
+    const durationDays = Math.ceil(durationMinutes / (60 * 24)); // Round up to days
 
 		const basePrice = Number(vehicle.pricePerDay) * durationDays;
 		// insurance rate depends on vehicle.type (type field in Vehicle)
@@ -206,31 +217,39 @@ export default function BookingScreen() {
 		};
 	};
 
-	const summary = calculateSummary();
+  const summary = calculateSummary();
 
-	if (isLoading) {
-		return (
-			<SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
-				<HeaderBase title="Đặt xe" showBackButton />
-				<View className="flex-1 items-center justify-center">
-					<ActivityIndicator size="large" color={COLORS.primary} />
-					<Text className="mt-4 text-gray-600">Đang tải thông tin...</Text>
-				</View>
-			</SafeAreaView>
-		);
-	}
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        className="flex-1 bg-white"
+        edges={["top", "left", "right"]}
+      >
+        <HeaderBase title="Đặt xe" showBackButton />
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text className="mt-4 text-gray-600">Đang tải thông tin...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-	if (!vehicle) {
-		return (
-			<SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
-				<HeaderBase title="Đặt xe" showBackButton />
-				<View className="flex-1 items-center justify-center px-4">
-					<MaterialIcons name="error-outline" size={64} color="#EF4444" />
-					<Text className="mt-4 text-red-600 text-center">Không tìm thấy thông tin xe</Text>
-				</View>
-			</SafeAreaView>
-		);
-	}
+  if (!vehicle) {
+    return (
+      <SafeAreaView
+        className="flex-1 bg-white"
+        edges={["top", "left", "right"]}
+      >
+        <HeaderBase title="Đặt xe" showBackButton />
+        <View className="flex-1 items-center justify-center px-4">
+          <MaterialIcons name="error-outline" size={64} color="#EF4444" />
+          <Text className="mt-4 text-red-600 text-center">
+            Không tìm thấy thông tin xe
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
 	return (
 		<SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
@@ -258,26 +277,26 @@ export default function BookingScreen() {
 						</View>
 					</View>
 
-					{/* Date Selection */}
-					<View className="mb-4">
-						<DatePicker
-							label="Ngày bắt đầu"
-							value={startDate}
-							onChange={(value) => setStartDate(value)}
-							placeholder="Chọn ngày bắt đầu"
-							minimumDate={new Date()}
-						/>
+          {/* Date Selection */}
+          <View className="mb-4">
+            <DatePicker
+              label="Ngày bắt đầu"
+              value={startDate}
+              onChange={(value) => setStartDate(value)}
+              placeholder="Chọn ngày bắt đầu"
+              mode="date"
+              minimumDate={new Date()}
+            />
 
-						<DatePicker
-							label="Ngày kết thúc"
-							value={endDate}
-							onChange={(value) => setEndDate(value)}
-							placeholder="Chọn ngày kết thúc"
-							minimumDate={
-								startDate ? new Date(new Date(startDate).getTime() + 24 * 60 * 60 * 1000) : new Date()
-							}
-						/>
-					</View>
+            <DatePicker
+              label="Ngày kết thúc"
+              value={endDate}
+              onChange={(value) => setEndDate(value)}
+              placeholder="Chọn ngày kết thúc"
+              mode="date"
+              minimumDate={startDate ? new Date(startDate) : new Date()}
+            />
+          </View>
 
 					{/* Unavailability notice (show only when vehicle has unavailabilities) */}
 					{vehicle?.unavailabilities && vehicle.unavailabilities.length > 0 && (
@@ -295,32 +314,40 @@ export default function BookingScreen() {
 						</>
 					)}
 
-					{/* Delivery / Pickup options */}
-					<View className="mb-4">
-						<Text className="text-sm text-gray-600 mb-2">Hình thức nhận/giao xe</Text>
-						{/* Pickup */}
-						<TouchableOpacity
-							onPress={() => setDeliveryAddress(null)}
-							activeOpacity={0.8}
-							className={`p-4 rounded-xl mb-2 ${!deliveryAddress ? "bg-white border border-gray-200" : "bg-gray-50 border border-gray-200"}`}
-						>
-							<View className="flex-row items-center">
-								<MaterialIcons
-									name={!deliveryAddress ? "radio-button-checked" : "radio-button-unchecked"}
-									size={20}
-									color={!deliveryAddress ? COLORS.primary : "#6B7280"}
-								/>
-								<View className="ml-3">
-									<Text className="font-semibold text-gray-900">Tôi tự đến lấy xe</Text>
-									<Text className="text-sm text-gray-700 mt-1">
-										{vehicle.address || ""}
-										{vehicle.ward ? `, ${vehicle.ward}` : ""}
-										{vehicle.district ? `, ${vehicle.district}` : ""}
-										{vehicle.city ? `, ${vehicle.city}` : ""}
-									</Text>
-								</View>
-							</View>
-						</TouchableOpacity>
+          {/* Delivery / Pickup options */}
+          <View className="mb-4">
+            <Text className="text-sm text-gray-600 mb-2">
+              Hình thức nhận/giao xe
+            </Text>
+            {/* Pickup */}
+            <TouchableOpacity
+              onPress={() => setDeliveryAddress(null)}
+              activeOpacity={0.8}
+              className={`p-4 rounded-xl mb-2 ${!deliveryAddress ? "bg-white border border-gray-200" : "bg-gray-50 border border-gray-200"}`}
+            >
+              <View className="flex-row items-center">
+                <MaterialIcons
+                  name={
+                    !deliveryAddress
+                      ? "radio-button-checked"
+                      : "radio-button-unchecked"
+                  }
+                  size={20}
+                  color={!deliveryAddress ? COLORS.primary : "#6B7280"}
+                />
+                <View className="ml-3">
+                  <Text className="font-semibold text-gray-900">
+                    Tôi tự đến lấy xe
+                  </Text>
+                  <Text className="text-sm text-gray-700 mt-1">
+                    {vehicle.address || ""}
+                    {vehicle.ward ? `, ${vehicle.ward}` : ""}
+                    {vehicle.district ? `, ${vehicle.district}` : ""}
+                    {vehicle.city ? `, ${vehicle.city}` : ""}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
 
 						{/* Delivery */}
 						<TouchableOpacity
@@ -408,39 +435,42 @@ export default function BookingScreen() {
 								return;
 							}
 
-							const dist = calculateDistanceKm(
-								Number(vehicle.lat),
-								Number(vehicle.lng),
-								Number(lat),
-								Number(lng)
-							);
-							// check radius if configured
-							const radius = vehicle.deliveryRadiusKm ?? 0;
-							if (radius > 0 && dist > radius) {
-								Alert.alert("Lỗi", `Vượt giới hạn giao: ${dist.toFixed(1)} km (max ${radius} km)`);
-								return;
-							}
+              const dist = calculateDistanceKm(
+                Number(vehicle.lat),
+                Number(vehicle.lng),
+                Number(lat),
+                Number(lng)
+              );
+              // check radius if configured
+              const radius = vehicle.deliveryRadiusKm ?? 0;
+              if (radius > 0 && dist > radius) {
+                Alert.alert(
+                  "Lỗi",
+                  `Vượt giới hạn giao: ${dist.toFixed(1)} km (max ${radius} km)`
+                );
+                return;
+              }
 
 							// compute fee (round km * feePerKm) + base, fallback to 0
 							// feePerKm default 10,000 VND/km
 							const feePerKm = Number((vehicle as any).deliveryFeePerKm ?? DELIVERY_FEE_PER_KM);
 							const calc = Math.round(dist) * feePerKm;
 
-							setDeliveryAddress({
-								fullAddress: addressParts?.fullAddress,
-								address: addressParts?.address,
-								ward: addressParts?.ward,
-								district: addressParts?.district,
-								city: addressParts?.city,
-								lat: Number(lat),
-								lng: Number(lng),
-							});
-							setDeliveryFee(calc);
-							setDeliveryDistanceKm(dist);
-						}}
-						initialLat={undefined}
-						initialLng={undefined}
-					/>
+              setDeliveryAddress({
+                fullAddress: addressParts?.fullAddress,
+                address: addressParts?.address,
+                ward: addressParts?.ward,
+                district: addressParts?.district,
+                city: addressParts?.city,
+                lat: Number(lat),
+                lng: Number(lng),
+              });
+              setDeliveryFee(calc);
+              setDeliveryDistanceKm(dist);
+            }}
+            initialLat={undefined}
+            initialLng={undefined}
+          />
 
 					{/* Price Summary */}
 					{/* Coupon preview (demo) */}
@@ -531,14 +561,14 @@ export default function BookingScreen() {
 							<View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">
 								<Text className="text-lg font-bold text-gray-900 mb-3">Tóm tắt giá</Text>
 
-								<View className="flex-row justify-between mb-2">
-									<Text className="text-sm text-gray-600">
-										Giá cơ bản ({summary.durationDays} ngày)
-									</Text>
-									<Text className="text-sm font-semibold text-gray-900">
-										{formatPrice(summary.basePrice)}
-									</Text>
-								</View>
+                <View className="flex-row justify-between mb-2">
+                  <Text className="text-sm text-gray-600">
+                    Giá cơ bản ({summary.durationDays} ngày)
+                  </Text>
+                  <Text className="text-sm font-semibold text-gray-900">
+                    {formatPrice(summary.basePrice)}
+                  </Text>
+                </View>
 
 								{summary.deliveryFee > 0 && (
 									<View className="flex-row justify-between mb-2">
@@ -573,60 +603,66 @@ export default function BookingScreen() {
 									</View>
 								)}
 
-								{summary.discountAmount > 0 && (
-									<View className="flex-row justify-between mb-2">
-										<Text className="text-sm text-gray-600">Giảm giá</Text>
-										<Text className="text-sm font-semibold text-green-600">
-											-{formatPrice(summary.discountAmount)}
-										</Text>
-									</View>
-								)}
+                {summary.discountAmount > 0 && (
+                  <View className="flex-row justify-between mb-2">
+                    <Text className="text-sm text-gray-600">Giảm giá</Text>
+                    <Text className="text-sm font-semibold text-green-600">
+                      -{formatPrice(summary.discountAmount)}
+                    </Text>
+                  </View>
+                )}
 
-								<View className="border-t border-orange-200 pt-2 mt-2">
-									<View className="flex-row justify-between mb-2">
-										<Text className="text-base font-bold text-gray-900">Tổng cộng</Text>
-										<Text className="text-xl font-bold text-orange-600">
-											{formatPrice(summary.totalPrice)}
-										</Text>
-									</View>
+                <View className="border-t border-orange-200 pt-2 mt-2">
+                  <View className="flex-row justify-between mb-2">
+                    <Text className="text-base font-bold text-gray-900">
+                      Tổng cộng
+                    </Text>
+                    <Text className="text-xl font-bold text-orange-600">
+                      {formatPrice(summary.totalPrice)}
+                    </Text>
+                  </View>
 
-									{summary.depositAmount > 0 && (
-										<View className="flex-row justify-between">
-											<Text className="text-sm text-gray-600">Tiền cọc</Text>
-											<Text className="text-sm font-semibold text-gray-900">
-												{formatPrice(summary.depositAmount)}
-											</Text>
-										</View>
-									)}
-								</View>
-							</View>
-						</>
-					)}
+                  {summary.depositAmount > 0 && (
+                    <View className="flex-row justify-between">
+                      <Text className="text-sm text-gray-600">Tiền cọc</Text>
+                      <Text className="text-sm font-semibold text-gray-900">
+                        {formatPrice(summary.depositAmount)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
 
-					{/* Submit Button */}
-					<TouchableOpacity
-						onPress={handleSubmit}
-						disabled={!startDate || !endDate || createRentalMutation.isPending}
-						className={`rounded-xl p-4 mb-4 ${
-							!startDate || !endDate || createRentalMutation.isPending ? "bg-gray-300" : "bg-orange-600"
-						}`}
-						style={
-							!startDate || !endDate || createRentalMutation.isPending
-								? {}
-								: { backgroundColor: COLORS.primary }
-						}
-					>
-						{createRentalMutation.isPending ? (
-							<View className="flex-row items-center justify-center">
-								<ActivityIndicator size="small" color="#FFFFFF" />
-								<Text className="ml-2 text-lg font-semibold text-white">Đang xử lý...</Text>
-							</View>
-						) : (
-							<Text className="text-lg font-semibold text-white text-center">Xác nhận đặt xe</Text>
-						)}
-					</TouchableOpacity>
-				</View>
-			</ScrollView>
-		</SafeAreaView>
-	);
+          {/* Submit Button */}
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={!startDate || !endDate || createRentalMutation.isPending}
+            className={`rounded-xl p-4 mb-4 ${
+              !startDate || !endDate || createRentalMutation.isPending
+                ? "bg-gray-300"
+                : "bg-orange-600"
+            }`}
+            style={
+              !startDate || !endDate ? {} : { backgroundColor: COLORS.primary }
+            }
+          >
+            {createRentalMutation.isPending ? (
+              <View className="flex-row items-center justify-center">
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text className="ml-2 text-lg font-semibold text-white">
+                  Đang xử lý...
+                </Text>
+              </View>
+            ) : (
+              <Text className="text-lg font-semibold text-white text-center">
+                Xác nhận đặt xe
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }

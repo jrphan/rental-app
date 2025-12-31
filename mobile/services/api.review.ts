@@ -63,7 +63,10 @@ export const apiReview = {
     reviews: Review[];
     userHasReviewed: boolean;
   }> {
-    const url = API_ENDPOINTS.REVIEW.GET_RENTAL_REVIEWS.replace(":id", rentalId);
+    const url = API_ENDPOINTS.REVIEW.GET_RENTAL_REVIEWS.replace(
+      ":id",
+      rentalId
+    );
     const response = await apiClient.get<{
       reviews: Review[];
       userHasReviewed: boolean;
@@ -73,5 +76,13 @@ export const apiReview = {
     }
     throw new Error(response.message || "Lấy đánh giá thất bại");
   },
-};
 
+  async deleteReview(reviewId: string): Promise<{ message: string }> {
+    const url = API_ENDPOINTS.REVIEW.DELETE.replace(":id", reviewId);
+    const response = await apiClient.delete<{ message: string }>(url);
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Xóa đánh giá thất bại");
+  },
+};

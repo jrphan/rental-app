@@ -6,6 +6,8 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { useAuthStore } from "@/store/auth";
 import { apiNotification } from "@/services/api.notification";
+import { router } from "expo-router";
+import ROUTES from "@/constants/routes";
 
 // Check if we're running in Expo Go (which doesn't support remote push notifications)
 const isExpoGo = Constants.executionEnvironment === "storeClient";
@@ -272,9 +274,38 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         Notifications.addNotificationResponseReceivedListener(
           (response: NotificationResponse) => {
             setNotification(response.notification);
-            // Handle notification tap here
-            // Ví dụ: navigate to specific screen
-            // router.push(response.notification.request.content.data.screen);
+            // Handle notification tap - navigate to appropriate screen
+            const data = response.notification.request.content.data;
+            const notificationType = data?.type;
+
+            if (notificationType === "KYC_UPDATE") {
+              // Navigate tới profile/KYC screen
+              router.push(ROUTES.PROFILE);
+            } else if (notificationType === "RENTAL_UPDATE") {
+              // Navigate tới rental detail nếu có rentalId
+              if (data?.rentalId) {
+                router.push(`/rental/${data.rentalId}` as any);
+              } else if (data?.vehicleId) {
+                // Nếu có vehicleId nhưng không có rentalId, navigate tới vehicle detail
+                router.push(`/vehicle/${data.vehicleId}` as any);
+              } else {
+                // Fallback: navigate tới danh sách rentals
+                router.push(ROUTES.BOOKINGS);
+              }
+            } else if (notificationType === "PAYMENT") {
+              // Navigate tới rental detail nếu có rentalId, nếu không thì tới danh sách rentals
+              if (data?.rentalId) {
+                router.push(`/rental/${data.rentalId}` as any);
+              } else {
+                router.push(ROUTES.BOOKINGS);
+              }
+            } else if (data?.vehicleId) {
+              // Nếu có vehicleId thì navigate tới vehicle detail
+              router.push(`/vehicle/${data.vehicleId}` as any);
+            } else if (data?.reviewId && data?.rentalId) {
+              // Nếu có reviewId và rentalId, navigate tới rental detail
+              router.push(`/rental/${data.rentalId}` as any);
+            }
           }
         );
     } catch (error) {

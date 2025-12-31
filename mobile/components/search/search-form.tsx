@@ -47,23 +47,27 @@ export function SearchForm({
   }, [initialLocation, initialStartDate, initialEndDate, form]);
 
   const formatDateTime = (date: Date) => {
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
-    return `${hours}h${minutes}, ${day}/${month}/${year}`;
+    return `${day}/${month}/${year}`;
   };
 
   const handleStartDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       setShowStartDatePicker(false);
       if (event.type === "set" && selectedDate) {
-        form.setValue("startDate", selectedDate, { shouldValidate: true });
+        // Normalize to start of day
+        const normalized = new Date(selectedDate);
+        normalized.setHours(0, 0, 0, 0);
+        form.setValue("startDate", normalized, { shouldValidate: true });
       }
     } else {
       if (selectedDate) {
-        form.setValue("startDate", selectedDate, { shouldValidate: true });
+        // Normalize to start of day
+        const normalized = new Date(selectedDate);
+        normalized.setHours(0, 0, 0, 0);
+        form.setValue("startDate", normalized, { shouldValidate: true });
       }
     }
   };
@@ -72,11 +76,17 @@ export function SearchForm({
     if (Platform.OS === "android") {
       setShowEndDatePicker(false);
       if (event.type === "set" && selectedDate) {
-        form.setValue("endDate", selectedDate, { shouldValidate: true });
+        // Normalize to end of day
+        const normalized = new Date(selectedDate);
+        normalized.setHours(23, 59, 59, 999);
+        form.setValue("endDate", normalized, { shouldValidate: true });
       }
     } else {
       if (selectedDate) {
-        form.setValue("endDate", selectedDate, { shouldValidate: true });
+        // Normalize to end of day
+        const normalized = new Date(selectedDate);
+        normalized.setHours(23, 59, 59, 999);
+        form.setValue("endDate", normalized, { shouldValidate: true });
       }
     }
   };
@@ -355,7 +365,7 @@ export function SearchForm({
               </View>
               <DateTimePicker
                 value={form.watch("startDate")}
-                mode="datetime"
+                mode="date"
                 display="spinner"
                 onChange={handleStartDateChange}
                 minimumDate={new Date()}
@@ -367,7 +377,7 @@ export function SearchForm({
       {showStartDatePicker && Platform.OS === "android" && (
         <DateTimePicker
           value={form.watch("startDate")}
-          mode="datetime"
+          mode="date"
           display="default"
           onChange={handleStartDateChange}
           minimumDate={new Date()}
@@ -415,7 +425,7 @@ export function SearchForm({
               </View>
               <DateTimePicker
                 value={form.watch("endDate")}
-                mode="datetime"
+                mode="date"
                 display="spinner"
                 onChange={handleEndDateChange}
                 minimumDate={form.watch("startDate")}
@@ -427,7 +437,7 @@ export function SearchForm({
       {showEndDatePicker && Platform.OS === "android" && (
         <DateTimePicker
           value={form.watch("endDate")}
-          mode="datetime"
+          mode="date"
           display="default"
           onChange={handleEndDateChange}
           minimumDate={form.watch("startDate")}
