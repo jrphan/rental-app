@@ -108,6 +108,7 @@ export class RentalService {
     endDate: Date,
     deliveryFee: number = 0,
     discountAmount: number = 0,
+    insuranceFee: number = 0,
     depositAmount?: Decimal,
   ): {
     durationMinutes: number;
@@ -124,19 +125,23 @@ export class RentalService {
     // Calculate base price (days * price per day)
     const basePrice = pricePerDay.mul(durationDays);
 
-    // Calculate total price (base + delivery - discount)
+    // insuranceFee passed in is already total for rental (rate * days) — treat as platform revenue (excluded from owner earning)
     const totalPrice = basePrice
       .plus(new Decimal(deliveryFee))
+      .plus(new Decimal(insuranceFee))
       .minus(new Decimal(discountAmount));
 
     // Get deposit from vehicle
     const depositPrice = depositAmount || new Decimal(0);
 
-    // Calculate platform fee
-    const platformFee = totalPrice.mul(this.PLATFORM_FEE_RATIO);
+    // Platform fee should be charged on rental revenue excluding insurance (since insurance goes to platform/partner)
+    const revenueExcludingInsurance = totalPrice.minus(
+      new Decimal(insuranceFee),
+    );
+    const platformFee = revenueExcludingInsurance.mul(this.PLATFORM_FEE_RATIO);
 
-    // Calculate owner earning
-    const ownerEarning = totalPrice.minus(platformFee);
+    // Owner earning = revenueExcludingInsurance - platformFee
+    const ownerEarning = revenueExcludingInsurance.minus(platformFee);
 
     return {
       durationMinutes,
@@ -160,6 +165,7 @@ export class RentalService {
       endDate,
       deliveryFee = 0,
       discountAmount = 0,
+      insuranceFee = 0,
       deliveryAddress = null,
     } = createRentalDto;
 
@@ -225,6 +231,7 @@ export class RentalService {
       end,
       deliveryFee,
       discountAmount,
+      insuranceFee ?? 0,
       vehicle.depositAmount,
     );
 
@@ -246,6 +253,7 @@ export class RentalService {
         durationMinutes: priceCalculation.durationMinutes,
         pricePerDay: vehicle.pricePerDay,
         deliveryFee: new Decimal(deliveryFee),
+        insuranceFee: new Decimal(insuranceFee ?? 0),
         discountAmount: new Decimal(discountAmount),
         // persist deliveryAddress JSON (use undefined when absent and cast to Prisma.InputJsonValue)
         deliveryAddress: deliveryAddress

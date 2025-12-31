@@ -96,6 +96,7 @@ export interface Rental {
 	platformFeeRatio: number;
 	platformFee: number;
 	ownerEarning: number;
+	insuranceFee: number;
 	status: "PENDING_PAYMENT" | "AWAIT_APPROVAL" | "CONFIRMED" | "ON_TRIP" | "COMPLETED" | "CANCELLED" | "DISPUTED";
 	deliveryAddress?: deliveryAddress | null;
 	createdAt: string;

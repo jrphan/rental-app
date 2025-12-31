@@ -94,6 +94,18 @@ export function VehicleDetailPanel({
                 }).format(selected.pricePerDay)}
               />
               <DetailRow
+                label="Hỗ trợ giao xe tận nơi"
+                value={selected.deliveryAvailable ? 'Có' : 'Không'}
+              />
+              <DetailRow
+                label="Giới hạn khoảng cách"
+                value={
+                  selected.deliveryRadiusKm
+                    ? `${selected.deliveryRadiusKm} km`
+                    : '—'
+                }
+              />
+              <DetailRow
                 label="Tiền cọc"
                 value={new Intl.NumberFormat('vi-VN', {
                   style: 'currency',
@@ -151,48 +163,48 @@ export function VehicleDetailPanel({
             )}
 
             {selected.status === 'PENDING' && (
-            <Section title="Hành động">
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <button
+              <Section title="Hành động">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <button
                       disabled={isApproving || isRejecting}
-                    onClick={onApprove}
-                    className="flex-1 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400"
-                  >
-                    {isApproving ? 'Đang duyệt...' : 'Duyệt xe'}
-                  </button>
-                  <button
-                    disabled={isApproving || isRejecting}
-                    onClick={onClearSelection}
-                    className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                  >
-                    Bỏ chọn
-                  </button>
-                </div>
+                      onClick={onApprove}
+                      className="flex-1 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-400"
+                    >
+                      {isApproving ? 'Đang duyệt...' : 'Duyệt xe'}
+                    </button>
+                    <button
+                      disabled={isApproving || isRejecting}
+                      onClick={onClearSelection}
+                      className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                    >
+                      Bỏ chọn
+                    </button>
+                  </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-gray-700">
-                    Lý do từ chối
-                  </label>
-                  <textarea
-                    rows={3}
-                    className="bg-white mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-300"
-                    placeholder="Nhập lý do chi tiết nếu cần từ chối xe..."
-                    value={rejectReason}
-                    onChange={(e) => onRejectReasonChange(e.target.value)}
-                  />
-                  <button
-                    disabled={
-                      !rejectReason.trim() || isApproving || isRejecting
-                    }
-                    onClick={onReject}
-                    className="w-full rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
-                  >
-                    {isRejecting ? 'Đang từ chối...' : 'Từ chối xe'}
-                  </button>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-700">
+                      Lý do từ chối
+                    </label>
+                    <textarea
+                      rows={3}
+                      className="bg-white mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-300"
+                      placeholder="Nhập lý do chi tiết nếu cần từ chối xe..."
+                      value={rejectReason}
+                      onChange={(e) => onRejectReasonChange(e.target.value)}
+                    />
+                    <button
+                      disabled={
+                        !rejectReason.trim() || isApproving || isRejecting
+                      }
+                      onClick={onReject}
+                      className="w-full rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+                    >
+                      {isRejecting ? 'Đang từ chối...' : 'Từ chối xe'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </Section>
+              </Section>
             )}
           </>
         )}

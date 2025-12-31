@@ -17,8 +17,10 @@ import { useState, useEffect } from "react";
 import { COLORS } from "@/constants/colors";
 import { VEHICLE_BRANDS, VEHICLE_TYPES, getModelsByBrand, getVehicleTypeByModel } from "@/constants/vehicle.constants";
 import { VIETNAM_CITIES } from "@/constants/city.constants";
+import { DELIVERY_FEE_PER_KM } from "@/constants/deliveryFee";
 import type { VehicleInput } from "@/schemas/vehicle.schema";
 import { formatCurrency, parseCurrency } from "@/utils/currency";
+import { formatPrice } from "@/screens/vehicles/utils";
 
 const licenseTypeOptions = [
 	{ label: "A1", value: "A1" },
@@ -125,7 +127,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				instantBook: data.instantBook,
 				deliveryAvailable: data.deliveryAvailable,
 				// system default: fee per km = 10,000 VND if owner doesn't supply
-				deliveryFeePerKm: data.deliveryFeePerKm ? parseFloat(data.deliveryFeePerKm) : 10000,
+				deliveryFeePerKm: data.deliveryFeePerKm ? parseFloat(data.deliveryFeePerKm) : DELIVERY_FEE_PER_KM,
 				deliveryRadiusKm: data.deliveryRadiusKm ? parseInt(data.deliveryRadiusKm, 10) : null,
 				images,
 			};
@@ -704,7 +706,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 								<Text className="text-sm font-medium text-gray-700 mb-1">Giao xe tận nơi</Text>
 								<Text className="text-xs text-gray-500">
 									Bật nếu bạn muốn hỗ trợ giao/nhận xe tận nơi. Hệ thống mặc định phí giao:
-									10.000đ/km. Bạn chỉ cần nhập Giới hạn khoảng cách (km).
+									{formatPrice(DELIVERY_FEE_PER_KM)}/km. Bạn chỉ cần nhập Giới hạn khoảng cách (km).
 								</Text>
 							</View>
 							<Switch

@@ -2,6 +2,8 @@ import React from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import type { Vehicle } from "@/screens/vehicles/types";
 import { formatPrice } from "@/screens/vehicles/utils";
+import { useQuery } from "@tanstack/react-query";
+import { apiReview } from "@/services/api.review";
 
 interface Props {
 	vehicle: Vehicle;
@@ -11,6 +13,15 @@ interface Props {
 
 export default function MiniVehicleCard({ vehicle, distanceKm, onPress }: Props) {
 	const img = vehicle.images && vehicle.images.length ? vehicle.images[0].url : undefined;
+	// Fetch reviews
+	const { data: reviewsData, isLoading: isLoadingReviews } = useQuery({
+		queryKey: ["vehicleReviews", vehicle.id],
+		queryFn: () => {
+			if (!vehicle.id) throw new Error("Vehicle Id is required");
+			return apiReview.getVehicleReviews(vehicle.id);
+		},
+		enabled: !!vehicle.id && !!vehicle,
+	});
 	return (
 		<TouchableOpacity onPress={onPress} style={styles.card}>
 			<Image source={{ uri: img }} style={styles.image} />
@@ -21,6 +32,19 @@ export default function MiniVehicleCard({ vehicle, distanceKm, onPress }: Props)
 				<Text numberOfLines={1} style={styles.sub}>
 					{vehicle.ward ? `${vehicle.ward}, ${vehicle.district}` : vehicle.district || "-"}
 				</Text>
+				{/* rating + trips (small) */}
+				<View style={{ flexDirection: "row", alignItems: "center" }}>
+					{reviewsData && reviewsData.averageRating > 0 && (
+						<Text
+							style={{ marginRight: 8, marginTop: 4, color: "#F59E0B", fontWeight: "700", fontSize: 12 }}
+						>
+							★ {reviewsData.averageRating.toFixed(1)}
+						</Text>
+					)}
+					{(vehicle as any).completedTrips !== undefined && (
+						<Text style={styles.sub}>• {(vehicle as any).completedTrips} chuyến</Text>
+					)}
+				</View>
 				<View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 6 }}>
 					<Text style={styles.price}>{formatPrice(Number(vehicle.pricePerDay))}</Text>
 					{typeof distanceKm === "number" && <Text style={styles.distance}>• {distanceKm} km</Text>}
@@ -46,7 +70,7 @@ const styles = StyleSheet.create({
 	},
 	image: { width: 80, height: 60, borderRadius: 8, backgroundColor: "#eee" },
 	title: { fontWeight: "700", color: "#111827" },
-	sub: { fontSize: 12, color: "#6B7280", marginTop: 2 },
+	sub: { fontSize: 12, color: "#6B7280", marginTop: 4 },
 	price: { fontWeight: "700", color: "#10B981" },
 	distance: { fontSize: 12, color: "#6B7280" },
 });

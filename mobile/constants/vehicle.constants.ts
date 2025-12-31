@@ -483,3 +483,19 @@ export function getVehicleTypeByModel(modelName: string): string | undefined {
 
 	return undefined;
 }
+
+/**
+ * Get insurance rate (VND per day) by vehicle type
+ */
+export function getInsuranceRateByVehicleType(type?: string): number {
+	// Normalize
+	const t = (type || "").toLowerCase();
+	// 50cc and "Xe số" => 20_000
+	if (t.includes("50cc") || t.includes("xe số")) return 20000;
+	// Tay ga and Xe điện => 30_000
+	if (t.includes("tay ga") || t.includes("xe điện")) return 30000;
+	// Mô tô and Tay côn => 50_000
+	if (t.includes("mô tô") || t.includes("tay côn")) return 50000;
+	// fallback default
+	return 30000;
+}

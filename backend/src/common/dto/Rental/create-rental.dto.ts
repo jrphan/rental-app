@@ -27,6 +27,11 @@ export class CreateRentalDto {
   @Min(0)
   discountAmount?: number;
 
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  insuranceFee?: number;
+
   // Optional delivery options payload (address + coords)
   @IsOptional()
   @IsObject()

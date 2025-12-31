@@ -17,6 +17,9 @@ import { PROMOS, type Promo } from "@/constants/promos";
 import { calculateDistanceKm } from "@/utils/geo";
 import UnavailabilityNotice from "@/components/unavailability/UnavailabilityNotice";
 import UnavailabilityModal from "@/components/unavailability/UnavailabilityModal";
+import { getInsuranceRateByVehicleType } from "@/constants/vehicle.constants";
+import InsuranceInfoModal from "@/components/insurance/InsuranceInfoModal";
+import { DELIVERY_FEE_PER_KM } from "@/constants/deliveryFee";
 
 export default function BookingScreen() {
 	const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
@@ -41,6 +44,8 @@ export default function BookingScreen() {
 	const [showPromoModal, setShowPromoModal] = useState(false);
 	const [selectedPromo, setSelectedPromo] = useState<Promo | null>(null);
 	const [unavailModalVisible, setUnavailModalVisible] = useState(false);
+	const [insuranceSelected, setInsuranceSelected] = useState(false);
+	const [showInsuranceInfo, setShowInsuranceInfo] = useState(false);
 
 	// Promo apply handler (client-side demo)
 	const applyPromo = (promo?: Promo, inputCode?: string) => {
@@ -147,6 +152,7 @@ export default function BookingScreen() {
 			endDate: end.toISOString(),
 			deliveryFee,
 			discountAmount,
+			insuranceFee: summary.insuranceFee,
 			// send deliveryAddress only when delivery selected
 			deliveryAddress: deliveryAddress
 				? {
@@ -168,8 +174,9 @@ export default function BookingScreen() {
 			return {
 				durationDays: 0,
 				basePrice: 0,
-				deliveryFee: deliveryFee,
-				discountAmount: discountAmount,
+				deliveryFee,
+				discountAmount,
+				insuranceFee: 0,
 				totalPrice: 0,
 				depositAmount: Number(vehicle?.depositAmount || 0),
 			};
@@ -182,7 +189,10 @@ export default function BookingScreen() {
 		const durationDays = Math.ceil(durationMinutes / (60 * 24)); // Round up to days
 
 		const basePrice = Number(vehicle.pricePerDay) * durationDays;
-		const totalPrice = basePrice + deliveryFee - discountAmount;
+		// insurance rate depends on vehicle.type (type field in Vehicle)
+		const insuranceRate = getInsuranceRateByVehicleType((vehicle as any).type);
+		const insuranceFee = insuranceSelected ? insuranceRate * durationDays : 0;
+		const totalPrice = basePrice + deliveryFee + insuranceFee - discountAmount;
 		const depositAmount = Number(vehicle.depositAmount || 0);
 
 		return {
@@ -190,6 +200,7 @@ export default function BookingScreen() {
 			basePrice,
 			deliveryFee,
 			discountAmount,
+			insuranceFee,
 			totalPrice,
 			depositAmount,
 		};
@@ -236,7 +247,7 @@ export default function BookingScreen() {
 							{vehicle.brand} {vehicle.model}
 						</Text>
 						<Text className="text-sm text-gray-600 mb-1">
-							Năm {vehicle.year} • {vehicle.color}
+							Năm {vehicle.year} • {vehicle.color} {vehicle.type ? `• ${vehicle.type}` : ""}
 						</Text>
 						<Text className="text-sm text-gray-600 mb-3">Biển số: {vehicle.licensePlate}</Text>
 						<View className="flex-row items-center justify-between">
@@ -329,14 +340,24 @@ export default function BookingScreen() {
 									color={deliveryAddress ? COLORS.primary : "#6B7280"}
 								/>
 								<View className="ml-3 flex-1">
-									<Text className="font-semibold text-gray-900">
-										{vehicle?.deliveryAvailable
-											? "Tôi muốn được giao xe tận nơi"
-											: "Chủ xe không hỗ trợ giao xe tận nơi"}
-									</Text>
+									<View className="flex-row justify-between">
+										<Text className="font-semibold text-gray-900">
+											{vehicle?.deliveryAvailable
+												? "Tôi muốn được giao xe tận nơi"
+												: "Chủ xe không hỗ trợ giao xe tận nơi"}
+											{/* show distance when chosen */}
+										</Text>
+										{deliveryDistanceKm != null && deliveryAddress && (
+											<View style={{ justifyContent: "center", marginLeft: 8 }}>
+												<Text style={{ color: "#10B981", fontWeight: "700" }}>
+													{deliveryDistanceKm.toFixed(1)} km
+												</Text>
+											</View>
+										)}
+									</View>
 									{vehicle?.deliveryAvailable &&
 										(deliveryAddress ? (
-											<Text className="text-sm text-gray-700 mt-1">
+											<Text className="text-sm text-gray-700 mt-1" style={{ maxWidth: "85%" }}>
 												{deliveryAddress.address || ""}
 												{deliveryAddress.ward ? `, ${deliveryAddress.ward}` : ""}
 												{deliveryAddress.district ? `, ${deliveryAddress.district}` : ""}
@@ -345,15 +366,25 @@ export default function BookingScreen() {
 										) : (
 											<Text className="text-sm text-gray-500 mt-1">Chọn địa điểm giao xe</Text>
 										))}
+									{vehicle?.deliveryAvailable && (
+										<View className="flex-row justify-between">
+											{vehicle.deliveryRadiusKm && (
+												<Text
+													className="text-sm text-gray-600 mt-1"
+													style={{ color: COLORS.primary }}
+												>
+													• Giới hạn {vehicle.deliveryRadiusKm} km
+												</Text>
+											)}
+											<Text
+												className="text-sm text-gray-600 mt-1"
+												style={{ color: COLORS.primary }}
+											>
+												• {formatPrice(vehicle.deliveryFeePerKm || DELIVERY_FEE_PER_KM)}/km
+											</Text>
+										</View>
+									)}
 								</View>
-								{/* show distance when chosen */}
-								{deliveryDistanceKm != null && deliveryAddress && (
-									<View style={{ justifyContent: "center", marginLeft: 8 }}>
-										<Text style={{ color: "#10B981", fontWeight: "700" }}>
-											{deliveryDistanceKm.toFixed(1)} km
-										</Text>
-									</View>
-								)}
 							</View>
 						</TouchableOpacity>
 					</View>
@@ -392,7 +423,7 @@ export default function BookingScreen() {
 
 							// compute fee (round km * feePerKm) + base, fallback to 0
 							// feePerKm default 10,000 VND/km
-							const feePerKm = Number((vehicle as any).deliveryFeePerKm ?? 10000);
+							const feePerKm = Number((vehicle as any).deliveryFeePerKm ?? DELIVERY_FEE_PER_KM);
 							const calc = Math.round(dist) * feePerKm;
 
 							setDeliveryAddress({
@@ -415,6 +446,51 @@ export default function BookingScreen() {
 					{/* Coupon preview (demo) */}
 					{startDate && endDate && (
 						<>
+							{/* Add insurance UI block (moved above promo/summary) */}
+							<View className="mb-4">
+								<Text className="text-sm text-gray-600 mb-2">Bảo hiểm bổ sung</Text>
+								<TouchableOpacity
+									onPress={() => setInsuranceSelected(!insuranceSelected)}
+									activeOpacity={0.8}
+									className={`p-4 rounded-xl mb-2 flex-row items-start ${insuranceSelected ? "bg-white border border-gray-200" : "bg-gray-50 border border-gray-200"}`}
+								>
+									{/* checkbox with tick */}
+									<View
+										style={{
+											width: 20,
+											height: 20,
+											borderRadius: 6,
+											borderWidth: 1,
+											borderColor: insuranceSelected ? COLORS.primary : "#D1D5DB",
+											alignItems: "center",
+											justifyContent: "center",
+											backgroundColor: insuranceSelected ? COLORS.primary : "transparent",
+										}}
+									>
+										{insuranceSelected && <MaterialIcons name="check" size={16} color="#fff" />}
+									</View>
+									<View className="ml-3 flex-1">
+										<Text className="font-semibold text-gray-900">Bảo hiểm thuê xe</Text>
+										<Text className="text-sm text-gray-700 mt-1">
+											Bảo vệ hành khách & xe trong suốt chuyến. Chủ xe không hưởng phí này.
+										</Text>
+									</View>
+									<View className="ml-3 items-end">
+										<Text className="text-sm font-semibold text-green-900">
+											{formatPrice(getInsuranceRateByVehicleType((vehicle as any)?.type || ""))}
+											/ngày
+										</Text>
+										<TouchableOpacity onPress={() => setShowInsuranceInfo(true)} className="mt-6">
+											<Text className="text-xs text-primary-600">Xem thêm &gt;</Text>
+										</TouchableOpacity>
+									</View>
+								</TouchableOpacity>
+							</View>
+
+							<InsuranceInfoModal
+								visible={showInsuranceInfo}
+								onClose={() => setShowInsuranceInfo(false)}
+							/>
 							<View className="mb-4">
 								<TouchableOpacity
 									onPress={() => setShowPromoModal(true)}
@@ -467,10 +543,32 @@ export default function BookingScreen() {
 								{summary.deliveryFee > 0 && (
 									<View className="flex-row justify-between mb-2">
 										<Text className="text-sm text-gray-600">
-											Phí giao xe <Text style={{ color: "#9CA3AF" }}>(10.000đ/km)</Text>
+											Phí giao xe{" "}
+											<Text style={{ color: "#9CA3AF" }}>
+												({}
+												{formatPrice(DELIVERY_FEE_PER_KM)}/km)
+											</Text>
 										</Text>
 										<Text className="text-sm font-semibold text-gray-900">
 											{formatPrice(summary.deliveryFee)}
+										</Text>
+									</View>
+								)}
+
+								{summary.insuranceFee > 0 && (
+									<View className="flex-row justify-between mb-2">
+										<Text className="text-sm text-gray-600">
+											Phí bảo hiểm{" "}
+											<Text style={{ color: "#9CA3AF" }}>
+												(
+												{formatPrice(
+													getInsuranceRateByVehicleType((vehicle as any)?.type || "")
+												)}{" "}
+												x {summary.durationDays} ngày)
+											</Text>
+										</Text>
+										<Text className="text-sm font-semibold text-gray-900">
+											{formatPrice(summary.insuranceFee)}
 										</Text>
 									</View>
 								)}

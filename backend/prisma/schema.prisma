@@ -328,6 +328,7 @@ model Rental {
 
   deliveryFee       Decimal      @default(0) @db.Decimal(15, 2) // Phí giao xe
   discountAmount    Decimal      @default(0) @db.Decimal(15, 2) // Mã giảm giá
+  insuranceFee      Decimal      @default(0) @db.Decimal(15, 2) // insurance fee charged to renter (platform retains), per-rental snapshot
 
   // deliveryAddress lưu object { address, ward, district, city, lat, lng, ... }
   deliveryAddress   Json?        // optional, future-proof

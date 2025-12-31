@@ -11,6 +11,7 @@ export const selectRental = {
   currency: true,
   pricePerDay: true,
   deliveryFee: true,
+  insuranceFee: true,
   discountAmount: true,
   deliveryAddress: true,
   totalPrice: true,

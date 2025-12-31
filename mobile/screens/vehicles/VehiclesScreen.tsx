@@ -112,6 +112,7 @@ export default function VehiclesScreen() {
       depositPrice: Number(apiRental.depositPrice),
       platformFeeRatio: Number(apiRental.platformFeeRatio),
       platformFee: Number(apiRental.platformFee),
+      insuranceFee: Number(apiRental.insuranceFee),
       ownerEarning: Number(apiRental.ownerEarning),
       status: apiRental.status,
       startOdometer: apiRental.startOdometer ?? undefined,
