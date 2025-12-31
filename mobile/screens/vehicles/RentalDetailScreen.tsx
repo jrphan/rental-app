@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import ImageViewing from "react-native-image-viewing";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import HeaderBase from "@/components/header/HeaderBase";
@@ -23,7 +23,7 @@ import { apiRental, type RentalStatus, type EvidenceType, type UploadEvidenceReq
 import { apiReview } from "@/services/api.review";
 import { useUploadUserFile } from "@/hooks/files/useUserFiles";
 import * as ImagePicker from "expo-image-picker";
-import { formatPrice, formatDate, getRentalStatusColor, getRentalStatusLabel } from "./utils";
+import { formatPrice, formatDate, getRentalStatusLabel, getRentalStatusStyles } from "./utils";
 import { COLORS } from "@/constants/colors";
 import { useAuthStore } from "@/store/auth";
 
@@ -492,17 +492,54 @@ export default function RentalDetailScreen() {
 									</Text>
 								)}
 							</View>
-							<View className={`px-3 py-1 rounded-full ${getRentalStatusColor(rental.status)}`}>
-								<Text className="text-xs font-medium">{getRentalStatusLabel(rental.status)}</Text>
-							</View>
+							{(() => {
+								const s = getRentalStatusStyles(rental.status);
+								return (
+									<View
+										style={{
+											paddingHorizontal: 12,
+											paddingVertical: 6,
+											borderRadius: 999,
+											backgroundColor: s.backgroundColor,
+										}}
+									>
+										<Text style={{ fontSize: 12, color: s.color, fontWeight: "600" }}>
+											{getRentalStatusLabel(rental.status)}
+										</Text>
+									</View>
+								);
+							})()}
 						</View>
 
 						{/* License Plate */}
-						<View className="flex-row items-center mt-2">
-							<MaterialIcons name="confirmation-number" size={20} color="#6B7280" />
-							<Text className="ml-2 text-base font-mono text-gray-700">
-								{rental.vehicle.licensePlate}
-							</Text>
+						<View className="flex-row justify-between">
+							<View className="flex-row items-center mt-2">
+								<MaterialIcons name="confirmation-number" size={20} color="#6B7280" />
+								<Text className="ml-2 text-base font-mono text-gray-700">
+									{rental.vehicle.licensePlate}
+								</Text>
+							</View>
+							{/* Rebook button */}
+							{(rental.status === "COMPLETED" || rental.status === "CANCELLED") && (
+								<TouchableOpacity
+									onPress={() => router.push(`/vehicle/${rental.vehicle.id}`)}
+									activeOpacity={0.8}
+								>
+									<View
+										style={{
+											alignSelf: "flex-start",
+											paddingHorizontal: 22,
+											paddingVertical: 6,
+											borderRadius: 10,
+											borderWidth: 1,
+											borderColor: "#F59E0B",
+											backgroundColor: "#ffd386ff",
+										}}
+									>
+										<Text style={{ color: "#111827", fontWeight: "600" }}>Đặt lại</Text>
+									</View>
+								</TouchableOpacity>
+							)}
 						</View>
 					</View>
 

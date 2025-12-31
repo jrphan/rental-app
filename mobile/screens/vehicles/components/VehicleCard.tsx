@@ -194,15 +194,15 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 					{reviewsData && reviewsData.averageRating > 0 && (
 						<View className="flex-row items-center mr-3 mb-2">
 							<MaterialIcons name="star" size={14} color="#F59E0B" />
-							<Text className="ml-1 text-xs text-gray-700">{reviewsData.averageRating.toFixed(1)}</Text>
+							<Text className="ml-1 text-xs text-gray-700">{reviewsData.averageRating.toFixed(1)} • </Text>
 						</View>
 					)}
-					{(vehicle as any).completedTrips !== undefined && (
-						<View className="flex-row items-center mb-2">
-							<MaterialIcons name="local-shipping" size={14} color="#10B981" />
-							<Text className="ml-1 text-xs text-gray-700">{(vehicle as any).completedTrips} chuyến</Text>
-						</View>
-					)}
+					<View className="flex-row items-center mb-2">
+						<MaterialIcons name="local-shipping" size={14} color="#10B981" />
+						<Text className="ml-1 text-xs text-gray-700">
+							{(vehicle as any).completedTrips ?? "Chưa có"} chuyến
+						</Text>
+					</View>
 				</View>
 				<View className="flex-row items-center mb-2">
 					<MaterialIcons name="confirmation-number" size={16} color="#6B7280" />

@@ -1,4 +1,5 @@
 import React from "react";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import type { Vehicle } from "@/screens/vehicles/types";
 import { formatPrice } from "@/screens/vehicles/utils";
@@ -38,12 +39,15 @@ export default function MiniVehicleCard({ vehicle, distanceKm, onPress }: Props)
 						<Text
 							style={{ marginRight: 8, marginTop: 4, color: "#F59E0B", fontWeight: "700", fontSize: 12 }}
 						>
-							★ {reviewsData.averageRating.toFixed(1)}
+							★ {reviewsData.averageRating.toFixed(1)} •
 						</Text>
 					)}
-					{(vehicle as any).completedTrips !== undefined && (
-						<Text style={styles.sub}>• {(vehicle as any).completedTrips} chuyến</Text>
-					)}
+					{
+						<View className="flex-row items-center">
+							<MaterialIcons name="local-shipping" size={14} color="#10B981" style={{ marginTop: 4 }} />
+							<Text style={styles.sub}> {(vehicle as any).completedTrips ?? "Chưa có"} chuyến</Text>
+						</View>
+					}
 				</View>
 				<View
 					style={{
