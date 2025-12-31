@@ -24,11 +24,7 @@ export class ReviewService {
   /**
    * Tạo review cho rental
    */
-  async createReview(
-    rentalId: string,
-    authorId: string,
-    dto: CreateReviewDto,
-  ) {
+  async createReview(rentalId: string, authorId: string, dto: CreateReviewDto) {
     // Kiểm tra rental có tồn tại không
     const rental = await this.prismaService.rental.findUnique({
       where: { id: rentalId },
@@ -62,9 +58,7 @@ export class ReviewService {
     if (dto.type === ReviewType.RENTER_TO_VEHICLE) {
       // Renter đánh giá xe (và gián tiếp đánh giá owner)
       if (rental.renterId !== authorId) {
-        throw new ForbiddenException(
-          'Chỉ người thuê mới có thể đánh giá xe',
-        );
+        throw new ForbiddenException('Chỉ người thuê mới có thể đánh giá xe');
       }
     } else if (dto.type === ReviewType.OWNER_TO_RENTER) {
       // Owner đánh giá renter
@@ -160,7 +154,7 @@ export class ReviewService {
           vehicleId: rental.vehicleId,
         },
       })
-      .catch((error) => {
+      .catch(error => {
         this.logger.error('Failed to send review notification', error);
       });
 
@@ -206,7 +200,7 @@ export class ReviewService {
     // Kiểm tra user đã đánh giá chưa
     let userHasReviewed = false;
     if (userId) {
-      userHasReviewed = reviews.some((review) => review.authorId === userId);
+      userHasReviewed = reviews.some(review => review.authorId === userId);
     }
 
     return {
@@ -214,5 +208,59 @@ export class ReviewService {
       userHasReviewed,
     };
   }
-}
 
+  /**
+   * Xóa review (chỉ cho phép người tạo review xóa)
+   */
+  async deleteReview(reviewId: string, userId: string) {
+    // Kiểm tra review có tồn tại không
+    const review = await this.prismaService.review.findUnique({
+      where: { id: reviewId },
+      include: {
+        rental: {
+          select: {
+            id: true,
+            vehicleId: true,
+          },
+        },
+      },
+    });
+
+    if (!review) {
+      throw new NotFoundException('Đánh giá không tồn tại');
+    }
+
+    // Kiểm tra quyền: chỉ người tạo review mới được xóa
+    if (review.authorId !== userId) {
+      throw new ForbiddenException('Bạn không có quyền xóa đánh giá này');
+    }
+
+    // Xóa review
+    await this.prismaService.review.delete({
+      where: { id: reviewId },
+    });
+
+    // Ghi audit log
+    await this.auditLogService
+      .log({
+        actorId: userId,
+        action: 'DELETE',
+        targetId: review.rental.id,
+        targetType: 'RENTAL',
+        metadata: {
+          reviewId,
+          type: review.type,
+          rating: review.rating,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log review deletion audit', error);
+      });
+
+    this.logger.log(`Review deleted: ${reviewId} by ${userId}`);
+
+    return {
+      message: 'Đánh giá đã được xóa thành công',
+    };
+  }
+}
