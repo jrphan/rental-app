@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   Param,
   UseGuards,
@@ -39,5 +40,16 @@ export class ReviewController {
   async getRentalReviews(@Param('id') rentalId: string, @Req() req: Request) {
     const userId = (req as AuthenticatedRequest).user?.sub;
     return this.reviewService.getRentalReviews(rentalId, userId);
+  }
+
+  @Delete(ROUTES.REVIEW.DELETE)
+  @UseGuards(AuthGuard)
+  async deleteReview(@Param('id') reviewId: string, @Req() req: Request) {
+    const userId = (req as AuthenticatedRequest).user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.reviewService.deleteReview(reviewId, userId);
   }
 }

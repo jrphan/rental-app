@@ -64,6 +64,7 @@ const API_ENDPOINTS = {
   REVIEW: {
     CREATE: "/rental/:id/review",
     GET_RENTAL_REVIEWS: "/rental/:id/reviews",
+    DELETE: "/review/:id",
   },
 };
 

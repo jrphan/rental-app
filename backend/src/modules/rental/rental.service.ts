@@ -47,6 +47,24 @@ export class RentalService {
   ) {}
 
   /**
+   * Normalize date to start of day (00:00:00) for date-only comparison
+   */
+  private normalizeDateToStartOfDay(date: Date): Date {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  }
+
+  /**
+   * Normalize date to end of day (23:59:59) for date-only comparison
+   */
+  private normalizeDateToEndOfDay(date: Date): Date {
+    const normalized = new Date(date);
+    normalized.setHours(23, 59, 59, 999);
+    return normalized;
+  }
+
+  /**
    * Kiểm tra xe có khả dụng trong khoảng thời gian không
    */
   private async checkVehicleAvailability(
@@ -55,6 +73,10 @@ export class RentalService {
     endDate: Date,
     excludeRentalId?: string,
   ): Promise<boolean> {
+    // Normalize dates to start/end of day for date-only comparison
+    const normalizedStart = this.normalizeDateToStartOfDay(startDate);
+    const normalizedEnd = this.normalizeDateToEndOfDay(endDate);
+
     // Check vehicle status
     const vehicle = await this.prismaService.vehicle.findUnique({
       where: { id: vehicleId },
@@ -80,21 +102,25 @@ export class RentalService {
       return false;
     }
 
-    // Check unavailabilities
-    const hasUnavailability = vehicle.unavailabilities.some(
-      unavailability =>
-        unavailability.startDate <= endDate &&
-        unavailability.endDate >= startDate,
-    );
+    // Check unavailabilities (date-only comparison)
+    const hasUnavailability = vehicle.unavailabilities.some(unavailability => {
+      const unavailStart = this.normalizeDateToStartOfDay(
+        unavailability.startDate,
+      );
+      const unavailEnd = this.normalizeDateToEndOfDay(unavailability.endDate);
+      return unavailStart <= normalizedEnd && unavailEnd >= normalizedStart;
+    });
 
     if (hasUnavailability) {
       return false;
     }
 
-    // Check existing rentals
-    const hasConflict = vehicle.rentals.some(
-      rental => rental.startDate <= endDate && rental.endDate >= startDate,
-    );
+    // Check existing rentals (date-only comparison)
+    const hasConflict = vehicle.rentals.some(rental => {
+      const rentalStart = this.normalizeDateToStartOfDay(rental.startDate);
+      const rentalEnd = this.normalizeDateToEndOfDay(rental.endDate);
+      return rentalStart <= normalizedEnd && rentalEnd >= normalizedStart;
+    });
 
     return !hasConflict;
   }
@@ -163,16 +189,17 @@ export class RentalService {
       deliveryAddress = null,
     } = createRentalDto;
 
-    // Parse dates
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    // Parse dates and normalize to start/end of day (date-only, no time)
+    const start = this.normalizeDateToStartOfDay(new Date(startDate));
+    const end = this.normalizeDateToEndOfDay(new Date(endDate));
 
     // Validate dates
     if (start >= end) {
       throw new BadRequestException('Ngày kết thúc phải sau ngày bắt đầu');
     }
 
-    if (start < new Date()) {
+    const today = this.normalizeDateToStartOfDay(new Date());
+    if (start < today) {
       throw new BadRequestException('Ngày bắt đầu không được trong quá khứ');
     }
 
@@ -302,6 +329,26 @@ export class RentalService {
       .catch(error => {
         this.logger.error('Failed to create chat for rental', error);
       });
+
+    // Tạo VehicleUnavailability để đánh dấu thời gian không khả dụng
+    // Chỉ tạo khi rental ở trạng thái AWAIT_APPROVAL hoặc PENDING_PAYMENT
+    if (
+      initialStatus === RentalStatus.AWAIT_APPROVAL ||
+      initialStatus === RentalStatus.PENDING_PAYMENT
+    ) {
+      await this.prismaService.vehicleUnavailability
+        .create({
+          data: {
+            vehicleId,
+            startDate: start,
+            endDate: end,
+            reason: `Đơn thuê #${rental.id}`,
+          },
+        })
+        .catch(error => {
+          this.logger.error('Failed to create vehicle unavailability', error);
+        });
+    }
 
     return {
       message: vehicle.instantBook
@@ -448,6 +495,58 @@ export class RentalService {
       },
       select: selectRental,
     });
+
+    // Quản lý VehicleUnavailability dựa trên status
+    // Nếu rental được xác nhận (CONFIRMED) và chưa có unavailability, tạo mới
+    // Nếu rental bị hủy (CANCELLED), xóa unavailability liên quan
+    if (status === RentalStatus.CONFIRMED) {
+      // Kiểm tra xem đã có unavailability chưa (có thể đã tạo khi tạo rental)
+      // Tìm bằng rentalId trong reason để tránh duplicate
+      const normalizedStart = this.normalizeDateToStartOfDay(rental.startDate);
+      const normalizedEnd = this.normalizeDateToEndOfDay(rental.endDate);
+
+      const existingUnavailability =
+        await this.prismaService.vehicleUnavailability.findFirst({
+          where: {
+            vehicleId: rental.vehicleId,
+            reason: { contains: rental.id },
+          },
+        });
+
+      if (!existingUnavailability) {
+        // Tạo unavailability nếu chưa có
+        await this.prismaService.vehicleUnavailability
+          .create({
+            data: {
+              vehicleId: rental.vehicleId,
+              startDate: normalizedStart,
+              endDate: normalizedEnd,
+              reason: `Đơn thuê #${rental.id}`,
+            },
+          })
+          .catch(error => {
+            this.logger.error(
+              'Failed to create vehicle unavailability on confirm',
+              error,
+            );
+          });
+      }
+    } else if (status === RentalStatus.CANCELLED) {
+      // Xóa unavailability khi rental bị hủy
+      await this.prismaService.vehicleUnavailability
+        .deleteMany({
+          where: {
+            vehicleId: rental.vehicleId,
+            reason: { contains: rental.id },
+          },
+        })
+        .catch(error => {
+          this.logger.error(
+            'Failed to delete vehicle unavailability on cancel',
+            error,
+          );
+        });
+    }
 
     // Log audit
     await this.auditLogService

@@ -84,11 +84,17 @@ export function DatePicker({
   };
 
   const formatInternal = (d: Date): string => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
+    // Normalize date to start of day when mode is "date"
+    const normalizedDate = mode === "date" ? new Date(d) : d;
+    if (mode === "date") {
+      normalizedDate.setHours(0, 0, 0, 0);
+    }
+
+    const year = normalizedDate.getFullYear();
+    const month = String(normalizedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(normalizedDate.getDate()).padStart(2, "0");
+    const hours = String(normalizedDate.getHours()).padStart(2, "0");
+    const minutes = String(normalizedDate.getMinutes()).padStart(2, "0");
 
     if (mode === "time") {
       return `${hours}:${minutes}`;
