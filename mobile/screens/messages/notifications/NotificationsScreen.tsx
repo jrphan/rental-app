@@ -119,22 +119,31 @@ export default function NotificationsScreen() {
       // Navigate tới profile/KYC screen
       router.push(ROUTES.PROFILE);
     } else if (originalType === "RENTAL_UPDATE") {
-      // Navigate tới booking detail nếu có rentalId
+      // Navigate tới rental detail nếu có rentalId
       if (originalData?.rentalId) {
-        // TODO: Navigate tới booking detail khi có route
-        router.push(ROUTES.BOOKINGS);
+        router.push(`/rental/${originalData.rentalId}` as any);
+      } else if (originalData?.vehicleId) {
+        // Nếu có vehicleId nhưng không có rentalId, có thể là thông báo về xe
+        router.push(`/vehicle/${originalData.vehicleId}` as any);
       } else {
+        // Fallback: navigate tới danh sách rentals
         router.push(ROUTES.BOOKINGS);
       }
     } else if (originalType === "PAYMENT") {
-      // Navigate tới payment/transaction screen
-      router.push(ROUTES.BOOKINGS);
+      // Navigate tới rental detail nếu có rentalId, nếu không thì tới danh sách rentals
+      if (originalData?.rentalId) {
+        router.push(`/rental/${originalData.rentalId}` as any);
+      } else {
+        router.push(ROUTES.BOOKINGS);
+      }
     } else if (originalData?.vehicleId) {
       // Nếu có vehicleId thì navigate tới vehicle detail
-      // TODO: Navigate tới vehicle detail khi có route
-      // router.push(ROUTES.HOME);
+      router.push(`/vehicle/${originalData.vehicleId}` as any);
+    } else if (originalData?.reviewId && originalData?.rentalId) {
+      // Nếu có reviewId và rentalId, navigate tới rental detail
+      router.push(`/rental/${originalData.rentalId}` as any);
     } else {
-      // Default: không navigate hoặc navigate tới home
+      // Default: không navigate
       // Có thể bỏ qua nếu không cần navigate
     }
   }, []);
@@ -160,78 +169,75 @@ export default function NotificationsScreen() {
   );
 
   // Tabs config
-  const notificationTabs = useMemo<TabConfig[]>(
-    () => {
-      if (!isAuthenticated) {
-        return [
-          {
-            label: "Chưa đọc",
-            value: "unread",
-            route: "",
-            content: <AuthRequiredMessage />,
-          },
-          {
-            label: "Tất cả",
-            value: "all",
-            route: "",
-            content: <AuthRequiredMessage />,
-          },
-        ];
-      }
-
+  const notificationTabs = useMemo<TabConfig[]>(() => {
+    if (!isAuthenticated) {
       return [
         {
-          label: `Chưa đọc${
-            unreadNotifications.length > 0
-              ? ` (${unreadNotifications.length})`
-              : ""
-          }`,
+          label: "Chưa đọc",
           value: "unread",
           route: "",
-          content: isLoadingUnread ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
-          ) : (
-            <NotificationsList
-              data={unreadNotifications}
-              onRefresh={refetchUnread}
-              onItemAction={handleItemAction}
-              onItemNavigate={handleItemNavigate}
-            />
-          ),
+          content: <AuthRequiredMessage />,
         },
         {
           label: "Tất cả",
           value: "all",
           route: "",
-          content: isLoadingAll ? (
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
-          ) : (
-            <NotificationsList
-              data={allNotifications}
-              onRefresh={refetchAll}
-              onItemAction={handleItemAction}
-              onItemNavigate={handleItemNavigate}
-            />
-          ),
+          content: <AuthRequiredMessage />,
         },
       ];
-    },
-    [
-      isAuthenticated,
-      unreadNotifications,
-      allNotifications,
-      isLoadingUnread,
-      isLoadingAll,
-      refetchUnread,
-      refetchAll,
-      handleItemAction,
-      handleItemNavigate,
-    ]
-  );
+    }
+
+    return [
+      {
+        label: `Chưa đọc${
+          unreadNotifications.length > 0
+            ? ` (${unreadNotifications.length})`
+            : ""
+        }`,
+        value: "unread",
+        route: "",
+        content: isLoadingUnread ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
+        ) : (
+          <NotificationsList
+            data={unreadNotifications}
+            onRefresh={refetchUnread}
+            onItemAction={handleItemAction}
+            onItemNavigate={handleItemNavigate}
+          />
+        ),
+      },
+      {
+        label: "Tất cả",
+        value: "all",
+        route: "",
+        content: isLoadingAll ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
+        ) : (
+          <NotificationsList
+            data={allNotifications}
+            onRefresh={refetchAll}
+            onItemAction={handleItemAction}
+            onItemNavigate={handleItemNavigate}
+          />
+        ),
+      },
+    ];
+  }, [
+    isAuthenticated,
+    unreadNotifications,
+    allNotifications,
+    isLoadingUnread,
+    isLoadingAll,
+    refetchUnread,
+    refetchAll,
+    handleItemAction,
+    handleItemNavigate,
+  ]);
 
   return (
     <View className="flex-1">
