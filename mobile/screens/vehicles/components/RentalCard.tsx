@@ -4,6 +4,7 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { Rental } from "../types";
 import { formatPrice, formatDate, getRentalStatusLabel, getRentalStatusStyles } from "../utils";
+import { COLORS } from "@/constants/colors";
 
 interface RentalCardProps {
 	rental: Rental;
@@ -84,18 +85,10 @@ export default function RentalCard({ rental, onPress }: RentalCardProps) {
 							<TouchableOpacity
 								onPress={() => router.push(`/vehicle/${rental.vehicle.id}`)}
 								activeOpacity={0.8}
-								style={{
-									marginTop: 4,
-									alignSelf: "flex-start",
-									paddingHorizontal: 16,
-									paddingVertical: 3,
-									borderRadius: 10,
-									borderWidth: 1,
-									borderColor: "#F59E0B",
-									backgroundColor: "#ffd386ff",
-								}}
+								className="flex-row items-center"
 							>
-								<Text style={{ color: "#111827", fontWeight: "600" }}>Đặt lại</Text>
+								<Text style={{ color: COLORS.primary, fontWeight: "600", fontSize: 12 }}>Đặt lại</Text>
+								<MaterialIcons name="arrow-right-alt" size={18} color={COLORS.primary} />
 							</TouchableOpacity>
 						)}
 					</View>

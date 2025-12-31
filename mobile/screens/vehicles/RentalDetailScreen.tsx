@@ -525,18 +525,9 @@ export default function RentalDetailScreen() {
 									onPress={() => router.push(`/vehicle/${rental.vehicle.id}`)}
 									activeOpacity={0.8}
 								>
-									<View
-										style={{
-											alignSelf: "flex-start",
-											paddingHorizontal: 22,
-											paddingVertical: 6,
-											borderRadius: 10,
-											borderWidth: 1,
-											borderColor: "#F59E0B",
-											backgroundColor: "#ffd386ff",
-										}}
-									>
-										<Text style={{ color: "#111827", fontWeight: "600" }}>Đặt lại</Text>
+									<View className="flex-row items-center mt-2">
+										<Text style={{ color: COLORS.primary, fontWeight: "600" }}>Đặt lại</Text>
+										<MaterialIcons name="chevron-right" size={18} color={COLORS.primary} />
 									</View>
 								</TouchableOpacity>
 							)}
