@@ -74,7 +74,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
 				cavetBack: (vehicleData as any).cavetBack || "",
 				instantBook: vehicleData.instantBook || false,
 				deliveryAvailable: (vehicleData as any).deliveryAvailable || false,
-				deliveryFeePerKm: (vehicleData as any).deliveryFeePerKm?.toString() ?? "10000",
+				deliveryFeePerKm: (vehicleData as any).deliveryFeePerKm?.toString() ?? String(DELIVERY_FEE_PER_KM),
 				deliveryRadiusKm: (vehicleData as any).deliveryRadiusKm?.toString() || "",
 				imageUrls: imageUrls.length > 0 ? imageUrls : [],
 			});

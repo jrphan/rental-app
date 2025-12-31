@@ -1205,12 +1205,14 @@ export default function RentalDetailScreen() {
 								className="flex-1 py-3 px-4 rounded-lg bg-green-600"
 								style={{
 									opacity: createReviewMutation.isPending || reviewRating === 0 ? 0.5 : 1,
+									borderWidth: 1,
+									borderColor: "#F59E0B",
 								}}
 							>
 								{createReviewMutation.isPending ? (
-									<ActivityIndicator color="#FFFFFF" />
+									<ActivityIndicator color="#F59E0B" />
 								) : (
-									<Text className="text-center font-medium text-white">Gửi đánh giá</Text>
+									<Text className="text-center font-medium" style={{color: "#F59E0B"}}>Gửi đánh giá</Text>
 								)}
 							</TouchableOpacity>
 						</View>
@@ -1226,7 +1228,7 @@ export default function RentalDetailScreen() {
 				onRequestClose={() => setShowEvidenceModal(false)}
 			>
 				<View className="flex-1 bg-black/50 justify-end">
-					<View className="bg-white rounded-t-3xl max-h-[90%] p-6">
+					<View className="bg-white rounded-t-3xl p-6" style={{ maxHeight: "90%" }}>
 						<View className="flex-row items-center justify-between mb-4">
 							<Text className="text-xl font-bold text-gray-900">Chụp ảnh hiện trạng xe</Text>
 							<TouchableOpacity onPress={() => setShowEvidenceModal(false)}>

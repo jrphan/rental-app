@@ -45,7 +45,16 @@ export default function MiniVehicleCard({ vehicle, distanceKm, onPress }: Props)
 						<Text style={styles.sub}>• {(vehicle as any).completedTrips} chuyến</Text>
 					)}
 				</View>
-				<View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 6 }}>
+				<View
+					style={{
+						flexDirection: "row",
+						justifyContent: "space-between",
+						marginTop: 6,
+						borderTopWidth: 1,
+						borderTopColor: "#E5E7EB",
+						paddingTop: 4,
+					}}
+				>
 					<Text style={styles.price}>{formatPrice(Number(vehicle.pricePerDay))}</Text>
 					{typeof distanceKm === "number" && <Text style={styles.distance}>• {distanceKm} km</Text>}
 				</View>
