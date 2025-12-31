@@ -64,6 +64,7 @@ export interface Vehicle {
 	unavailabilities: VehicleUnavailability[];
 	createdAt: string;
 	updatedAt: string;
+	completedTrips?: number; // Thêm dòng này
 }
 
 export interface RentalVehicle {

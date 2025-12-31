@@ -25,7 +25,7 @@ export default function UnavailabilityModal({ visible, onClose, items }: Props) 
 					className="w-full bg-white rounded-t-3xl p-6 min-h-[70%]"
 				>
 					<View className="flex-row items-center justify-between mb-4">
-						<Text className="text-lg font-semibold text-gray-900">Xe không khả dụng vào các ngày</Text>
+						<Text className="text-lg font-semibold text-gray-900">Xe bận hoặc đã được thuê vào các ngày</Text>
 						<TouchableOpacity onPress={onClose}>
 							<MaterialIcons name="close" size={22} color="#6B7280" />
 						</TouchableOpacity>

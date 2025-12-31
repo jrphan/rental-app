@@ -5,6 +5,7 @@ import type { Vehicle } from "@/screens/vehicles/types";
 import { formatPrice } from "@/screens/vehicles/utils";
 import { useQuery } from "@tanstack/react-query";
 import { apiReview } from "@/services/api.review";
+import VehicleStats from "@/screens/vehicles/components/VehicleStats";
 
 interface Props {
 	vehicle: Vehicle;
@@ -14,8 +15,9 @@ interface Props {
 
 export default function MiniVehicleCard({ vehicle, distanceKm, onPress }: Props) {
 	const img = vehicle.images && vehicle.images.length ? vehicle.images[0].url : undefined;
+
 	// Fetch reviews
-	const { data: reviewsData, isLoading: isLoadingReviews } = useQuery({
+	const { data: reviewsData } = useQuery({
 		queryKey: ["vehicleReviews", vehicle.id],
 		queryFn: () => {
 			if (!vehicle.id) throw new Error("Vehicle Id is required");
@@ -23,6 +25,10 @@ export default function MiniVehicleCard({ vehicle, distanceKm, onPress }: Props)
 		},
 		enabled: !!vehicle.id && !!vehicle,
 	});
+
+	const completedTrips = (vehicle as any).completedTrips ?? 0;
+	const rating = reviewsData?.averageRating || 0;
+
 	return (
 		<TouchableOpacity onPress={onPress} style={styles.card}>
 			<Image source={{ uri: img }} style={styles.image} />
@@ -33,22 +39,10 @@ export default function MiniVehicleCard({ vehicle, distanceKm, onPress }: Props)
 				<Text numberOfLines={1} style={styles.sub}>
 					{vehicle.ward ? `${vehicle.ward}, ${vehicle.district}` : vehicle.district || vehicle.address || "-"}
 				</Text>
-				{/* rating + trips (small) */}
-				<View style={{ flexDirection: "row", alignItems: "center" }}>
-					{reviewsData && reviewsData.averageRating > 0 && (
-						<Text
-							style={{ marginRight: 8, marginTop: 4, color: "#F59E0B", fontWeight: "700", fontSize: 12 }}
-						>
-							★ {reviewsData.averageRating.toFixed(1)} •
-						</Text>
-					)}
-					{
-						<View className="flex-row items-center">
-							<MaterialIcons name="local-shipping" size={14} color="#10B981" style={{ marginTop: 4 }} />
-							<Text style={styles.sub}> {(vehicle as any).completedTrips ?? "Chưa có"} chuyến</Text>
-						</View>
-					}
-				</View>
+
+				{/* Hiển thị thống kê xe */}
+				<VehicleStats completedTrips={completedTrips} rating={rating} compact={true} />
+
 				<View
 					style={{
 						flexDirection: "row",

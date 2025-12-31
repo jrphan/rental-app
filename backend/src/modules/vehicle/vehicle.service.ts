@@ -1085,4 +1085,54 @@ export class VehicleService {
 
     return vehicles;
   }
+
+  /**
+   * Lấy số chuyến hoàn thành của xe
+   */
+  async getVehicleCompletedTripsCount(vehicleId: string): Promise<number> {
+    const count = await this.prismaService.rental.count({
+      where: {
+        vehicleId,
+        status: RentalStatus.COMPLETED,
+        deletedAt: null,
+      },
+    });
+    return count;
+  }
+
+  /**
+   * Lấy danh sách xe với số chuyến hoàn thành
+   * Được dùng khi cần hiển thị thông tin xe kèm completedTrips
+   */
+  async getVehiclesWithCompletedTrips(
+    vehicles: VehicleResponse[],
+  ): Promise<(VehicleResponse & { completedTrips: number })[]> {
+    const vehicleIds = vehicles.map(v => v.id);
+
+    // Query tất cả completed trips count cùng lúc (tối ưu DB)
+    const completedTripsMap = await this.prismaService.rental
+      .groupBy({
+        by: ['vehicleId'],
+        where: {
+          vehicleId: { in: vehicleIds },
+          status: RentalStatus.COMPLETED,
+          deletedAt: null,
+        },
+        _count: true,
+      })
+      .then(results =>
+        results.reduce(
+          (acc, result) => {
+            acc[result.vehicleId] = result._count;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+      );
+
+    return vehicles.map(vehicle => ({
+      ...vehicle,
+      completedTrips: completedTripsMap[vehicle.id] || 0,
+    }));
+  }
 }

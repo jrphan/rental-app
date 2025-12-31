@@ -107,7 +107,7 @@ export class VehicleController {
 
   // Public routes - must be defined BEFORE /vehicle/:id to avoid route conflicts
   @Get(ROUTES.VEHICLE.SEARCH)
-  searchVehicles(
+  async searchVehicles(
     @Query('lat') lat?: string,
     @Query('lng') lng?: string,
     @Query('radius') radius?: string,
@@ -117,14 +117,14 @@ export class VehicleController {
     @Query('endDate') endDate?: string,
     @Query('search') search?: string,
     @Query('licensePlate') licensePlate?: string,
-    @Query('type') type?: string, // comma separated
+    @Query('type') type?: string,
     @Query('minPrice') minPrice?: string,
     @Query('maxPrice') maxPrice?: string,
     @Query('sortBy') sortBy?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.vehicleService.searchVehicles({
+    const result = await this.vehicleService.searchVehicles({
       lat: lat ? Number(lat) : undefined,
       lng: lng ? Number(lng) : undefined,
       radius: radius ? Number(radius) : undefined,
@@ -141,46 +141,78 @@ export class VehicleController {
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     });
+
+    const vehiclesWithTrips =
+      await this.vehicleService.getVehiclesWithCompletedTrips(result.items);
+
+    return {
+      ...result,
+      items: vehiclesWithTrips,
+    };
   }
 
   @Get(ROUTES.VEHICLE.LIST_POPULAR)
-  getPopularVehicles(
+  async getPopularVehicles(
     @Query('limit') limit?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.vehicleService.getPopularVehicles(
+    const vehicles = await this.vehicleService.getPopularVehicles(
       limit ? Number(limit) : 10,
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
     );
+
+    // Thêm completedTrips count
+    const vehiclesWithTrips =
+      await this.vehicleService.getVehiclesWithCompletedTrips(vehicles);
+
+    return vehiclesWithTrips;
   }
 
   @Get(ROUTES.VEHICLE.LIST_BY_CITY)
-  getVehiclesByCity(
+  async getVehiclesByCity(
     @Query('city') city: string,
     @Query('limit') limit?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.vehicleService.getVehiclesByCity(
+    const vehicles = await this.vehicleService.getVehiclesByCity(
       city,
       limit ? Number(limit) : 20,
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
     );
+
+    const vehiclesWithTrips =
+      await this.vehicleService.getVehiclesWithCompletedTrips(vehicles);
+
+    return vehiclesWithTrips;
   }
 
   @Get(ROUTES.VEHICLE.LIST_BY_OWNER)
-  getVehiclesByOwner(
+  async getVehiclesByOwner(
     @Param('ownerId') ownerId: string,
   ): Promise<UserVehicleListResponse> {
-    return this.vehicleService.getVehiclesByOwner(ownerId);
+    const result = await this.vehicleService.getVehiclesByOwner(ownerId);
+
+    const vehiclesWithTrips =
+      await this.vehicleService.getVehiclesWithCompletedTrips(result.items);
+
+    return {
+      ...result,
+      items: vehiclesWithTrips,
+    };
   }
 
   @Get(ROUTES.VEHICLE.GET_VEHICLE_DETAIL)
-  getVehicleDetailPublic(@Param('id') id: string): Promise<VehicleResponse> {
-    return this.vehicleService.getVehicleDetailPublic(id);
+  async getVehicleDetailPublic(@Param('id') id: string) {
+    const vehicle = await this.vehicleService.getVehicleDetailPublic(id);
+
+    const [vehicleWithTrips] =
+      await this.vehicleService.getVehiclesWithCompletedTrips([vehicle]);
+
+    return vehicleWithTrips;
   }
 
   @Get(ROUTES.VEHICLE.GET_VEHICLE_REVIEWS)

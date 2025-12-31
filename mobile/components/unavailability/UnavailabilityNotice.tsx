@@ -17,7 +17,7 @@ export default function UnavailabilityNotice({ count, onPress }: Props) {
 			<MaterialIcons name="error-outline" size={20} color="#EF4444" />
 			<View className="ml-3">
 				<Text className="text-sm font-medium text-red-700">
-					Xem khoảng thời gian xe không khả dụng{count ? ` (${count})` : ""}
+					Khoảng thời gian xe không có sẵn{count ? ` (${count})` : ""}
 				</Text>
 			</View>
 		</TouchableOpacity>

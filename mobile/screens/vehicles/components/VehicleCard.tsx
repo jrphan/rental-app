@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth";
 import type { Vehicle } from "../types";
 import { formatPrice, getVehicleStatusLabel } from "../utils";
 import ChangeVehicleStatusModal from "./ChangeVehicleStatusModal";
+import VehicleStats from "./VehicleStats";
 import { COLORS } from "@/constants/colors";
 import { useQuery } from "@tanstack/react-query";
 import { apiReview } from "@/services/api.review";
@@ -26,7 +27,7 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 	const [showStatusModal, setShowStatusModal] = useState(false);
 
 	// Fetch reviews
-	const { data: reviewsData, isLoading: isLoadingReviews } = useQuery({
+	const { data: reviewsData } = useQuery({
 		queryKey: ["vehicleReviews", vehicle.id],
 		queryFn: () => {
 			if (!vehicle.id) throw new Error("Vehicle ID is required");
@@ -35,39 +36,32 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 		enabled: !!vehicle.id && !!vehicle,
 	});
 
-	// Kiểm tra xem user hiện tại có phải là chủ xe không
 	const isOwner = user?.id && vehicle.ownerId === user.id;
+	const completedTrips = (vehicle as any).completedTrips ?? 0;
+	const rating = reviewsData?.averageRating || 0;
 
 	// Tính toán card width dựa trên variant
 	const getCardWidth = React.useCallback(() => {
 		if (variant === "compact") {
-			// Compact: chiếm khoảng 70% width để hiển thị 1.5 items
-			// windowWidth - padding container (16*2) - gap (16)
 			return (windowWidth - 48) * 0.7;
 		}
-		// Full: chiếm toàn bộ width trừ padding
-		return windowWidth - 32; // windowWidth - padding (16*2)
+		return windowWidth - 32;
 	}, [variant, windowWidth]);
 
-	// Card width cố định, không thay đổi khi layout
 	const cardWidth = React.useMemo(() => getCardWidth(), [getCardWidth]);
 
 	// Sắp xếp ảnh: ảnh primary đầu tiên, sau đó các ảnh khác
 	const sortedImages = React.useMemo(() => {
 		if (!vehicle.images || vehicle.images.length === 0) {
-			console.log("VehicleCard: No images", vehicle.id, vehicle.images);
 			return [];
 		}
-		// Filter out images without URL
 		const validImages = vehicle.images.filter((img) => img.url && img.url.trim() !== "");
 		if (validImages.length === 0) {
-			console.log("VehicleCard: No valid images with URL", vehicle.id, vehicle.images);
 			return [];
 		}
 		const primary = validImages.find((img) => img.isPrimary);
 		const others = validImages.filter((img) => !img.isPrimary);
-		const result = primary ? [primary, ...others] : validImages;
-		return result;
+		return primary ? [primary, ...others] : validImages;
 	}, [vehicle.images, vehicle.id]);
 
 	const hasMultipleImages = sortedImages.length > 1;
@@ -78,8 +72,7 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 		setCurrentIndex(index);
 	};
 
-	const cardStyle: { width: number; marginRight?: number } =
-		variant === "compact" ? { width: cardWidth, marginRight: 16 } : { width: windowWidth - 32 };
+	const cardStyle = variant === "compact" ? { width: cardWidth, marginRight: 16 } : { width: windowWidth - 32 };
 
 	const handleCardPress = () => {
 		if (onPress) {
@@ -105,7 +98,6 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 							decelerationRate="fast"
 							snapToInterval={cardWidth}
 							snapToAlignment="start"
-							// Android performance optimizations
 							removeClippedSubviews={Platform.OS === "android"}
 							overScrollMode="never"
 							nestedScrollEnabled={true}
@@ -120,7 +112,6 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 											transition={200}
 											cachePolicy="memory-disk"
 											priority="normal"
-											// Reduce memory usage
 											recyclingKey={img.id}
 										/>
 									) : (
@@ -151,15 +142,14 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 					</View>
 				)}
 			</View>
+
 			<TouchableOpacity onPress={handleCardPress} className="p-4">
 				<View className="flex-row items-center justify-between mb-2">
 					<Text className="text-lg font-semibold text-gray-900">
 						{vehicle.brand} {vehicle.model}
 					</Text>
-					{/* Chỉ hiển thị edit button và status badge khi user là chủ xe */}
 					{isOwner && (
 						<View className="flex-row items-center gap-2">
-							{/* Nút edit - cho phép edit nội dung xe */}
 							<TouchableOpacity
 								onPress={(e) => {
 									e.stopPropagation();
@@ -169,7 +159,6 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 							>
 								<MaterialIcons name="edit" size={18} color="#6B7280" />
 							</TouchableOpacity>
-							{/* Nút thay đổi trạng thái - chỉ hiển thị khi không phải REJECTED */}
 							{vehicle.status !== "REJECTED" && (
 								<TouchableOpacity
 									onPress={(e) => {
@@ -189,21 +178,10 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 						</View>
 					)}
 				</View>
-				{/* Rating + completed trips */}
-				<View className="flex-row items-center">
-					{reviewsData && reviewsData.averageRating > 0 && (
-						<View className="flex-row items-center mr-3 mb-2">
-							<MaterialIcons name="star" size={14} color="#F59E0B" />
-							<Text className="ml-1 text-xs text-gray-700">{reviewsData.averageRating.toFixed(1)} • </Text>
-						</View>
-					)}
-					<View className="flex-row items-center mb-2">
-						<MaterialIcons name="local-shipping" size={14} color="#10B981" />
-						<Text className="ml-1 text-xs text-gray-700">
-							{(vehicle as any).completedTrips ?? "Chưa có"} chuyến
-						</Text>
-					</View>
-				</View>
+
+				{/* Hiển thị thống kê xe */}
+				<VehicleStats completedTrips={completedTrips} rating={rating} />
+
 				<View className="flex-row items-center mb-2">
 					<MaterialIcons name="confirmation-number" size={16} color="#6B7280" />
 					<Text className="text-sm text-gray-600 ml-1">{vehicle.licensePlate}</Text>
@@ -220,6 +198,7 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 						</Text>
 					)}
 				</View>
+
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center">
 						<Text className="text-sm text-gray-500 mr-3">
@@ -246,10 +225,7 @@ const VehicleCard = ({ vehicle, onPress, variant = "full", distanceKm }: Vehicle
 	);
 };
 
-// Memoize component to prevent unnecessary re-renders
 export default memo(VehicleCard, (prevProps, nextProps) => {
-	// Only re-render if vehicle data or variant changes
-	// Compare images by length and first image URL (simple comparison for performance)
 	const prevImages = prevProps.vehicle.images || [];
 	const nextImages = nextProps.vehicle.images || [];
 	const imagesEqual =
@@ -263,6 +239,7 @@ export default memo(VehicleCard, (prevProps, nextProps) => {
 		imagesEqual &&
 		prevProps.variant === nextProps.variant &&
 		prevProps.distanceKm === nextProps.distanceKm &&
-		prevProps.onPress === nextProps.onPress
+		prevProps.onPress === nextProps.onPress &&
+		(prevProps.vehicle as any).completedTrips === (nextProps.vehicle as any).completedTrips
 	);
 });
