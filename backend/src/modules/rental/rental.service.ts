@@ -19,6 +19,9 @@ import {
   RentalDetailResponse,
   UpdateRentalStatusResponse,
   selectRental,
+  AdminRentalListResponse,
+  AdminRentalDetailResponse,
+  selectAdminRental,
 } from '@/types/rental.type';
 import {
   RentalStatus,
@@ -26,6 +29,7 @@ import {
   Prisma,
   AuditAction,
   AuditTargetType,
+  UserRole,
 } from '@prisma/client';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { NotificationService } from '@/modules/notification/notification.service';
@@ -787,5 +791,86 @@ export class RentalService {
       dispute,
       rental: updatedRental,
     };
+  }
+
+  // ==================== ADMIN METHODS ====================
+
+  private async assertAdminOrSupport(userId: string): Promise<void> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Người dùng không tồn tại');
+    }
+
+    if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPPORT) {
+      throw new ForbiddenException('Bạn không có quyền truy cập');
+    }
+  }
+
+  /**
+   * Admin: Lấy danh sách đơn thuê với filters
+   */
+  async listRentals(
+    adminId: string,
+    status?: RentalStatus,
+    hasDispute?: boolean,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<AdminRentalListResponse> {
+    await this.assertAdminOrSupport(adminId);
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.RentalWhereInput = {
+      deletedAt: null,
+      ...(status && { status }),
+      ...(hasDispute !== undefined && {
+        dispute: hasDispute ? { isNot: null } : { is: null },
+      }),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prismaService.rental.findMany({
+        where,
+        select: selectAdminRental,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prismaService.rental.count({ where }),
+    ]);
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  /**
+   * Admin: Lấy chi tiết đơn thuê
+   */
+  async getRentalDetailAdmin(
+    adminId: string,
+    rentalId: string,
+  ): Promise<AdminRentalDetailResponse> {
+    await this.assertAdminOrSupport(adminId);
+
+    const rental = await this.prismaService.rental.findUnique({
+      where: { id: rentalId },
+      select: selectAdminRental,
+    });
+
+    if (!rental) {
+      throw new NotFoundException('Đơn thuê không tồn tại');
+    }
+
+    return rental;
   }
 }

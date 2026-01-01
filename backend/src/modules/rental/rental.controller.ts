@@ -27,6 +27,8 @@ import {
   RentalListResponse,
   RentalDetailResponse,
   UpdateRentalStatusResponse,
+  AdminRentalListResponse,
+  AdminRentalDetailResponse,
 } from '@/types/rental.type';
 import { RentalStatus } from '@prisma/client';
 
@@ -129,5 +131,48 @@ export class RentalController {
     }
 
     return this.rentalService.createDispute(id, userId, createDisputeDto);
+  }
+
+  // Admin endpoints
+  @Get(ROUTES.ADMIN.LIST_RENTALS)
+  @UseGuards(AuthGuard)
+  listRentals(
+    @Req() req: Request,
+    @Query('status') status?: RentalStatus,
+    @Query('hasDispute') hasDispute?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ): Promise<AdminRentalListResponse> {
+    const adminId = (req as AuthenticatedRequest).user?.sub;
+    if (!adminId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 20;
+    const hasDisputeBool =
+      hasDispute !== undefined ? hasDispute === 'true' : undefined;
+
+    return this.rentalService.listRentals(
+      adminId,
+      status,
+      hasDisputeBool,
+      pageNum,
+      limitNum,
+    );
+  }
+
+  @Get(ROUTES.ADMIN.GET_RENTAL_DETAIL)
+  @UseGuards(AuthGuard)
+  getRentalDetailAdmin(
+    @Req() req: Request,
+    @Param('id') id: string,
+  ): Promise<AdminRentalDetailResponse> {
+    const adminId = (req as AuthenticatedRequest).user?.sub;
+    if (!adminId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.rentalService.getRentalDetailAdmin(adminId, id);
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/constants/colors";
@@ -22,6 +22,7 @@ interface VehicleSearchBarProps {
   onDateRangeChange?: (startDate?: Date, endDate?: Date) => void;
   location?: { city?: string; district?: string; lat?: number; lng?: number };
   dateRange?: { startDate?: Date; endDate?: Date };
+  searchText?: string;
 }
 
 export default function VehicleSearchBar({
@@ -31,8 +32,16 @@ export default function VehicleSearchBar({
   onDateRangeChange,
   location,
   dateRange,
+  searchText: initialSearchText = "",
 }: VehicleSearchBarProps) {
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState(initialSearchText);
+
+  // Sync searchText với prop khi prop thay đổi
+  useEffect(() => {
+    if (initialSearchText !== undefined) {
+      setSearchText(initialSearchText);
+    }
+  }, [initialSearchText]);
 
   const handleSearch = () => {
     onSearch({
