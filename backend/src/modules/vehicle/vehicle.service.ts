@@ -97,7 +97,7 @@ export class VehicleService {
         status: VehicleStatus.PENDING,
         depositAmount: vehicleData.depositAmount || 0,
         requiredLicense: vehicleData.requiredLicense || 'A1',
-        instantBook: vehicleData.instantBook || false,
+        instantBook: false, // Feature disabled
         deliveryAvailable: vehicleData.deliveryAvailable || false,
         images: {
           create: images.map((img, index) => ({
@@ -178,7 +178,7 @@ export class VehicleService {
         ...vehicleData,
         depositAmount: vehicleData.depositAmount || 0,
         requiredLicense: vehicleData.requiredLicense || 'A1',
-        instantBook: vehicleData.instantBook || false,
+        instantBook: false, // Feature disabled
         deliveryAvailable: vehicleData.deliveryAvailable || false,
         images: {
           create: images.map((img, index) => ({
