@@ -12,6 +12,7 @@ import { NotificationModule } from '@/modules/notification/notification.module';
 import { RentalModule } from '@/modules/rental/rental.module';
 import { ChatModule } from '@/modules/chat/chat.module';
 import { ReviewModule } from '@/modules/review/review.module';
+import { CommissionModule } from '@/modules/commission/commission.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ReviewModule } from '@/modules/review/review.module';
     RentalModule,
     ChatModule,
     ReviewModule,
+    CommissionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

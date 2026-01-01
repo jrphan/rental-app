@@ -88,6 +88,14 @@ export default function ProfileActions({
       route: "/(tabs)/profile/favorites",
     },
     {
+      id: "commissions",
+      icon: "receipt-long",
+      iconType: "MaterialIcons",
+      title: "Chiết khấu",
+      route: "/(tabs)/profile/commissions",
+      showCondition: () => user?.isVendor ?? false,
+    },
+    {
       id: "change-password",
       icon: "lock",
       iconType: "MaterialIcons",

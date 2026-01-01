@@ -1,4 +1,4 @@
-import { Bike, Home, MonitorCheck, Package, ShieldCheck, Users } from 'lucide-react'
+import { Bike, Home, MonitorCheck, Package, ShieldCheck, Users, Receipt } from 'lucide-react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import type { AdminKycListResponse, KycStatus } from '@/types/auth.types'
@@ -48,6 +48,11 @@ const menuItems = [
     title: 'Quản lý người dùng',
     icon: Users,
     href: ROUTES.USERS,
+  },
+  {
+    title: 'Chiết khấu',
+    icon: Receipt,
+    href: ROUTES.COMMISSIONS,
   },
 ]
 

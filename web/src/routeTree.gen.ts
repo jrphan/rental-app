@@ -17,6 +17,7 @@ import { Route as ProtectUsersRouteImport } from './routes/_protect/users'
 import { Route as ProtectRentalsRouteImport } from './routes/_protect/rentals'
 import { Route as ProtectNotificationsRouteImport } from './routes/_protect/notifications'
 import { Route as ProtectKycRouteImport } from './routes/_protect/kyc'
+import { Route as ProtectCommissionsRouteImport } from './routes/_protect/commissions'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -57,9 +58,15 @@ const ProtectKycRoute = ProtectKycRouteImport.update({
   path: '/kyc',
   getParentRoute: () => ProtectRoute,
 } as any)
+const ProtectCommissionsRoute = ProtectCommissionsRouteImport.update({
+  id: '/commissions',
+  path: '/commissions',
+  getParentRoute: () => ProtectRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
+  '/commissions': typeof ProtectCommissionsRoute
   '/kyc': typeof ProtectKycRoute
   '/notifications': typeof ProtectNotificationsRoute
   '/rentals': typeof ProtectRentalsRoute
@@ -69,6 +76,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/commissions': typeof ProtectCommissionsRoute
   '/kyc': typeof ProtectKycRoute
   '/notifications': typeof ProtectNotificationsRoute
   '/rentals': typeof ProtectRentalsRoute
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_protect': typeof ProtectRouteWithChildren
   '/login': typeof LoginRoute
+  '/_protect/commissions': typeof ProtectCommissionsRoute
   '/_protect/kyc': typeof ProtectKycRoute
   '/_protect/notifications': typeof ProtectNotificationsRoute
   '/_protect/rentals': typeof ProtectRentalsRoute
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/login'
+    | '/commissions'
     | '/kyc'
     | '/notifications'
     | '/rentals'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/commissions'
     | '/kyc'
     | '/notifications'
     | '/rentals'
@@ -110,6 +121,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_protect'
     | '/login'
+    | '/_protect/commissions'
     | '/_protect/kyc'
     | '/_protect/notifications'
     | '/_protect/rentals'
@@ -181,10 +193,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectKycRouteImport
       parentRoute: typeof ProtectRoute
     }
+    '/_protect/commissions': {
+      id: '/_protect/commissions'
+      path: '/commissions'
+      fullPath: '/commissions'
+      preLoaderRoute: typeof ProtectCommissionsRouteImport
+      parentRoute: typeof ProtectRoute
+    }
   }
 }
 
 interface ProtectRouteChildren {
+  ProtectCommissionsRoute: typeof ProtectCommissionsRoute
   ProtectKycRoute: typeof ProtectKycRoute
   ProtectNotificationsRoute: typeof ProtectNotificationsRoute
   ProtectRentalsRoute: typeof ProtectRentalsRoute
@@ -194,6 +214,7 @@ interface ProtectRouteChildren {
 }
 
 const ProtectRouteChildren: ProtectRouteChildren = {
+  ProtectCommissionsRoute: ProtectCommissionsRoute,
   ProtectKycRoute: ProtectKycRoute,
   ProtectNotificationsRoute: ProtectNotificationsRoute,
   ProtectRentalsRoute: ProtectRentalsRoute,
