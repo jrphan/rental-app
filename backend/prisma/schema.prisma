@@ -3,26 +3,26 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 // ==================== ENUMS ====================
 
 enum UserRole {
-  USER      // Người dùng thuê xe
-  ADMIN     // Quản trị hệ thống
-  SUPPORT   // Hỗ trợ khách hàng
+  USER // Người dùng thuê xe
+  ADMIN // Quản trị hệ thống
+  SUPPORT // Hỗ trợ khách hàng
 }
 
 enum VehicleStatus {
-  DRAFT       // Chưa đủ thông tin
-  PENDING     // Chờ duyệt
-  APPROVED     // Đã được duyệt
-  REJECTED     // Bị từ chối
-  MAINTENANCE  // Đang trong quá trình bảo trì
-  HIDDEN       // Ẩn xe
+  DRAFT // Chưa đủ thông tin
+  PENDING // Chờ duyệt
+  APPROVED // Đã được duyệt
+  REJECTED // Bị từ chối
+  MAINTENANCE // Đang trong quá trình bảo trì
+  HIDDEN // Ẩn xe
 }
 
 enum LicenseType {
@@ -34,12 +34,12 @@ enum LicenseType {
 
 enum RentalStatus {
   PENDING_PAYMENT // Chờ thanh toán
-  AWAIT_APPROVAL  // Chờ duyệt
-  CONFIRMED       // Đã được xác nhận
-  ON_TRIP         // Đang trên đường
-  COMPLETED       // Đã hoàn thành
-  CANCELLED       // Đã hủy
-  DISPUTED        // Khi có tranh chấp giữa renter và owner    
+  AWAIT_APPROVAL // Chờ duyệt
+  CONFIRMED // Đã được xác nhận
+  ON_TRIP // Đang trên đường
+  COMPLETED // Đã hoàn thành
+  CANCELLED // Đã hủy
+  DISPUTED // Khi có tranh chấp giữa renter và owner    
 }
 
 enum KycStatus {
@@ -82,7 +82,7 @@ enum TransactionStatus {
 
 enum ReviewType {
   RENTER_TO_VEHICLE // Khách review xe (và review chủ xe gián tiếp)
-  OWNER_TO_RENTER   // Chủ xe review khách
+  OWNER_TO_RENTER // Chủ xe review khách
 }
 
 enum AuditAction {
@@ -117,56 +117,65 @@ enum EvidenceType {
 }
 
 enum OtpType {
-  REGISTER           // Xác thực SĐT khi đăng ký mới
-  LOGIN              // Đăng nhập nhanh (nếu hỗ trợ)
-  RESET_PASSWORD     // Quên mật khẩu
-  VERIFY_PHONE       // Xác thực lại SĐT (cho user cũ update profile)
+  REGISTER // Xác thực SĐT khi đăng ký mới
+  LOGIN // Đăng nhập nhanh (nếu hỗ trợ)
+  RESET_PASSWORD // Quên mật khẩu
+  VERIFY_PHONE // Xác thực lại SĐT (cho user cũ update profile)
   CONFIRM_TRANSACTION // Xác thực rút tiền/giao dịch lớn (Bảo mật cao)
+}
+
+enum CommissionPaymentStatus {
+  PENDING // Chờ thanh toán
+  PAID // Đã thanh toán (chờ admin xác nhận)
+  APPROVED // Admin đã xác nhận thanh toán
+  REJECTED // Admin từ chối thanh toán
 }
 
 // ==================== USER & AUTH ====================
 
 model User {
-  id                 String    @id @default(cuid())
-  phone              String    @unique 
-  email              String?   @unique 
-  password           String    
-  fullName           String?
-  avatar             String?
-  
-  isActive           Boolean   @default(true) 
-  isPhoneVerified    Boolean   @default(false)
-  role               UserRole  @default(USER)
-  
-  // Vendor Info
-  isVendor           Boolean   @default(false) 
-  stripeAccountId    String?   
-  stripeStatus       String?   
+  id       String  @id @default(cuid())
+  phone    String  @unique
+  email    String? @unique
+  password String
+  fullName String?
+  avatar   String?
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  deletedAt          DateTime? // Soft delete
+  isActive        Boolean  @default(true)
+  isPhoneVerified Boolean  @default(false)
+  role            UserRole @default(USER)
+
+  // Vendor Info
+  isVendor        Boolean @default(false)
+  stripeAccountId String?
+  stripeStatus    String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete
 
   // Relations
-  kyc              Kyc?
-  vehicles         Vehicle[]      @relation("OwnerVehicles")
-  rentals          Rental[]       @relation("RenterRentals")
-  ownerRentals     Rental[]       @relation("OwnerRentals")
-  
-  reviewsWritten   Review[]       @relation("ReviewAuthor")
-  reviewsReceived  Review[]       @relation("ReviewTarget")
-  
-  auditLogsActed   AuditLog[]     @relation("AuditActor")
-  notifications    Notification[]
-  transactions     Transaction[]
-  deviceTokens     DeviceToken[]
+  kyc          Kyc?
+  vehicles     Vehicle[] @relation("OwnerVehicles")
+  rentals      Rental[]  @relation("RenterRentals")
+  ownerRentals Rental[]  @relation("OwnerRentals")
 
-  otps             Otp[] // <--- Thêm dòng này
-  files            UserFile[]
-  favoriteVehicles VehicleFavorite[] // Xe yêu thích của người dùng
-  messages         Message[]      // Tin nhắn của user
-  renterChats      Chat[]         @relation("RenterChats") // Chats nơi user là renter
-  ownerChats       Chat[]         @relation("OwnerChats")  // Chats nơi user là owner
+  reviewsWritten  Review[] @relation("ReviewAuthor")
+  reviewsReceived Review[] @relation("ReviewTarget")
+
+  auditLogsActed AuditLog[]     @relation("AuditActor")
+  notifications  Notification[]
+  transactions   Transaction[]
+  deviceTokens   DeviceToken[]
+
+  otps               Otp[] // <--- Thêm dòng này
+  files              UserFile[]
+  favoriteVehicles   VehicleFavorite[] // Xe yêu thích của người dùng
+  messages           Message[] // Tin nhắn của user
+  renterChats        Chat[]              @relation("RenterChats") // Chats nơi user là renter
+  ownerChats         Chat[]              @relation("OwnerChats") // Chats nơi user là owner
+  ownerCommissions   OwnerCommission[] // Commission theo tuần của owner
+  commissionPayments CommissionPayment[] // Payments đã gửi
 
   @@index([phone])
   @@index([email])
@@ -174,21 +183,21 @@ model User {
 }
 
 model Otp {
-  id        String   @id @default(cuid())
-  
-  phone     String   // Định danh chính ở VN (Bắt buộc)
-  email     String?  // Optional (nếu user muốn nhận qua email)
-  code      String   // Mã 6 số: "123456"
-  
+  id String @id @default(cuid())
+
+  phone String // Định danh chính ở VN (Bắt buộc)
+  email String? // Optional (nếu user muốn nhận qua email)
+  code  String // Mã 6 số: "123456"
+
   type      OtpType  @default(REGISTER)
   isUsed    Boolean  @default(false) // Chống Replay attack (dùng lại mã cũ)
   expiresAt DateTime // Thời gian hết hạn
-  
+
   createdAt DateTime @default(now())
-  
+
   // Relation (Optional: Chỉ link nếu User đã tồn tại)
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([phone, code, isUsed]) // Index để verify nhanh
   @@index([expiresAt]) // Index để job cleanup xóa OTP rác
@@ -198,34 +207,34 @@ model Otp {
 // ==================== KYC ====================
 
 model Kyc {
-  id              String      @id @default(cuid())
-  userId          String      @unique
-  
-  citizenId       String?     @unique // Mã số công dân
-  fullNameInId    String?
-  dob             DateTime?
-  addressInId     String?     
-  
-  driverLicense   String?     @unique // Giấy phép lái xe
-  licenseType     LicenseType?
-  
-  idCardFront     String?
-  idCardBack      String?
-  licenseFront    String?
-  licenseBack     String?
-  selfieImg       String?     
-  
-  status          KycStatus   @default(PENDING)
-  rejectionReason String?
-  
-  reviewedBy      String?     
-  reviewedAt      DateTime?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id     String @id @default(cuid())
+  userId String @unique
 
-  user            User        @relation(fields: [userId], references: [id])
-  
+  citizenId    String?   @unique // Mã số công dân
+  fullNameInId String?
+  dob          DateTime?
+  addressInId  String?
+
+  driverLicense String?      @unique // Giấy phép lái xe
+  licenseType   LicenseType?
+
+  idCardFront  String?
+  idCardBack   String?
+  licenseFront String?
+  licenseBack  String?
+  selfieImg    String?
+
+  status          KycStatus @default(PENDING)
+  rejectionReason String?
+
+  reviewedBy String?
+  reviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
   @@index([status])
   @@map("kyc_records")
 }
@@ -233,51 +242,51 @@ model Kyc {
 // ==================== VEHICLE ====================
 
 model Vehicle {
-  id              String        @id @default(cuid())
-  ownerId         String
+  id      String @id @default(cuid())
+  ownerId String
 
   type            String?
   brand           String
   model           String
   year            Int
   color           String
-  licensePlate    String        @unique 
-  engineSize      Int           
-  requiredLicense LicenseType   @default(A1) 
+  licensePlate    String      @unique
+  engineSize      Int
+  requiredLicense LicenseType @default(A1)
 
-  cavetFront      String?       
-  cavetBack       String?
-  description     String?       @db.Text
-  images          VehicleImage[]
+  cavetFront  String?
+  cavetBack   String?
+  description String?        @db.Text
+  images      VehicleImage[]
 
-  fullAddress     String?       
-  address         String        
-  district        String?
-  ward            String?      
-  city            String?       
-  lat             Float
-  lng             Float
+  fullAddress String?
+  address     String
+  district    String?
+  ward        String?
+  city        String?
+  lat         Float
+  lng         Float
 
-  pricePerDay     Decimal       @db.Decimal(15, 2)
-  depositAmount   Decimal       @default(0) @db.Decimal(15, 2)
-  instantBook     Boolean       @default(false)
-  deliveryAvailable Boolean     @default(false)
+  pricePerDay       Decimal @db.Decimal(15, 2)
+  depositAmount     Decimal @default(0) @db.Decimal(15, 2)
+  instantBook       Boolean @default(false)
+  deliveryAvailable Boolean @default(false)
 
   // delivery config
-  deliveryFeePerKm   Decimal?   @default(0) @db.Decimal(10,2)  // VNĐ/km
-  deliveryRadiusKm   Int?      // nếu null hoặc 0 => không giới hạn
+  deliveryFeePerKm Decimal? @default(0) @db.Decimal(10, 2) // VNĐ/km
+  deliveryRadiusKm Int? // nếu null hoặc 0 => không giới hạn
 
-  status          VehicleStatus @default(DRAFT)
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?     // Soft delete
+  status VehicleStatus @default(DRAFT)
 
-  owner           User          @relation("OwnerVehicles", fields: [ownerId], references: [id])
-  rentals         Rental[]
-  reviews         Review[]      // Đánh giá dành cho xe này
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete
+
+  owner            User                    @relation("OwnerVehicles", fields: [ownerId], references: [id])
+  rentals          Rental[]
+  reviews          Review[] // Đánh giá dành cho xe này
   unavailabilities VehicleUnavailability[]
-  favorites       VehicleFavorite[] // Xe được yêu thích bởi người dùng
+  favorites        VehicleFavorite[] // Xe được yêu thích bởi người dùng
 
   @@index([status])
   @@index([district, city])
@@ -287,13 +296,14 @@ model Vehicle {
 }
 
 model VehicleImage {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   vehicleId String
   url       String
-  isPrimary Boolean  @default(false)
-  order     Int      @default(0) // Thứ tự ảnh
-  
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  isPrimary Boolean @default(false)
+  order     Int     @default(0) // Thứ tự ảnh
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
   @@map("vehicle_images")
 }
 
@@ -302,10 +312,10 @@ model VehicleUnavailability {
   vehicleId String
   startDate DateTime
   endDate   DateTime
-  reason    String?  
-  
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  
+  reason    String?
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
   @@index([vehicleId, startDate, endDate])
   @@map("vehicle_unavailabilities")
 }
@@ -313,58 +323,58 @@ model VehicleUnavailability {
 // ==================== RENTAL (CORE) ====================
 
 model Rental {
-  id                String       @id @default(cuid())
-  renterId          String
-  ownerId           String
-  vehicleId         String
+  id        String @id @default(cuid())
+  renterId  String
+  ownerId   String
+  vehicleId String
 
-  startDate         DateTime
-  endDate           DateTime
-  durationMinutes   Int          // Đổi sang phút để chính xác
+  startDate       DateTime
+  endDate         DateTime
+  durationMinutes Int // Đổi sang phút để chính xác
 
   // MONEY SNAPSHOTS (Lưu cứng mọi thứ tại thời điểm đặt)
-  currency          String       @default("VND")
-  pricePerDay       Decimal      @db.Decimal(15, 2) // Giá gốc
+  currency    String  @default("VND")
+  pricePerDay Decimal @db.Decimal(15, 2) // Giá gốc
 
-  deliveryFee       Decimal      @default(0) @db.Decimal(15, 2) // Phí giao xe
-  discountAmount    Decimal      @default(0) @db.Decimal(15, 2) // Mã giảm giá
-  insuranceFee      Decimal      @default(0) @db.Decimal(15, 2) // insurance fee charged to renter (platform retains), per-rental snapshot
+  deliveryFee    Decimal @default(0) @db.Decimal(15, 2) // Phí giao xe
+  discountAmount Decimal @default(0) @db.Decimal(15, 2) // Mã giảm giá
+  insuranceFee   Decimal @default(0) @db.Decimal(15, 2) // insurance fee charged to renter (platform retains), per-rental snapshot
 
   // deliveryAddress lưu object { address, ward, district, city, lat, lng, ... }
-  deliveryAddress   Json?        // optional, future-proof
+  deliveryAddress Json? // optional, future-proof
 
-  totalPrice        Decimal      @db.Decimal(15, 2) // = (Price * Duration) + Delivery - Discount
-  depositPrice      Decimal      @db.Decimal(15, 2) // Tiền cọc giữ
-  
+  totalPrice   Decimal @db.Decimal(15, 2) // = (Price * Duration) + Delivery - Discount
+  depositPrice Decimal @db.Decimal(15, 2) // Tiền cọc giữ
+
   // COMMISSION TRACKING
-  platformFeeRatio  Decimal      @default(0.15) @db.Decimal(5, 4) // 0.1500 = 15%
-  platformFee       Decimal      @db.Decimal(15, 2) // = TotalPrice * Ratio
-  ownerEarning      Decimal      @db.Decimal(15, 2) // = TotalPrice - PlatformFee
-  
-  status            RentalStatus @default(PENDING_PAYMENT)
-  
-  startOdometer     Int?
-  endOdometer       Int?
-  evidences         RentalEvidence[]
-  
-  cancelReason      String?
-  
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  deletedAt         DateTime?    // Soft delete (ít dùng, thường là Cancelled)
+  platformFeeRatio Decimal @default(0.15) @db.Decimal(5, 4) // 0.1500 = 15%
+  platformFee      Decimal @db.Decimal(15, 2) // = TotalPrice * Ratio
+  ownerEarning     Decimal @db.Decimal(15, 2) // = TotalPrice - PlatformFee
+
+  status RentalStatus @default(PENDING_PAYMENT)
+
+  startOdometer Int?
+  endOdometer   Int?
+  evidences     RentalEvidence[]
+
+  cancelReason String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete (ít dùng, thường là Cancelled)
 
   renter       User          @relation("RenterRentals", fields: [renterId], references: [id])
   owner        User          @relation("OwnerRentals", fields: [ownerId], references: [id])
   vehicle      Vehicle       @relation(fields: [vehicleId], references: [id])
-  transactions Transaction[] 
+  transactions Transaction[]
   reviews      Review[]
   dispute      Dispute?
-  chat         Chat?         // Cuộc hội thoại cho đơn thuê này
+  chat         Chat? // Cuộc hội thoại cho đơn thuê này
 
   @@index([renterId])
   @@index([ownerId])
   @@index([status])
-  @@index([startDate, endDate]) 
+  @@index([startDate, endDate])
   @@map("rentals")
 }
 
@@ -372,87 +382,89 @@ model RentalEvidence {
   id        String       @id @default(cuid())
   rentalId  String
   url       String
-  type      EvidenceType 
+  type      EvidenceType
   order     Int          @default(0) // Thứ tự ảnh (quan trọng cho UI slider)
-  note      String?      
+  note      String?
   createdAt DateTime     @default(now())
-  
-  rental    Rental       @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+
+  rental Rental @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+
   @@map("rental_evidences")
 }
 
 // ==================== MONEY & TRANSACTIONS ====================
 
 model Transaction {
-  id              String            @id @default(cuid())
-  rentalId        String
-  userId          String            
-  
-  amount          Decimal           @db.Decimal(15, 2)
-  currency        String            @default("VND")
-  type            TransactionType   
-  status          TransactionStatus @default(PENDING)
-  description     String?
-  
-  stripeIntentId  String?           @unique 
-  stripeTransferId String?          // Không unique để support retry/batching
-  stripeRefundId  String?
-  
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  deletedAt       DateTime?         // Soft delete
+  id       String @id @default(cuid())
+  rentalId String
+  userId   String
 
-  rental          Rental            @relation(fields: [rentalId], references: [id])
-  user            User              @relation(fields: [userId], references: [id])
-  
+  amount      Decimal           @db.Decimal(15, 2)
+  currency    String            @default("VND")
+  type        TransactionType
+  status      TransactionStatus @default(PENDING)
+  description String?
+
+  stripeIntentId   String? @unique
+  stripeTransferId String? // Không unique để support retry/batching
+  stripeRefundId   String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete
+
+  rental Rental @relation(fields: [rentalId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
   @@index([rentalId])
   @@index([stripeIntentId])
   @@map("transactions")
 }
 
 model Dispute {
-  id          String        @id @default(cuid())
-  rentalId    String        @unique
-  reason      String
-  status      DisputeStatus @default(OPEN)
-  
-  description String?       @db.Text
+  id       String        @id @default(cuid())
+  rentalId String        @unique
+  reason   String
+  status   DisputeStatus @default(OPEN)
+
+  description String? @db.Text
   adminNotes  String?
-  
-  resolvedBy  String?       // Admin ID
-  resolvedAt  DateTime?
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  deletedAt   DateTime?
-  
-  rental      Rental   @relation(fields: [rentalId], references: [id])
+
+  resolvedBy String? // Admin ID
+  resolvedAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  rental Rental @relation(fields: [rentalId], references: [id])
+
   @@map("disputes")
 }
 
 // ==================== REVIEW & LOGGING ====================
 
 model Review {
-  id        String     @id @default(cuid())
-  rentalId  String
-  type      ReviewType // Xác định chiều review
-  
-  authorId  String     // Người viết
-  revieweeId String    // Người bị đánh giá (User Profile)
-  vehicleId String?    // Xe bị đánh giá (Chỉ có nếu type = RENTER_TO_VEHICLE)
-  
-  rating    Int        @default(5)
-  content   String?
-  isHidden  Boolean    @default(false) // Admin ẩn đánh giá
-  
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  
-  rental    Rental     @relation(fields: [rentalId], references: [id])
-  author    User       @relation("ReviewAuthor", fields: [authorId], references: [id])
-  reviewee  User       @relation("ReviewTarget", fields: [revieweeId], references: [id])
-  vehicle   Vehicle?   @relation(fields: [vehicleId], references: [id])
-  
+  id       String     @id @default(cuid())
+  rentalId String
+  type     ReviewType // Xác định chiều review
+
+  authorId   String // Người viết
+  revieweeId String // Người bị đánh giá (User Profile)
+  vehicleId  String? // Xe bị đánh giá (Chỉ có nếu type = RENTER_TO_VEHICLE)
+
+  rating   Int     @default(5)
+  content  String?
+  isHidden Boolean @default(false) // Admin ẩn đánh giá
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rental   Rental   @relation(fields: [rentalId], references: [id])
+  author   User     @relation("ReviewAuthor", fields: [authorId], references: [id])
+  reviewee User     @relation("ReviewTarget", fields: [revieweeId], references: [id])
+  vehicle  Vehicle? @relation(fields: [vehicleId], references: [id])
+
   @@unique([rentalId, authorId, type]) // Một người chỉ đánh giá 1 lần/chiều cho 1 đơn
   @@index([vehicleId])
   @@index([revieweeId])
@@ -465,12 +477,13 @@ model Notification {
   title     String
   message   String
   type      NotificationType
-  data      Json?            
+  data      Json?
   isRead    Boolean          @default(false)
-  readAt    DateTime?        // Thời điểm đọc
+  readAt    DateTime? // Thời điểm đọc
   createdAt DateTime         @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
+
   @@map("notifications")
 }
 
@@ -478,13 +491,13 @@ model DeviceToken {
   id        String   @id @default(cuid())
   userId    String
   token     String   @unique
-  platform  String   // 'ios' | 'android' | 'web'
-  deviceId  String?  // Optional device identifier
+  platform  String // 'ios' | 'android' | 'web'
+  deviceId  String? // Optional device identifier
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([token])
@@ -492,20 +505,21 @@ model DeviceToken {
 }
 
 model AuditLog {
-  id          String      @id @default(cuid())
-  actorId     String?     // Người thực hiện (ID của User/Admin) - Null nếu là System
-  action      AuditAction // Tạo, Cập nhật, Xóa, Duyệt, Từ chối, Đăng nhập
-  
-  targetId    String?     // ID đối tượng (RentalID, VehicleID...)
-  targetType  AuditTargetType // Đơn thuê, Xe, Người dùng, Thanh toán, Hệ thống
-  
-  ipAddress   String?     // IP address của người dùng
-  userAgent   String?     // User agent của người dùng
-  metadata    Json?       // Lưu { field: "oldValue", to: "newValue" }
-  
-  createdAt   DateTime    @default(now())
+  id      String      @id @default(cuid())
+  actorId String? // Người thực hiện (ID của User/Admin) - Null nếu là System
+  action  AuditAction // Tạo, Cập nhật, Xóa, Duyệt, Từ chối, Đăng nhập
 
-  actor       User?       @relation("AuditActor", fields: [actorId], references: [id])
+  targetId   String? // ID đối tượng (RentalID, VehicleID...)
+  targetType AuditTargetType // Đơn thuê, Xe, Người dùng, Thanh toán, Hệ thống
+
+  ipAddress String? // IP address của người dùng
+  userAgent String? // User agent của người dùng
+  metadata  Json? // Lưu { field: "oldValue", to: "newValue" }
+
+  createdAt DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
   @@index([targetId, targetType])
   @@index([actorId])
   @@map("audit_logs")
@@ -514,17 +528,17 @@ model AuditLog {
 // ==================== FILES ====================
 
 model UserFile {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   userId      String
-  key         String   // S3 object key
-  url         String   // Public or signed URL base
+  key         String // S3 object key
+  url         String // Public or signed URL base
   size        Int?
   contentType String?
-  folder      String?  // Logical folder (e.g. 'kyc', 'avatar', 'vehicles')
+  folder      String? // Logical folder (e.g. 'kyc', 'avatar', 'vehicles')
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([folder])
@@ -534,14 +548,14 @@ model UserFile {
 // ==================== FAVORITES ====================
 
 model VehicleFavorite {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   userId    String
   vehicleId String
-  
+
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@unique([userId, vehicleId]) // Một user chỉ có thể favorite một xe 1 lần
   @@index([userId])
@@ -552,19 +566,19 @@ model VehicleFavorite {
 // ==================== CHAT & MESSAGES ====================
 
 model Chat {
-  id        String   @id @default(cuid())
-  rentalId String   @unique // Mỗi rental có 1 chat duy nhất
-  renterId  String   // Người thuê xe
-  ownerId   String   // Chủ xe
-  
+  id       String @id @default(cuid())
+  rentalId String @unique // Mỗi rental có 1 chat duy nhất
+  renterId String // Người thuê xe
+  ownerId  String // Chủ xe
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  rental    Rental   @relation(fields: [rentalId], references: [id], onDelete: Cascade)
-  messages  Message[]
-  renter    User     @relation("RenterChats", fields: [renterId], references: [id])
-  owner     User     @relation("OwnerChats", fields: [ownerId], references: [id])
-  
+
+  rental   Rental    @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  messages Message[]
+  renter   User      @relation("RenterChats", fields: [renterId], references: [id])
+  owner    User      @relation("OwnerChats", fields: [ownerId], references: [id])
+
   @@index([renterId])
   @@index([ownerId])
   @@index([rentalId])
@@ -572,21 +586,89 @@ model Chat {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  chatId    String
-  senderId  String   // Người gửi tin nhắn
-  content   String   @db.Text
-  isRead    Boolean   @default(false) // Đã đọc chưa
-  readAt    DateTime? // Thời điểm đọc
-  
+  id       String    @id @default(cuid())
+  chatId   String
+  senderId String // Người gửi tin nhắn
+  content  String    @db.Text
+  isRead   Boolean   @default(false) // Đã đọc chưa
+  readAt   DateTime? // Thời điểm đọc
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender    User     @relation(fields: [senderId], references: [id])
-  
+
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id])
+
   @@index([chatId, createdAt]) // Index để query messages theo chat và thời gian
   @@index([senderId])
   @@index([isRead])
   @@map("messages")
+}
+
+// ==================== COMMISSION ====================
+
+model CommissionSettings {
+  id             String  @id @default(cuid())
+  commissionRate Decimal @db.Decimal(5, 4) // 0.1500 = 15%
+  isActive       Boolean @default(true)
+
+  createdBy String? // Admin ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("commission_settings")
+}
+
+model OwnerCommission {
+  id            String   @id @default(cuid())
+  ownerId       String
+  weekStartDate DateTime // Thứ 2 đầu tuần
+  weekEndDate   DateTime // Chủ nhật cuối tuần
+
+  totalEarning     Decimal @db.Decimal(15, 2) // Tổng tiền owner kiếm được (ownerEarning)
+  commissionRate   Decimal @db.Decimal(5, 4) // % chiết khấu tại thời điểm đó
+  commissionAmount Decimal @db.Decimal(15, 2) // Số tiền commission = totalEarning * commissionRate
+
+  rentalCount   Int                     @default(0) // Số đơn thuê trong tuần
+  paymentStatus CommissionPaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner   User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  payment CommissionPayment?
+
+  @@unique([ownerId, weekStartDate]) // Một owner chỉ có 1 commission record cho mỗi tuần
+  @@index([ownerId])
+  @@index([weekStartDate])
+  @@index([paymentStatus])
+  @@map("owner_commissions")
+}
+
+model CommissionPayment {
+  id           String @id @default(cuid())
+  commissionId String @unique
+  ownerId      String
+
+  amount        Decimal @db.Decimal(15, 2) // Số tiền cần thanh toán
+  invoiceUrl    String? // URL của hóa đơn đã upload
+  invoiceFileId String? // UserFile ID của invoice
+
+  status     CommissionPaymentStatus @default(PENDING)
+  adminNotes String?                 @db.Text // Ghi chú từ admin
+
+  paidAt     DateTime? // Thời điểm owner upload invoice
+  reviewedBy String? // Admin ID
+  reviewedAt DateTime? // Thời điểm admin review
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  commission OwnerCommission @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+  owner      User            @relation(fields: [ownerId], references: [id])
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("commission_payments")
 }

@@ -37,13 +37,19 @@ CREATE TYPE "AuditTargetType" AS ENUM ('RENTAL', 'VEHICLE', 'USER', 'PAYMENT', '
 -- CreateEnum
 CREATE TYPE "EvidenceType" AS ENUM ('PICKUP_FRONT', 'PICKUP_BACK', 'PICKUP_LEFT', 'PICKUP_RIGHT', 'PICKUP_DASHBOARD', 'RETURN_FRONT', 'RETURN_BACK', 'RETURN_LEFT', 'RETURN_RIGHT', 'RETURN_DASHBOARD', 'DAMAGE_DETAIL');
 
+-- CreateEnum
+CREATE TYPE "OtpType" AS ENUM ('REGISTER', 'LOGIN', 'RESET_PASSWORD', 'VERIFY_PHONE', 'CONFIRM_TRANSACTION');
+
+-- CreateEnum
+CREATE TYPE "CommissionPaymentStatus" AS ENUM ('PENDING', 'PAID', 'APPROVED', 'REJECTED');
+
 -- CreateTable
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
     "email" TEXT,
     "password" TEXT NOT NULL,
-    "fullName" TEXT NOT NULL,
+    "fullName" TEXT,
     "avatar" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isPhoneVerified" BOOLEAN NOT NULL DEFAULT false,
@@ -56,6 +62,21 @@ CREATE TABLE "users" (
     "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "otps" (
+    "id" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "email" TEXT,
+    "code" TEXT NOT NULL,
+    "type" "OtpType" NOT NULL DEFAULT 'REGISTER',
+    "isUsed" BOOLEAN NOT NULL DEFAULT false,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" TEXT,
+
+    CONSTRAINT "otps_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -87,6 +108,7 @@ CREATE TABLE "kyc_records" (
 CREATE TABLE "vehicles" (
     "id" TEXT NOT NULL,
     "ownerId" TEXT NOT NULL,
+    "type" TEXT,
     "brand" TEXT NOT NULL,
     "model" TEXT NOT NULL,
     "year" INTEGER NOT NULL,
@@ -97,14 +119,19 @@ CREATE TABLE "vehicles" (
     "cavetFront" TEXT,
     "cavetBack" TEXT,
     "description" TEXT,
+    "fullAddress" TEXT,
     "address" TEXT NOT NULL,
     "district" TEXT,
+    "ward" TEXT,
     "city" TEXT,
     "lat" DOUBLE PRECISION NOT NULL,
     "lng" DOUBLE PRECISION NOT NULL,
     "pricePerDay" DECIMAL(15,2) NOT NULL,
     "depositAmount" DECIMAL(15,2) NOT NULL DEFAULT 0,
     "instantBook" BOOLEAN NOT NULL DEFAULT false,
+    "deliveryAvailable" BOOLEAN NOT NULL DEFAULT false,
+    "deliveryFeePerKm" DECIMAL(10,2) DEFAULT 0,
+    "deliveryRadiusKm" INTEGER,
     "status" "VehicleStatus" NOT NULL DEFAULT 'DRAFT',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -148,6 +175,8 @@ CREATE TABLE "rentals" (
     "pricePerDay" DECIMAL(15,2) NOT NULL,
     "deliveryFee" DECIMAL(15,2) NOT NULL DEFAULT 0,
     "discountAmount" DECIMAL(15,2) NOT NULL DEFAULT 0,
+    "insuranceFee" DECIMAL(15,2) NOT NULL DEFAULT 0,
+    "deliveryAddress" JSONB,
     "totalPrice" DECIMAL(15,2) NOT NULL,
     "depositPrice" DECIMAL(15,2) NOT NULL,
     "platformFeeRatio" DECIMAL(5,4) NOT NULL DEFAULT 0.15,
@@ -247,6 +276,20 @@ CREATE TABLE "notifications" (
 );
 
 -- CreateTable
+CREATE TABLE "device_tokens" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "platform" TEXT NOT NULL,
+    "deviceId" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "device_tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "audit_logs" (
     "id" TEXT NOT NULL,
     "actorId" TEXT,
@@ -261,6 +304,104 @@ CREATE TABLE "audit_logs" (
     CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "user_files" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "url" TEXT NOT NULL,
+    "size" INTEGER,
+    "contentType" TEXT,
+    "folder" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "user_files_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "vehicle_favorites" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "vehicleId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "vehicle_favorites_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "chats" (
+    "id" TEXT NOT NULL,
+    "rentalId" TEXT NOT NULL,
+    "renterId" TEXT NOT NULL,
+    "ownerId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "chats_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "messages" (
+    "id" TEXT NOT NULL,
+    "chatId" TEXT NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "readAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "messages_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "commission_settings" (
+    "id" TEXT NOT NULL,
+    "commissionRate" DECIMAL(5,4) NOT NULL,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "commission_settings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "owner_commissions" (
+    "id" TEXT NOT NULL,
+    "ownerId" TEXT NOT NULL,
+    "weekStartDate" TIMESTAMP(3) NOT NULL,
+    "weekEndDate" TIMESTAMP(3) NOT NULL,
+    "totalEarning" DECIMAL(15,2) NOT NULL,
+    "commissionRate" DECIMAL(5,4) NOT NULL,
+    "commissionAmount" DECIMAL(15,2) NOT NULL,
+    "rentalCount" INTEGER NOT NULL DEFAULT 0,
+    "paymentStatus" "CommissionPaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "owner_commissions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "commission_payments" (
+    "id" TEXT NOT NULL,
+    "commissionId" TEXT NOT NULL,
+    "ownerId" TEXT NOT NULL,
+    "amount" DECIMAL(15,2) NOT NULL,
+    "invoiceUrl" TEXT,
+    "invoiceFileId" TEXT,
+    "status" "CommissionPaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "adminNotes" TEXT,
+    "paidAt" TIMESTAMP(3),
+    "reviewedBy" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "commission_payments_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_phone_key" ON "users"("phone");
 
@@ -272,6 +413,12 @@ CREATE INDEX "users_phone_idx" ON "users"("phone");
 
 -- CreateIndex
 CREATE INDEX "users_email_idx" ON "users"("email");
+
+-- CreateIndex
+CREATE INDEX "otps_phone_code_isUsed_idx" ON "otps"("phone", "code", "isUsed");
+
+-- CreateIndex
+CREATE INDEX "otps_expiresAt_idx" ON "otps"("expiresAt");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "kyc_records_userId_key" ON "kyc_records"("userId");
@@ -337,10 +484,82 @@ CREATE INDEX "reviews_revieweeId_idx" ON "reviews"("revieweeId");
 CREATE UNIQUE INDEX "reviews_rentalId_authorId_type_key" ON "reviews"("rentalId", "authorId", "type");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "device_tokens_token_key" ON "device_tokens"("token");
+
+-- CreateIndex
+CREATE INDEX "device_tokens_userId_idx" ON "device_tokens"("userId");
+
+-- CreateIndex
+CREATE INDEX "device_tokens_token_idx" ON "device_tokens"("token");
+
+-- CreateIndex
 CREATE INDEX "audit_logs_targetId_targetType_idx" ON "audit_logs"("targetId", "targetType");
 
 -- CreateIndex
 CREATE INDEX "audit_logs_actorId_idx" ON "audit_logs"("actorId");
+
+-- CreateIndex
+CREATE INDEX "user_files_userId_idx" ON "user_files"("userId");
+
+-- CreateIndex
+CREATE INDEX "user_files_folder_idx" ON "user_files"("folder");
+
+-- CreateIndex
+CREATE INDEX "vehicle_favorites_userId_idx" ON "vehicle_favorites"("userId");
+
+-- CreateIndex
+CREATE INDEX "vehicle_favorites_vehicleId_idx" ON "vehicle_favorites"("vehicleId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "vehicle_favorites_userId_vehicleId_key" ON "vehicle_favorites"("userId", "vehicleId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "chats_rentalId_key" ON "chats"("rentalId");
+
+-- CreateIndex
+CREATE INDEX "chats_renterId_idx" ON "chats"("renterId");
+
+-- CreateIndex
+CREATE INDEX "chats_ownerId_idx" ON "chats"("ownerId");
+
+-- CreateIndex
+CREATE INDEX "chats_rentalId_idx" ON "chats"("rentalId");
+
+-- CreateIndex
+CREATE INDEX "messages_chatId_createdAt_idx" ON "messages"("chatId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "messages_senderId_idx" ON "messages"("senderId");
+
+-- CreateIndex
+CREATE INDEX "messages_isRead_idx" ON "messages"("isRead");
+
+-- CreateIndex
+CREATE INDEX "owner_commissions_ownerId_idx" ON "owner_commissions"("ownerId");
+
+-- CreateIndex
+CREATE INDEX "owner_commissions_weekStartDate_idx" ON "owner_commissions"("weekStartDate");
+
+-- CreateIndex
+CREATE INDEX "owner_commissions_paymentStatus_idx" ON "owner_commissions"("paymentStatus");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "owner_commissions_ownerId_weekStartDate_key" ON "owner_commissions"("ownerId", "weekStartDate");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "commission_payments_commissionId_key" ON "commission_payments"("commissionId");
+
+-- CreateIndex
+CREATE INDEX "commission_payments_ownerId_idx" ON "commission_payments"("ownerId");
+
+-- CreateIndex
+CREATE INDEX "commission_payments_status_idx" ON "commission_payments"("status");
+
+-- CreateIndex
+CREATE INDEX "commission_payments_createdAt_idx" ON "commission_payments"("createdAt");
+
+-- AddForeignKey
+ALTER TABLE "otps" ADD CONSTRAINT "otps_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "kyc_records" ADD CONSTRAINT "kyc_records_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -391,4 +610,40 @@ ALTER TABLE "reviews" ADD CONSTRAINT "reviews_vehicleId_fkey" FOREIGN KEY ("vehi
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "device_tokens" ADD CONSTRAINT "device_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "user_files" ADD CONSTRAINT "user_files_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "vehicle_favorites" ADD CONSTRAINT "vehicle_favorites_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "vehicle_favorites" ADD CONSTRAINT "vehicle_favorites_vehicleId_fkey" FOREIGN KEY ("vehicleId") REFERENCES "vehicles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chats" ADD CONSTRAINT "chats_rentalId_fkey" FOREIGN KEY ("rentalId") REFERENCES "rentals"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chats" ADD CONSTRAINT "chats_renterId_fkey" FOREIGN KEY ("renterId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chats" ADD CONSTRAINT "chats_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "chats"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "messages" ADD CONSTRAINT "messages_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "owner_commissions" ADD CONSTRAINT "owner_commissions_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "commission_payments" ADD CONSTRAINT "commission_payments_commissionId_fkey" FOREIGN KEY ("commissionId") REFERENCES "owner_commissions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "commission_payments" ADD CONSTRAINT "commission_payments_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
