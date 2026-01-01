@@ -4,6 +4,7 @@ interface RoutesType {
   KYC: string
   USERS: string
   VEHICLES: string
+  RENTALS: string
   NOTIFICATIONS: string
 }
 
@@ -16,6 +17,7 @@ const ROUTES = {
   KYC: '/kyc',
   USERS: '/users',
   VEHICLES: '/vehicles',
+  RENTALS: '/rentals',
   NOTIFICATIONS: '/notifications',
 } satisfies RoutesType
 

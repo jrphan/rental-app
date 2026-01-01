@@ -23,6 +23,7 @@ import {
   AdminKycDetailResponse,
   AdminKycActionResponse,
 } from '@/types/user.type';
+import { AdminStatsResponse } from '@/types/admin.type';
 import { AuthGuard } from '@/common/guards/auth.guard';
 import { AuthenticatedRequest } from '@/types/response.type';
 import { UpdateProfileDto } from '@/common/dto/User/update-profile.dto';
@@ -221,5 +222,18 @@ export class UserController {
     }
 
     return this.userService.rejectKyc(id, reviewerId, body.reason);
+  }
+
+  @Get(ROUTES.ADMIN.STATS)
+  @UseGuards(AuthGuard)
+  getAdminStats(
+    @Req() req: Request,
+  ): Promise<AdminStatsResponse> {
+    const adminId = (req as AuthenticatedRequest).user?.sub;
+    if (!adminId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.userService.getAdminStats(adminId);
   }
 }

@@ -29,6 +29,9 @@ const API_ENDPOINTS = {
     GET_VEHICLE_DETAIL: (id: string) => `/admin/vehicles/${id}`,
     APPROVE_VEHICLE: (id: string) => `/admin/vehicles/${id}/approve`,
     REJECT_VEHICLE: (id: string) => `/admin/vehicles/${id}/reject`,
+    LIST_RENTALS: '/admin/rentals',
+    GET_RENTAL_DETAIL: (id: string) => `/admin/rentals/${id}`,
+    STATS: '/admin/stats',
   },
   FILES: {
     UPLOAD: '/files/upload',

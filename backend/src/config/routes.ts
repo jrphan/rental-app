@@ -57,6 +57,9 @@ export const ROUTES = {
     GET_VEHICLE_DETAIL: '/admin/vehicles/:id',
     APPROVE_VEHICLE: '/admin/vehicles/:id/approve',
     REJECT_VEHICLE: '/admin/vehicles/:id/reject',
+    LIST_RENTALS: '/admin/rentals',
+    GET_RENTAL_DETAIL: '/admin/rentals/:id',
+    STATS: '/admin/stats',
   },
   FILES: {
     UPLOAD: '/files/upload',
