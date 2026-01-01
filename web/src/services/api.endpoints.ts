@@ -29,6 +29,13 @@ const API_ENDPOINTS = {
     GET_VEHICLE_DETAIL: (id: string) => `/admin/vehicles/${id}`,
     APPROVE_VEHICLE: (id: string) => `/admin/vehicles/${id}/approve`,
     REJECT_VEHICLE: (id: string) => `/admin/vehicles/${id}/reject`,
+    LIST_RENTALS: '/admin/rentals',
+    GET_RENTAL_DETAIL: (id: string) => `/admin/rentals/${id}`,
+    STATS: '/admin/stats',
+    COMMISSION_SETTINGS: '/admin/commission-settings',
+    COMMISSION_PAYMENTS: '/admin/commission-payments',
+    COMMISSION_PAYMENT_REVIEW: (id: string) =>
+      `/admin/commission-payments/${id}/review`,
   },
   FILES: {
     UPLOAD: '/files/upload',

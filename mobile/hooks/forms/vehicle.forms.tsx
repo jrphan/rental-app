@@ -30,7 +30,7 @@ export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
 			description: defaultValues?.description || "",
 			cavetFront: defaultValues?.cavetFront || "",
 			cavetBack: defaultValues?.cavetBack || "",
-			instantBook: defaultValues?.instantBook || false,
+			instantBook: false, // Feature disabled
 			deliveryAvailable: defaultValues?.deliveryAvailable || false,
 			imageUrls: defaultValues?.imageUrls || [],
 			deliveryFeePerKm: defaultValues?.deliveryFeePerKm ?? String(DELIVERY_FEE_PER_KM),

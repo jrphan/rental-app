@@ -25,6 +25,9 @@ const API_ENDPOINTS = {
     REMOVE_FAVORITE: "/user/favorites/:vehicleId",
     GET_FAVORITES: "/user/favorites",
     CHECK_FAVORITE: "/user/favorites/:vehicleId/check",
+    MY_COMMISSIONS: "/user/commissions",
+    CURRENT_WEEK_COMMISSION: "/user/commissions/current-week",
+    COMMISSION_PAYMENT: "/user/commissions/:commissionId/payment",
   },
   VEHICLE: {
     CREATE: "/vehicle/create",

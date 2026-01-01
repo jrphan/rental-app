@@ -25,6 +25,9 @@ export const ROUTES = {
     REMOVE_FAVORITE: '/user/favorites/:vehicleId',
     GET_FAVORITES: '/user/favorites',
     CHECK_FAVORITE: '/user/favorites/:vehicleId/check',
+    MY_COMMISSIONS: '/user/commissions',
+    CURRENT_WEEK_COMMISSION: '/user/commissions/current-week',
+    COMMISSION_PAYMENT: '/user/commissions/:commissionId/payment',
   },
   VEHICLE: {
     CREATE: '/vehicle/create',
@@ -57,6 +60,12 @@ export const ROUTES = {
     GET_VEHICLE_DETAIL: '/admin/vehicles/:id',
     APPROVE_VEHICLE: '/admin/vehicles/:id/approve',
     REJECT_VEHICLE: '/admin/vehicles/:id/reject',
+    LIST_RENTALS: '/admin/rentals',
+    GET_RENTAL_DETAIL: '/admin/rentals/:id',
+    STATS: '/admin/stats',
+    COMMISSION_SETTINGS: '/admin/commission-settings',
+    COMMISSION_PAYMENTS: '/admin/commission-payments',
+    COMMISSION_PAYMENT_REVIEW: '/admin/commission-payments/:id/review',
   },
   FILES: {
     UPLOAD: '/files/upload',

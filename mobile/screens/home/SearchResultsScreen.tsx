@@ -52,11 +52,19 @@ export default function SearchResultsScreen() {
 		endDate: params.endDate ? new Date(params.endDate) : undefined,
 	});
 
+	const [searchText, setSearchText] = useState(params.search || "");
 	const [filterModalVisible, setFilterModalVisible] = useState(false);
 	const [activeFilters, setActiveFilters] = useState<SearchFilters>({});
 	const [hasActiveFilter, setHasActiveFilter] = useState(false);
 	const [viewMode, setViewMode] = useState<"list" | "map">("list");
 	const [mapFullScreen, setMapFullScreen] = useState(false);
+
+	// Sync searchText với params khi params thay đổi
+	useEffect(() => {
+		if (params.search !== undefined) {
+			setSearchText(params.search);
+		}
+	}, [params.search]);
 
 	// Parse search filters from params
 	const searchFilters = {
@@ -92,6 +100,10 @@ export default function SearchResultsScreen() {
 		lng?: number;
 		radius?: number;
 	}) => {
+		// Update local searchText state
+		if (filters.search !== undefined) {
+			setSearchText(filters.search);
+		}
 		// Navigate to search results screen with filters as params
 		const newParams = new URLSearchParams();
 		if (filters.search) newParams.append("search", filters.search);
@@ -264,6 +276,7 @@ export default function SearchResultsScreen() {
 							onDateRangeChange={handleDateRangeChange}
 							location={location}
 							dateRange={dateRange}
+							searchText={searchText}
 						/>
 					</View>
 
