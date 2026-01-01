@@ -28,7 +28,7 @@ export default function VehicleStats({ completedTrips, rating, compact = false }
 					</>
 				)}
 				<View className="flex-row items-center">
-					<MaterialIcons name="local-shipping" size={12} color="#10B981" />
+					<MaterialIcons name="motorcycle" size={12} color="#10B981" />
 					<Text className="text-xs text-gray-700 ml-1">{completedTrips || "Chưa có"} chuyến</Text>
 				</View>
 			</View>
@@ -44,7 +44,7 @@ export default function VehicleStats({ completedTrips, rating, compact = false }
 				</View>
 			)}
 			<View className="flex-row items-center mb-2">
-				<MaterialIcons name="local-shipping" size={16} color="#10B981" />
+				<MaterialIcons name="motorcycle" size={16} color="#10B981" />
 				<Text className="ml-1 text-sm text-gray-700">{completedTrips || "Chưa có"} chuyến</Text>
 			</View>
 		</View>

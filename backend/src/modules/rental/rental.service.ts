@@ -55,7 +55,7 @@ export class RentalService {
    */
   private normalizeDateToStartOfDay(date: Date): Date {
     const normalized = new Date(date);
-    normalized.setHours(0, 0, 0, 0);
+    // normalized.setHours(0, 0, 0, 0);
     return normalized;
   }
 
@@ -64,7 +64,7 @@ export class RentalService {
    */
   private normalizeDateToEndOfDay(date: Date): Date {
     const normalized = new Date(date);
-    normalized.setHours(23, 59, 59, 999);
+    // normalized.setHours(23, 59, 59, 999);
     return normalized;
   }
 
@@ -142,43 +142,50 @@ export class RentalService {
     depositAmount?: Decimal,
   ): {
     durationMinutes: number;
+    durationDays: number;
+    baseRental: Decimal;
     totalPrice: Decimal;
     depositPrice: Decimal;
     platformFee: Decimal;
     ownerEarning: Decimal;
+    platformEarning: Decimal;
   } {
-    // Calculate duration in minutes
     const durationMs = endDate.getTime() - startDate.getTime();
     const durationMinutes = Math.floor(durationMs / (1000 * 60));
-    const durationDays = Math.ceil(durationMinutes / (60 * 24)); // Round up to days
+    const durationDays = Math.ceil(durationMinutes / (60 * 24));
 
-    // Calculate base price (days * price per day)
-    const basePrice = pricePerDay.mul(durationDays);
+    // 1. Giá thuê gốc
+    const baseRental = pricePerDay.mul(durationDays);
 
-    // insuranceFee passed in is already total for rental (rate * days) — treat as platform revenue (excluded from owner earning)
-    const totalPrice = basePrice
+    // 2. Tổng tiền người thuê trả
+    const totalPrice = baseRental
       .plus(new Decimal(deliveryFee))
       .plus(new Decimal(insuranceFee))
       .minus(new Decimal(discountAmount));
 
-    // Get deposit from vehicle
+    // 3. Tiền cọc (không ảnh hưởng doanh thu)
     const depositPrice = depositAmount || new Decimal(0);
 
-    // Platform fee should be charged on rental revenue excluding insurance (since insurance goes to platform/partner)
-    const revenueExcludingInsurance = totalPrice.minus(
-      new Decimal(insuranceFee),
-    );
-    const platformFee = revenueExcludingInsurance.mul(this.PLATFORM_FEE_RATIO);
+    // 4. Phí nền tảng (CHỈ tính trên tiền thuê xe)
+    const platformFee = baseRental.mul(this.PLATFORM_FEE_RATIO);
 
-    // Owner earning = revenueExcludingInsurance - platformFee
-    const ownerEarning = revenueExcludingInsurance.minus(platformFee);
+    // 5. Thu nhập chủ xe
+    const ownerEarning = baseRental
+      .minus(platformFee)
+      .plus(new Decimal(deliveryFee));
+
+    // 6. Doanh thu platform thực
+    const platformEarning = platformFee.minus(new Decimal(discountAmount));
 
     return {
       durationMinutes,
+      durationDays,
+      baseRental,
       totalPrice,
       depositPrice,
       platformFee,
       ownerEarning,
+      platformEarning,
     };
   }
 
@@ -295,6 +302,7 @@ export class RentalService {
         platformFeeRatio: this.PLATFORM_FEE_RATIO,
         platformFee: priceCalculation.platformFee,
         ownerEarning: priceCalculation.ownerEarning,
+        platformEarning: priceCalculation.platformEarning,
         status: initialStatus,
       },
       select: selectRental,

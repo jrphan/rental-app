@@ -520,7 +520,7 @@ export default function RentalDetailScreen() {
 								</Text>
 							</View>
 							{/* Rebook button */}
-							{(rental.status === "COMPLETED" || rental.status === "CANCELLED") && (
+							{(rental.status === "COMPLETED" || rental.status === "CANCELLED") && !isOwner && (
 								<TouchableOpacity
 									onPress={() => router.push(`/vehicle/${rental.vehicle.id}`)}
 									activeOpacity={0.8}
@@ -1173,12 +1173,16 @@ export default function RentalDetailScreen() {
 								className="flex-1 py-3 px-4 rounded-lg bg-red-600"
 								style={{
 									opacity: updateStatusMutation.isPending || !cancelReason.trim() ? 0.5 : 1,
+									borderWidth: 1,
+									borderColor: "#EF4444",
 								}}
 							>
 								{updateStatusMutation.isPending ? (
-									<ActivityIndicator color="#FFFFFF" />
+									<ActivityIndicator color="#EF4444" />
 								) : (
-									<Text className="text-center font-medium text-white">Xác nhận hủy</Text>
+									<Text className="text-center font-medium text-white" style={{ color: "#EF4444" }}>
+										Xác nhận hủy
+									</Text>
 								)}
 							</TouchableOpacity>
 						</View>

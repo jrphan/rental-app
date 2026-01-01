@@ -5,6 +5,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { Rental } from "../types";
 import { formatPrice, formatDate, getRentalStatusLabel, getRentalStatusStyles } from "../utils";
 import { COLORS } from "@/constants/colors";
+import { useAuthStore } from "@/store/auth";
 
 interface RentalCardProps {
 	rental: Rental;
@@ -12,6 +13,8 @@ interface RentalCardProps {
 }
 
 export default function RentalCard({ rental, onPress }: RentalCardProps) {
+	const { user } = useAuthStore();
+	const isOwner = user?.id === rental.ownerId;
 	const primaryImage =
 		rental.vehicle.images?.find((img) => img.isPrimary)?.url ||
 		rental.vehicle.images?.[0]?.url ||
@@ -81,7 +84,7 @@ export default function RentalCard({ rental, onPress }: RentalCardProps) {
 							)}
 						</View>
 						{/* Rebook button for completed / cancelled */}
-						{(rental.status === "COMPLETED" || rental.status === "CANCELLED") && (
+						{(rental.status === "COMPLETED" || rental.status === "CANCELLED") && !isOwner && (
 							<TouchableOpacity
 								onPress={() => router.push(`/vehicle/${rental.vehicle.id}`)}
 								activeOpacity={0.8}

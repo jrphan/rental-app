@@ -135,9 +135,9 @@ export default function BookingScreen() {
 
 		// Normalize dates to start/end of day (date-only, no time)
 		const start = new Date(startDate);
-		start.setHours(0, 0, 0, 0);
+		// start.setHours(0, 0, 0, 0);
 		const end = new Date(endDate);
-		end.setHours(23, 59, 59, 999);
+		// end.setHours(23, 59, 59, 999);
 
 		if (start > end) {
 			Alert.alert("Lỗi", "Ngày kết thúc không được trước ngày bắt đầu");
