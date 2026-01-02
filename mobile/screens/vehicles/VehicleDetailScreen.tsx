@@ -362,7 +362,7 @@ export default function VehicleDetailScreen() {
 										>
 											<View className="flex-row items-start justify-between mb-2">
 												<View className="flex-1">
-													<Text className="text-base font-semibold text-gray-900">
+													<Text onPress={() => router.push(`/owner/${review.authorId}`)} className="text-base font-semibold text-gray-900">
 														{review.author.fullName || "Người dùng"}
 													</Text>
 													<View className="flex-row items-center mt-1">

@@ -63,16 +63,21 @@ export class VehicleController {
 
   @Get(ROUTES.VEHICLE.GET_MY_VEHICLE_DETAIL)
   @UseGuards(AuthGuard)
-  getMyVehicleDetail(
+  async getMyVehicleDetail(
     @Req() req: Request,
     @Param('id') id: string,
-  ): Promise<VehicleResponse> {
+  ) {
     const userId = (req as AuthenticatedRequest).user?.sub;
     if (!userId) {
       throw new UnauthorizedException('Người dùng không tồn tại');
     }
 
-    return this.vehicleService.getMyVehicleDetail(userId, id);
+    const vehicle = await this.vehicleService.getMyVehicleDetail(userId, id);
+
+    const [vehicleWithTrips] =
+      await this.vehicleService.getVehiclesWithCompletedTrips([vehicle]);
+
+    return vehicleWithTrips;
   }
 
   @Put(ROUTES.VEHICLE.UPDATE_VEHICLE)

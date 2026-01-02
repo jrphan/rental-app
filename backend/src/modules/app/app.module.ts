@@ -13,6 +13,7 @@ import { RentalModule } from '@/modules/rental/rental.module';
 import { ChatModule } from '@/modules/chat/chat.module';
 import { ReviewModule } from '@/modules/review/review.module';
 import { CommissionModule } from '@/modules/commission/commission.module';
+import { FeeModule } from '@/modules/fee/fee.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CommissionModule } from '@/modules/commission/commission.module';
     ChatModule,
     ReviewModule,
     CommissionModule,
+    FeeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

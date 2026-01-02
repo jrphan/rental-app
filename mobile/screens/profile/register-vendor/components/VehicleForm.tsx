@@ -29,10 +29,11 @@ import {
   getVehicleTypeByModel,
 } from "@/constants/vehicle.constants";
 import { VIETNAM_CITIES } from "@/constants/city.constants";
-import { DELIVERY_FEE_PER_KM } from "@/constants/deliveryFee";
+import { useFeeSettings } from "@/hooks/useFeeSettings";
 import type { VehicleInput } from "@/schemas/vehicle.schema";
 import { formatCurrency, parseCurrency } from "@/utils/currency";
 import { formatPrice } from "@/screens/vehicles/utils";
+import { DELIVERY_FEE_PER_KM } from "@/constants/deliveryFee";
 
 const licenseTypeOptions = [
   { label: "A1", value: "A1" },
@@ -50,6 +51,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
   const queryClient = useQueryClient();
   const form = useVehicleForm();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { deliveryFeePerKm } = useFeeSettings();
 
   // Load vehicle data if vehicleId is provided
   const { data: vehicleData, isLoading: isLoadingVehicle } = useQuery({
@@ -93,8 +95,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         instantBook: false,
         deliveryAvailable: (vehicleData as any).deliveryAvailable || false,
         deliveryFeePerKm:
-          (vehicleData as any).deliveryFeePerKm?.toString() ??
-          String(DELIVERY_FEE_PER_KM),
+        String(deliveryFeePerKm) ?? DELIVERY_FEE_PER_KM ?? (vehicleData as any).deliveryFeePerKm?.toString(),  
         deliveryRadiusKm:
           (vehicleData as any).deliveryRadiusKm?.toString() || "",
         imageUrls: imageUrls.length > 0 ? imageUrls : [],
@@ -147,10 +148,10 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         cavetBack: data.cavetBack,
         instantBook: false, // Always false, feature disabled
         deliveryAvailable: data.deliveryAvailable,
-        // system default: fee per km = 10,000 VND if owner doesn't supply
+        // system default: fee per km from API settings if owner doesn't supply
         deliveryFeePerKm: data.deliveryFeePerKm
           ? parseFloat(data.deliveryFeePerKm)
-          : DELIVERY_FEE_PER_KM,
+          : deliveryFeePerKm ?? DELIVERY_FEE_PER_KM,
         deliveryRadiusKm: data.deliveryRadiusKm
           ? parseInt(data.deliveryRadiusKm, 10)
           : null,
@@ -795,7 +796,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
                 <Text className="text-xs text-gray-500">
                   Bật nếu bạn muốn hỗ trợ giao/nhận xe tận nơi. Hệ thống mặc
                   định phí giao:
-                  {formatPrice(DELIVERY_FEE_PER_KM)}/km. Bạn chỉ cần nhập Giới
+                  {formatPrice(deliveryFeePerKm)}/km. Bạn chỉ cần nhập Giới
                   hạn khoảng cách (km).
                 </Text>
               </View>

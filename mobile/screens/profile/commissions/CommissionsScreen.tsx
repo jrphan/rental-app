@@ -88,11 +88,11 @@ function CommissionCard({ commission, onUploadInvoice }: CommissionCardProps) {
         </View>
         <View
           className={`px-3 py-1 rounded-full ${
-            status === "PENDING"
+            commission.paymentStatus === "PENDING"
               ? "bg-amber-100"
-              : status === "PAID"
+              : commission.paymentStatus === "PAID"
                 ? "bg-blue-100"
-                : status === "APPROVED"
+                : commission.paymentStatus === "APPROVED"
                   ? "bg-green-100"
                   : "bg-red-100"
           }`}

@@ -69,6 +69,7 @@ const API_ENDPOINTS = {
     GET_RENTAL_REVIEWS: "/rental/:id/reviews",
     DELETE: "/review/:id",
   },
+  FEE_SETTINGS: "/fee-settings",
 };
 
 export default API_ENDPOINTS;

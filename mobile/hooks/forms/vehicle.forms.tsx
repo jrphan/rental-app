@@ -1,12 +1,15 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { vehicleSchema, VehicleInput } from "@/schemas/vehicle.schema";
+import { useFeeSettings } from "@/hooks/useFeeSettings";
 import { DELIVERY_FEE_PER_KM } from "@/constants/deliveryFee";
 
 /**
  * Hook cho form tạo/cập nhật xe
  */
 export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
+	const { deliveryFeePerKm } = useFeeSettings();
+	
 	const form = useForm<VehicleInput>({
 		resolver: zodResolver(vehicleSchema),
 		defaultValues: {
@@ -33,7 +36,7 @@ export function useVehicleForm(defaultValues?: Partial<VehicleInput>) {
 			instantBook: false, // Feature disabled
 			deliveryAvailable: defaultValues?.deliveryAvailable || false,
 			imageUrls: defaultValues?.imageUrls || [],
-			deliveryFeePerKm: defaultValues?.deliveryFeePerKm ?? String(DELIVERY_FEE_PER_KM),
+			deliveryFeePerKm: defaultValues?.deliveryFeePerKm ?? String(deliveryFeePerKm ?? DELIVERY_FEE_PER_KM),
 			deliveryRadiusKm: defaultValues?.deliveryRadiusKm || "",
 		},
 		mode: "onChange",

@@ -66,7 +66,10 @@ export const ROUTES = {
     COMMISSION_SETTINGS: '/admin/commission-settings',
     COMMISSION_PAYMENTS: '/admin/commission-payments',
     COMMISSION_PAYMENT_REVIEW: '/admin/commission-payments/:id/review',
+    FEE_SETTINGS: '/admin/fee-settings',
+    INSURANCE_STATS: '/admin/insurance-stats',
   },
+  FEE_SETTINGS: '/fee-settings',
   FILES: {
     UPLOAD: '/files/upload',
     UPLOAD_MULTIPLE: '/files/upload-multiple',

@@ -350,6 +350,7 @@ model Rental {
   platformFeeRatio Decimal @default(0.15) @db.Decimal(5, 4) // 0.1500 = 15%
   platformFee      Decimal @db.Decimal(15, 2) // = TotalPrice * Ratio
   ownerEarning     Decimal @db.Decimal(15, 2) // = TotalPrice - PlatformFee
+  platformEarning  Decimal @db.Decimal(15, 2) // = PlatformFee - Discount
 
   status RentalStatus @default(PENDING_PAYMENT)
 
@@ -671,4 +672,26 @@ model CommissionPayment {
   @@index([status])
   @@index([createdAt])
   @@map("commission_payments")
+}
+
+// ==================== FEE SETTINGS ====================
+
+model FeeSettings {
+  id             String  @id @default(cuid())
+  deliveryFeePerKm Decimal @db.Decimal(10, 2) // VND per km (default: 10000)
+  
+  // Insurance rates by vehicle type (VND per day)
+  insuranceRate50cc    Decimal @default(20000) @db.Decimal(10, 2) // 50cc and Xe số
+  insuranceRateTayGa   Decimal @default(30000) @db.Decimal(10, 2) // Tay ga and Xe điện
+  insuranceRateTayCon  Decimal @default(50000) @db.Decimal(10, 2) // Tay côn
+  insuranceRateMoto    Decimal @default(50000) @db.Decimal(10, 2) // Mô tô
+  insuranceRateDefault Decimal @default(30000) @db.Decimal(10, 2) // Default fallback
+  
+  isActive       Boolean @default(true)
+
+  createdBy String? // Admin ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fee_settings")
 }

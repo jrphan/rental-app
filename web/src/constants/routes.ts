@@ -7,6 +7,7 @@ interface RoutesType {
   RENTALS: string
   NOTIFICATIONS: string
   COMMISSIONS: string
+  FEES: string
 }
 
 const ROUTES = {
@@ -21,6 +22,7 @@ const ROUTES = {
   RENTALS: '/rentals',
   NOTIFICATIONS: '/notifications',
   COMMISSIONS: '/commissions',
+  FEES: '/fees',
 } satisfies RoutesType
 
 export default ROUTES

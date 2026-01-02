@@ -829,7 +829,42 @@ export class VehicleService {
         filteredItems.sort(
           (a, b) => (b as any).__distance - (a as any).__distance,
         );
-      // rating_desc requires join/aggregation with reviews - omitted for brevity (can compute average rating separately)
+      else if (filters.sortBy === 'rating_desc') {
+        // Calculate average rating for each vehicle
+        const vehicleIds = filteredItems.map(v => v.id);
+        const ratingAggregates = await this.prismaService.review.groupBy({
+          by: ['vehicleId'],
+          where: {
+            vehicleId: { in: vehicleIds },
+            type: 'RENTER_TO_VEHICLE',
+            isHidden: false,
+          },
+          _avg: {
+            rating: true,
+          },
+          _count: {
+            id: true,
+          },
+        });
+
+        // Create a map of vehicleId -> averageRating
+        const ratingMap = new Map<string, number>();
+        ratingAggregates.forEach(agg => {
+          if (agg.vehicleId) {
+            ratingMap.set(agg.vehicleId, agg._avg.rating || 0);
+          }
+        });
+
+        // Sort by average rating (descending), vehicles without reviews go to the end
+        filteredItems.sort((a, b) => {
+          const ratingA = ratingMap.get(a.id) || 0;
+          const ratingB = ratingMap.get(b.id) || 0;
+          if (ratingA === 0 && ratingB === 0) return 0;
+          if (ratingA === 0) return 1; // No reviews go to end
+          if (ratingB === 0) return -1; // No reviews go to end
+          return ratingB - ratingA; // Descending order
+        });
+      }
     }
 
     return {

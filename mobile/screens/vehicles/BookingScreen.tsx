@@ -17,7 +17,7 @@ import { PROMOS, type Promo } from "@/constants/promos";
 import { calculateDistanceKm } from "@/utils/geo";
 import UnavailabilityNotice from "@/components/unavailability/UnavailabilityNotice";
 import UnavailabilityModal from "@/components/unavailability/UnavailabilityModal";
-import { getInsuranceRateByVehicleType } from "@/constants/vehicle.constants";
+import { useFeeSettings } from "@/hooks/useFeeSettings";
 import InsuranceInfoModal from "@/components/insurance/InsuranceInfoModal";
 import { DELIVERY_FEE_PER_KM } from "@/constants/deliveryFee";
 
@@ -25,6 +25,7 @@ export default function BookingScreen() {
 	const { vehicleId } = useLocalSearchParams<{ vehicleId: string }>();
 	const router = useRouter();
 	const queryClient = useQueryClient();
+	const { deliveryFeePerKm, getInsuranceRate } = useFeeSettings();
 
 	const [startDate, setStartDate] = useState<string>("");
 	const [endDate, setEndDate] = useState<string>("");
@@ -195,7 +196,7 @@ export default function BookingScreen() {
 
 		const basePrice = Number(vehicle.pricePerDay) * durationDays;
 		// insurance rate depends on vehicle.type (type field in Vehicle)
-		const insuranceRate = getInsuranceRateByVehicleType((vehicle as any).type);
+		const insuranceRate = getInsuranceRate((vehicle as any).type);
 		const insuranceFee = insuranceSelected ? insuranceRate * durationDays : 0;
 		const totalPrice = basePrice + deliveryFee + insuranceFee - discountAmount;
 		const depositAmount = Number(vehicle.depositAmount || 0);
@@ -384,7 +385,7 @@ export default function BookingScreen() {
 												className="text-sm text-gray-600 mt-1"
 												style={{ color: COLORS.primary }}
 											>
-												• {formatPrice(vehicle.deliveryFeePerKm || DELIVERY_FEE_PER_KM)}/km
+												• {formatPrice(deliveryFeePerKm || DELIVERY_FEE_PER_KM)}/km
 											</Text>
 										</View>
 									)}
@@ -426,8 +427,8 @@ export default function BookingScreen() {
 							}
 
 							// compute fee (round km * feePerKm) + base, fallback to 0
-							// feePerKm default 10,000 VND/km
-							const feePerKm = Number((vehicle as any).deliveryFeePerKm ?? DELIVERY_FEE_PER_KM);
+							// feePerKm from API settings
+							const feePerKm = deliveryFeePerKm ?? DELIVERY_FEE_PER_KM;
 							const calc = Math.round(dist) * feePerKm;
 
 							setDeliveryAddress({
@@ -481,7 +482,7 @@ export default function BookingScreen() {
 									</View>
 									<View className="ml-3 items-end">
 										<Text className="text-sm font-semibold text-green-900">
-											{formatPrice(getInsuranceRateByVehicleType((vehicle as any)?.type || ""))}
+											{formatPrice(getInsuranceRate((vehicle as any)?.type || ""))}
 											/ngày
 										</Text>
 										<TouchableOpacity onPress={() => setShowInsuranceInfo(true)} className="mt-6">
@@ -549,8 +550,7 @@ export default function BookingScreen() {
 										<Text className="text-sm text-gray-600">
 											Phí giao xe{" "}
 											<Text style={{ color: "#9CA3AF" }}>
-												({}
-												{formatPrice(DELIVERY_FEE_PER_KM)}/km)
+												({formatPrice(deliveryFeePerKm)} x {deliveryDistanceKm?.toFixed(1)} km)
 											</Text>
 										</Text>
 										<Text className="text-sm font-semibold text-gray-900">
@@ -564,10 +564,7 @@ export default function BookingScreen() {
 										<Text className="text-sm text-gray-600">
 											Phí bảo hiểm{" "}
 											<Text style={{ color: "#9CA3AF" }}>
-												(
-												{formatPrice(
-													getInsuranceRateByVehicleType((vehicle as any)?.type || "")
-												)}{" "}
+												({formatPrice(getInsuranceRate((vehicle as any)?.type || ""))}{" "}
 												x {summary.durationDays} ngày)
 											</Text>
 										</Text>
