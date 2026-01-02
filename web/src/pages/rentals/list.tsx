@@ -1,9 +1,6 @@
 import { Loader2, RefreshCw } from 'lucide-react'
 import { RentalStatusBadge } from './status-badge'
-import type {
-  AdminRentalItem,
-  RentalStatus,
-} from '@/services/api.admin-rental'
+import type { AdminRentalItem, RentalStatus } from '@/services/api.admin-rental'
 import {
   Table,
   TableBody,
@@ -89,10 +86,14 @@ export function RentalListTable({
   return (
     <div>
       <div className="flex items-center justify-between border-b px-4 py-3">
-        <h2 className="text-sm font-semibold text-gray-800">Danh sách đơn hàng</h2>
+        <h2 className="text-sm font-semibold text-gray-800">
+          Danh sách đơn hàng
+        </h2>
         <div className="flex items-center gap-3">
           <Select
-            value={hasDisputeFilter === undefined ? 'all' : String(hasDisputeFilter)}
+            value={
+              hasDisputeFilter === undefined ? 'all' : String(hasDisputeFilter)
+            }
             onValueChange={(value) => {
               if (value === 'all') {
                 onDisputeFilterChange(undefined)
@@ -141,7 +142,7 @@ export function RentalListTable({
           </Button>
         </div>
       </div>
-      <div className="max-h-[520px] overflow-auto">
+      <div>
         {isLoading ? (
           <div className="flex items-center justify-center py-10 text-gray-500">
             Đang tải dữ liệu...
@@ -156,7 +157,7 @@ export function RentalListTable({
           </div>
         ) : (
           <>
-            <div className="p-2">
+            <div className="p-2 max-h-[calc(100vh-250px)] overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -247,7 +248,8 @@ export function RentalListTable({
                 <span className="font-medium">
                   {(page - 1) * limit + items.length}
                 </span>{' '}
-                trong tổng số <span className="font-medium">{total}</span> đơn hàng
+                trong tổng số <span className="font-medium">{total}</span> đơn
+                hàng
               </div>
               <div className="flex items-center gap-2">
                 <span>
@@ -282,4 +284,3 @@ export function RentalListTable({
     </div>
   )
 }
-
