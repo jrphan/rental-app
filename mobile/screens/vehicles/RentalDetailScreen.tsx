@@ -447,7 +447,8 @@ export default function RentalDetailScreen() {
 	const canUpdateToOnTrip = isOwner && rental.status === "CONFIRMED";
 	const canUpdateToCompleted = isOwner && rental.status === "ON_TRIP";
 	const canCancel =
-		isOwner && (rental.status === "AWAIT_APPROVAL" || rental.status === "CONFIRMED" || rental.status === "ON_TRIP");
+		// isOwner && (rental.status === "AWAIT_APPROVAL" || rental.status === "CONFIRMED" || rental.status === "ON_TRIP");
+		(rental.status === "AWAIT_APPROVAL" || rental.status === "CONFIRMED" || rental.status === "ON_TRIP");
 
 	// Check if renter can upload pickup evidence
 	const canUploadPickupEvidence = isRenter && (rental.status === "CONFIRMED" || rental.status === "ON_TRIP");

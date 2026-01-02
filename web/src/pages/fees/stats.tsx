@@ -83,92 +83,94 @@ export function StatsPanel({
           <h2 className="text-sm font-semibold text-gray-800">
             Thống kê phí bảo hiểm
           </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onRefetch()}
-            className="flex items-center gap-2 h-9"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Làm mới
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Bộ lọc loại (Ngày/Tháng/Năm) */}
-          <Select value={filterType} onValueChange={(v) => onFilterTypeChange(v as 'day' | 'month' | 'year')}>
-            <SelectTrigger className="w-[120px] h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Theo ngày</SelectItem>
-              <SelectItem value="month">Theo tháng</SelectItem>
-              <SelectItem value="year">Theo năm</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Bộ lọc theo ngày */}
-          {filterType === 'day' && (
-            <div className="flex items-center gap-2">
-              <Label htmlFor="date-filter" className="text-xs text-gray-600 whitespace-nowrap">
-                Chọn ngày:
-              </Label>
-              <Input
-                id="date-filter"
-                type="date"
-                value={selectedDate}
-                onChange={(e) => onDateChange(e.target.value)}
-                className="w-[150px] h-9 text-sm"
-              />
-            </div>
-          )}
-
-          {/* Bộ lọc theo tháng */}
-          {filterType === 'month' && (
-            <>
-              <Select value={month} onValueChange={handleMonthSelect}>
-                <SelectTrigger className="w-[123px] h-9 text-sm">
-                  <SelectValue placeholder="Chọn tháng" />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>
-                      {m.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={year} onValueChange={handleYearSelect}>
+          <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Bộ lọc loại (Ngày/Tháng/Năm) */}
+              <Select value={filterType} onValueChange={(v) => onFilterTypeChange(v as 'day' | 'month' | 'year')}>
                 <SelectTrigger className="w-[120px] h-9 text-sm">
-                  <SelectValue placeholder="Chọn năm" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y.value} value={y.value}>
-                      {y.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="day">Theo ngày</SelectItem>
+                  <SelectItem value="month">Theo tháng</SelectItem>
+                  <SelectItem value="year">Theo năm</SelectItem>
                 </SelectContent>
               </Select>
-            </>
-          )}
 
-          {/* Bộ lọc theo năm */}
-          {filterType === 'year' && (
-            <Select value={selectedYear} onValueChange={onYearChange}>
-              <SelectTrigger className="w-[120px] h-9 text-sm">
-                <SelectValue placeholder="Chọn năm" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y.value} value={y.value}>
-                    {y.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+              {/* Bộ lọc theo ngày */}
+              {filterType === 'day' && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="date-filter" className="text-xs text-gray-600 whitespace-nowrap">
+                    Chọn ngày:
+                  </Label>
+                  <Input
+                    id="date-filter"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => onDateChange(e.target.value)}
+                    className="w-[150px] h-9 text-sm"
+                  />
+                </div>
+              )}
+
+              {/* Bộ lọc theo tháng */}
+              {filterType === 'month' && (
+                <>
+                  <Select value={month} onValueChange={handleMonthSelect}>
+                    <SelectTrigger className="w-[123px] h-9 text-sm">
+                      <SelectValue placeholder="Chọn tháng" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {months.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={year} onValueChange={handleYearSelect}>
+                    <SelectTrigger className="w-[120px] h-9 text-sm">
+                      <SelectValue placeholder="Chọn năm" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map((y) => (
+                        <SelectItem key={y.value} value={y.value}>
+                          {y.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+
+              {/* Bộ lọc theo năm */}
+              {filterType === 'year' && (
+                <Select value={selectedYear} onValueChange={onYearChange}>
+                  <SelectTrigger className="w-[120px] h-9 text-sm">
+                    <SelectValue placeholder="Chọn năm" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((y) => (
+                      <SelectItem key={y.value} value={y.value}>
+                        {y.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRefetch()}
+              className="flex items-center gap-2 h-9"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Làm mới
+            </Button>
+          </div>
         </div>
+
       </div>
 
       <div className="p-4">
