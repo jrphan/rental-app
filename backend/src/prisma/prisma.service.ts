@@ -1,10 +1,25 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
   private isConnected = false;
+
+  constructor() {
+    super({
+      log:
+        process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    });
+  }
 
   async onModuleInit(): Promise<void> {
     this.logger.log('Connecting to database...');
@@ -38,16 +53,33 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   }
 
   private async safeConnect(): Promise<void> {
-    try {
-      await this.$connect();
-      this.updateConnectionStatus(true);
-      this.logger.log('Database connected successfully');
-    } catch (error: unknown) {
-      this.updateConnectionStatus(false);
-      this.logError('Failed to connect to database', error);
-      this.logger.warn(
-        'Application will continue to run but database operations will fail',
-      );
+    const maxRetries = 3;
+    let retries = 0;
+
+    while (retries < maxRetries) {
+      try {
+        await this.$connect();
+        this.updateConnectionStatus(true);
+        this.logger.log('Database connected successfully');
+        return;
+      } catch (error: unknown) {
+        retries++;
+        this.logError(
+          `Failed to connect to database (attempt ${retries}/${maxRetries})`,
+          error,
+        );
+
+        if (retries < maxRetries) {
+          const delay = retries * 1000; // Exponential backoff
+          this.logger.warn(`Retrying connection in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          this.updateConnectionStatus(false);
+          this.logger.warn(
+            'Application will continue to run but database operations will fail',
+          );
+        }
+      }
     }
   }
 

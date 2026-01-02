@@ -9,7 +9,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "get-ip": "node ./scripts/get-ip.js"
+    "get-ip": "node ./scripts/get-ip.js",
+    "build:apk:preview": "eas build --platform android --profile preview",
+    "build:apk:production": "eas build --platform android --profile production",
+    "build:apk:local": "eas build --platform android --profile preview --local",
+    "build:configure": "eas build:configure"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
