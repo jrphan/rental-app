@@ -99,7 +99,7 @@ export function PaymentListTable({
           Làm mới
         </Button>
       </div>
-      <div className="max-h-[520px] overflow-auto">
+      <div>
         {isLoading ? (
           <div className="flex items-center justify-center py-10 text-gray-500">
             Đang tải dữ liệu...
@@ -114,7 +114,7 @@ export function PaymentListTable({
           </div>
         ) : (
           <>
-            <div className="p-2">
+            <div className="p-2 max-h-[calc(100vh-250px)] overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -213,4 +213,3 @@ export function PaymentListTable({
     </div>
   )
 }
-
