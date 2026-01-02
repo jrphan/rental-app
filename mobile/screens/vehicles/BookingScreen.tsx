@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -31,7 +31,7 @@ export default function BookingScreen() {
 	const [endDate, setEndDate] = useState<string>("");
 	const [deliveryFee, setDeliveryFee] = useState<number>(0);
 	const [deliveryDistanceKm, setDeliveryDistanceKm] = useState<number | null>(null);
-	const [discountAmount, setDiscountAmount] = useState<number>(0);
+
 	const [showMapPicker, setShowMapPicker] = useState(false);
 	const [deliveryAddress, setDeliveryAddress] = useState<{
 		fullAddress?: string;
@@ -48,38 +48,6 @@ export default function BookingScreen() {
 	const [insuranceSelected, setInsuranceSelected] = useState(false);
 	const [showInsuranceInfo, setShowInsuranceInfo] = useState(false);
 
-	// Promo apply handler (client-side demo)
-	const applyPromo = (promo?: Promo, inputCode?: string) => {
-		setSelectedPromo(promo || null);
-		// Reset discount
-		setDiscountAmount(0);
-		if (!promo && !inputCode) return;
-		// try match inputCode to promos
-		const matched = promo ? promo : PROMOS.find((p) => p.code.toUpperCase() === (inputCode || "").toUpperCase());
-		if (!matched) {
-			Alert.alert("Mã khuyến mại", "Mã không hợp lệ (demo).");
-			return;
-		}
-		// compute discount preview
-		const start = new Date(startDate || "");
-		const end = new Date(endDate || "");
-		const durationDays =
-			startDate && endDate ? Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) : 1;
-		const base = Number(vehicle?.pricePerDay || 0) * durationDays;
-		if (matched.type === "FREESHIP") {
-			setDiscountAmount(Number(deliveryFee));
-			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
-		} else if (matched.type === "PERCENT") {
-			let disc = Math.floor((base * matched.value) / 100);
-			if (matched.maxAmount) disc = Math.min(disc, matched.maxAmount);
-			setDiscountAmount(disc);
-			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
-		} else if (matched.type === "FIXED") {
-			setDiscountAmount(matched.value);
-			Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
-		}
-	};
-
 	// Fetch vehicle details
 	const { data: vehicle, isLoading } = useQuery<Vehicle>({
 		queryKey: ["vehicle", vehicleId],
@@ -89,6 +57,102 @@ export default function BookingScreen() {
 		},
 		enabled: !!vehicleId,
 	});
+
+	// --- LOGIC TÍNH TOÁN GIÁ & DISCOUNT (Cập nhật tự động) ---
+
+	// 1. Tính số ngày thuê (Duration Days)
+	const durationDays = useMemo(() => {
+		if (!startDate || !endDate) return 0;
+		const start = new Date(startDate);
+		const end = new Date(endDate);
+		if (start > end) return 0;
+		const durationMs = end.getTime() - start.getTime();
+		const durationMinutes = Math.floor(durationMs / (1000 * 60));
+		return Math.ceil(durationMinutes / (60 * 24)); // Round up to days
+	}, [startDate, endDate]);
+
+	// 2. Tính giá cơ bản (Base Price)
+	const basePrice = useMemo(() => {
+		if (!vehicle) return 0;
+		return Number(vehicle.pricePerDay) * durationDays;
+	}, [vehicle, durationDays]);
+
+	// 3. Tính Discount Amount (Derived State - Tự động cập nhật)
+	const discountAmount = useMemo(() => {
+		if (!selectedPromo) return 0;
+
+		// Trường hợp FREESHIP
+		if (selectedPromo.type === "FREESHIP") {
+			// Nếu phí ship = 0 (tự đến lấy), giảm giá = 0
+			// Nếu có phí ship, giảm giá = phí ship
+			return deliveryFee;
+		}
+
+		// Trường hợp PERCENT (Phần trăm)
+		if (selectedPromo.type === "PERCENT") {
+			let disc = Math.floor((basePrice * selectedPromo.value) / 100);
+			if (selectedPromo.maxAmount) disc = Math.min(disc, selectedPromo.maxAmount);
+			return disc;
+		}
+
+		// Trường hợp FIXED (Giảm tiền mặt cố định)
+		if (selectedPromo.type === "FIXED") {
+			// Nếu chưa đạt minAmount thì coi như không giảm (trước khi bị gỡ bởi useEffect)
+			if (selectedPromo.minAmount && basePrice < selectedPromo.minAmount) {
+				return 0;
+			}
+			return selectedPromo.value;
+		}
+
+		return 0;
+	}, [selectedPromo, basePrice, deliveryFee]);
+
+	// 4. Theo dõi thay đổi giá để kiểm tra điều kiện mã giảm giá (Side Effect)
+	useEffect(() => {
+		if (!selectedPromo) return;
+
+		if (selectedPromo.type === "FREESHIP" && deliveryFee === 0)
+			setSelectedPromo(null);
+
+		// Kiểm tra đơn tối thiểu cho mã FIXED khi basePrice thay đổi
+		if (selectedPromo.type === "FIXED" && selectedPromo.minAmount) {
+			// Chỉ check khi đã có giá cơ bản
+			if (basePrice > 0 && basePrice < selectedPromo.minAmount) {
+				Alert.alert(
+					// "Mã giảm giá hết hiệu lực",
+					`Đơn không đạt tối thiểu ${formatPrice(selectedPromo.minAmount)} do thay đổi ngày thuê. Mã đã bị hủy.`
+				);
+				setSelectedPromo(null);
+			}
+		}
+	}, [basePrice, selectedPromo, deliveryFee]);
+
+
+	// Promo apply handler (Updated)
+	const applyPromo = (promo?: Promo, inputCode?: string) => {
+		if (!promo && !inputCode) {
+			setSelectedPromo(null);
+			return;
+		}
+
+		// Tìm mã phù hợp
+		const matched = promo ? promo : PROMOS.find((p) => p.code.toUpperCase() === (inputCode || "").toUpperCase());
+
+		if (!matched) {
+			Alert.alert("Mã khuyến mại", "Mã không hợp lệ (demo).");
+			return;
+		}
+
+		// Validate ngay tại thời điểm áp dụng
+		// Lưu ý: Dùng basePrice hiện tại (đã tính toán từ useMemo)
+		if (matched.type === "FIXED" && matched.minAmount && basePrice < matched.minAmount) {
+			Alert.alert("Mã khuyến mại", `Chưa đạt đơn tối thiểu ${formatPrice(matched.minAmount)}`);
+			return;
+		}
+
+		setSelectedPromo(matched);
+		Alert.alert("Mã khuyến mại", `${matched.title} đã được áp dụng`);
+	};
 
 	// Create rental mutation
 	const createRentalMutation = useMutation({
@@ -116,6 +180,26 @@ export default function BookingScreen() {
 		},
 	});
 
+	// Calculate Final Summary Object
+	const summary = useMemo(() => {
+		const insuranceRate = vehicle ? getInsuranceRate((vehicle as any).type) : 0;
+		const insuranceFee = insuranceSelected ? insuranceRate * durationDays : 0;
+		const depositAmount = Number(vehicle?.depositAmount || 0);
+
+		const totalPrice = basePrice + deliveryFee + insuranceFee - discountAmount;
+
+		return {
+			durationDays,
+			basePrice,
+			deliveryFee,
+			discountAmount,
+			insuranceFee,
+			totalPrice,
+			depositAmount,
+		};
+	}, [basePrice, deliveryFee, discountAmount, insuranceSelected, durationDays, vehicle, getInsuranceRate]);
+
+
 	const handleSubmit = () => {
 		if (!vehicleId || !startDate || !endDate) {
 			Alert.alert("Lỗi", "Vui lòng chọn ngày bắt đầu và ngày kết thúc");
@@ -134,11 +218,9 @@ export default function BookingScreen() {
 			}
 		}
 
-		// Normalize dates to start/end of day (date-only, no time)
+		// Normalize dates
 		const start = new Date(startDate);
-		// start.setHours(0, 0, 0, 0);
 		const end = new Date(endDate);
-		// end.setHours(23, 59, 59, 999);
 
 		if (start > end) {
 			Alert.alert("Lỗi", "Ngày kết thúc không được trước ngày bắt đầu");
@@ -162,57 +244,17 @@ export default function BookingScreen() {
 			// send deliveryAddress only when delivery selected
 			deliveryAddress: deliveryAddress
 				? {
-						fullAddress: deliveryAddress.fullAddress || "",
-						address: deliveryAddress.address || "",
-						ward: deliveryAddress.ward,
-						district: deliveryAddress.district,
-						city: deliveryAddress.city,
-						lat: deliveryAddress.lat ?? null,
-						lng: deliveryAddress.lng ?? null,
-					}
+					fullAddress: deliveryAddress.fullAddress || "",
+					address: deliveryAddress.address || "",
+					ward: deliveryAddress.ward,
+					district: deliveryAddress.district,
+					city: deliveryAddress.city,
+					lat: deliveryAddress.lat ?? null,
+					lng: deliveryAddress.lng ?? null,
+				}
 				: undefined,
 		});
 	};
-
-	// Calculate price summary
-	const calculateSummary = () => {
-		if (!vehicle || !startDate || !endDate) {
-			return {
-				durationDays: 0,
-				basePrice: 0,
-				deliveryFee,
-				discountAmount,
-				insuranceFee: 0,
-				totalPrice: 0,
-				depositAmount: Number(vehicle?.depositAmount || 0),
-			};
-		}
-
-		const start = new Date(startDate);
-		const end = new Date(endDate);
-		const durationMs = end.getTime() - start.getTime();
-		const durationMinutes = Math.floor(durationMs / (1000 * 60));
-		const durationDays = Math.ceil(durationMinutes / (60 * 24)); // Round up to days
-
-		const basePrice = Number(vehicle.pricePerDay) * durationDays;
-		// insurance rate depends on vehicle.type (type field in Vehicle)
-		const insuranceRate = getInsuranceRate((vehicle as any).type);
-		const insuranceFee = insuranceSelected ? insuranceRate * durationDays : 0;
-		const totalPrice = basePrice + deliveryFee + insuranceFee - discountAmount;
-		const depositAmount = Number(vehicle.depositAmount || 0);
-
-		return {
-			durationDays,
-			basePrice,
-			deliveryFee,
-			discountAmount,
-			insuranceFee,
-			totalPrice,
-			depositAmount,
-		};
-	};
-
-	const summary = calculateSummary();
 
 	if (isLoading) {
 		return (
@@ -283,7 +325,7 @@ export default function BookingScreen() {
 							mode="date"
 							minimumDate={startDate ? new Date(startDate) : new Date()}
 						/>
-						{/* Unavailability notice (show only when vehicle has unavailabilities) */}
+						{/* Unavailability notice */}
 						{vehicle?.unavailabilities && vehicle.unavailabilities.length > 0 && (
 							<>
 								<UnavailabilityNotice
@@ -305,7 +347,7 @@ export default function BookingScreen() {
 						<Text className="text-sm text-gray-600 mb-2">Hình thức nhận/giao xe</Text>
 						{/* Pickup */}
 						<TouchableOpacity
-							onPress={() => setDeliveryAddress(null)}
+							onPress={() => { setDeliveryAddress(null); setDeliveryFee(0) }}
 							activeOpacity={0.8}
 							className={`p-4 rounded-xl mb-2 ${!deliveryAddress ? "bg-white border border-gray-200" : "bg-gray-50 border border-gray-200"}`}
 						>
@@ -331,7 +373,6 @@ export default function BookingScreen() {
 						<TouchableOpacity
 							onPress={() => {
 								if (!vehicle?.deliveryAvailable) return;
-								// open map picker to choose address
 								setShowMapPicker(true);
 							}}
 							activeOpacity={vehicle?.deliveryAvailable ? 0.8 : 1}
@@ -350,7 +391,6 @@ export default function BookingScreen() {
 											{vehicle?.deliveryAvailable
 												? "Tôi muốn được giao xe tận nơi"
 												: "Chủ xe không hỗ trợ giao xe tận nơi"}
-											{/* show distance when chosen */}
 										</Text>
 										{deliveryDistanceKm != null && deliveryAddress && (
 											<View style={{ justifyContent: "center", marginLeft: 8 }}>
@@ -393,6 +433,7 @@ export default function BookingScreen() {
 							</View>
 						</TouchableOpacity>
 					</View>
+
 					{/* Map picker modal */}
 					<MapPickerModal
 						visible={showMapPicker}
@@ -400,7 +441,6 @@ export default function BookingScreen() {
 						onSelect={(lat, lng, addressParts) => {
 							setShowMapPicker(false);
 							if (!vehicle || vehicle.lat == null || vehicle.lng == null) {
-								// fallback: set address but fee = 0
 								setDeliveryAddress({
 									fullAddress: addressParts?.fullAddress,
 									address: addressParts?.address,
@@ -419,15 +459,13 @@ export default function BookingScreen() {
 								Number(lat),
 								Number(lng)
 							);
-							// check radius if configured
+
 							const radius = vehicle.deliveryRadiusKm ?? 0;
 							if (radius > 0 && dist > radius) {
 								Alert.alert("Lỗi", `Vượt giới hạn giao: ${dist.toFixed(1)} km (max ${radius} km)`);
 								return;
 							}
 
-							// compute fee (round km * feePerKm) + base, fallback to 0
-							// feePerKm from API settings
 							const feePerKm = deliveryFeePerKm ?? DELIVERY_FEE_PER_KM;
 							const calc = Math.round(dist) * feePerKm;
 
@@ -447,11 +485,10 @@ export default function BookingScreen() {
 						initialLng={undefined}
 					/>
 
-					{/* Price Summary */}
-					{/* Coupon preview (demo) */}
+					{/* Price Summary & Details */}
 					{startDate && endDate && (
 						<>
-							{/* Add insurance UI block (moved above promo/summary) */}
+							{/* Insurance Block */}
 							<View className="mb-4">
 								<Text className="text-sm text-gray-600 mb-2">Bảo hiểm bổ sung</Text>
 								<TouchableOpacity
@@ -459,7 +496,6 @@ export default function BookingScreen() {
 									activeOpacity={0.8}
 									className={`p-4 rounded-xl mb-2 flex-row items-start ${insuranceSelected ? "bg-white border border-gray-200" : "bg-gray-50 border border-gray-200"}`}
 								>
-									{/* checkbox with tick */}
 									<View
 										style={{
 											width: 20,
@@ -496,6 +532,8 @@ export default function BookingScreen() {
 								visible={showInsuranceInfo}
 								onClose={() => setShowInsuranceInfo(false)}
 							/>
+
+							{/* Promo Selection */}
 							<View className="mb-4">
 								<TouchableOpacity
 									onPress={() => setShowPromoModal(true)}
@@ -519,7 +557,7 @@ export default function BookingScreen() {
 										<TouchableOpacity
 											onPress={() => {
 												setSelectedPromo(null);
-												setDiscountAmount(0);
+												// setDiscountAmount(0); // Không cần set nữa vì là derived
 											}}
 										>
 											<MaterialIcons name="close" size={20} />
@@ -533,6 +571,8 @@ export default function BookingScreen() {
 								onClose={() => setShowPromoModal(false)}
 								onApply={applyPromo}
 							/>
+
+							{/* Total Summary */}
 							<View className="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">
 								<Text className="text-lg font-bold text-gray-900 mb-3">Tóm tắt giá</Text>
 
@@ -574,6 +614,7 @@ export default function BookingScreen() {
 									</View>
 								)}
 
+								{/* Chỉ hiển thị dòng giảm giá nếu số tiền giảm > 0 */}
 								{summary.discountAmount > 0 && (
 									<View className="flex-row justify-between mb-2">
 										<Text className="text-sm text-gray-600">Giảm giá</Text>
@@ -608,9 +649,8 @@ export default function BookingScreen() {
 					<TouchableOpacity
 						onPress={handleSubmit}
 						disabled={!startDate || !endDate || createRentalMutation.isPending}
-						className={`rounded-xl p-4 mb-4 ${
-							!startDate || !endDate || createRentalMutation.isPending ? "bg-gray-300" : "bg-orange-600"
-						}`}
+						className={`rounded-xl p-4 mb-4 ${!startDate || !endDate || createRentalMutation.isPending ? "bg-gray-300" : "bg-orange-600"
+							}`}
 						style={!startDate || !endDate ? {} : { backgroundColor: COLORS.primary }}
 					>
 						{createRentalMutation.isPending ? (

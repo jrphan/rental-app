@@ -340,6 +340,11 @@ model Rental {
   discountAmount Decimal @default(0) @db.Decimal(15, 2) // Mã giảm giá
   insuranceFee   Decimal @default(0) @db.Decimal(15, 2) // insurance fee charged to renter (platform retains), per-rental snapshot
 
+  // INSURANCE COMMISSION TRACKING (snapshot tại thời điểm tạo đơn)
+  insuranceCommissionRatio    Decimal @default(0.20) @db.Decimal(5, 4) // 0.2000 = 20% hoa hồng nền tảng
+  insuranceCommissionAmount   Decimal @default(0) @db.Decimal(15, 2) // = insuranceFee × insuranceCommissionRatio
+  insurancePayableToPartner    Decimal @default(0) @db.Decimal(15, 2) // = insuranceFee - insuranceCommissionAmount
+
   // deliveryAddress lưu object { address, ward, district, city, lat, lng, ... }
   deliveryAddress Json? // optional, future-proof
 
@@ -350,7 +355,7 @@ model Rental {
   platformFeeRatio Decimal @default(0.15) @db.Decimal(5, 4) // 0.1500 = 15%
   platformFee      Decimal @db.Decimal(15, 2) // = TotalPrice * Ratio
   ownerEarning     Decimal @db.Decimal(15, 2) // = TotalPrice - PlatformFee
-  platformEarning  Decimal @db.Decimal(15, 2) // = PlatformFee - Discount
+  platformEarning  Decimal @db.Decimal(15, 2) // = PlatformFee - Discount + insuranceCommissionAmount
 
   status RentalStatus @default(PENDING_PAYMENT)
 
@@ -686,6 +691,9 @@ model FeeSettings {
   insuranceRateTayCon  Decimal @default(50000) @db.Decimal(10, 2) // Tay côn
   insuranceRateMoto    Decimal @default(50000) @db.Decimal(10, 2) // Mô tô
   insuranceRateDefault Decimal @default(30000) @db.Decimal(10, 2) // Default fallback
+  
+  // Insurance commission ratio (% hoa hồng nền tảng)
+  insuranceCommissionRatio Decimal @default(0.20) @db.Decimal(5, 4) // 0.2000 = 20%
   
   isActive       Boolean @default(true)
 

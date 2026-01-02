@@ -520,17 +520,21 @@ export default function RentalDetailScreen() {
 								</Text>
 							</View>
 							{/* Rebook button */}
-							{(rental.status === "COMPLETED" || rental.status === "CANCELLED") && !isOwner && (
-								<TouchableOpacity
-									onPress={() => router.push(`/vehicle/${rental.vehicle.id}`)}
-									activeOpacity={0.8}
-								>
-									<View className="flex-row items-center mt-2">
-										<Text style={{ color: COLORS.primary, fontWeight: "600" }}>Đặt lại</Text>
-										<MaterialIcons name="chevron-right" size={18} color={COLORS.primary} />
-									</View>
-								</TouchableOpacity>
-							)}
+							{(() => {
+								// Khai báo biến ngay tại đây
+								const showRebook = (rental.status === "COMPLETED" || rental.status === "CANCELLED") && !isOwner;
+								return (
+									<TouchableOpacity
+										onPress={() => router.push(`/vehicle/${rental.vehicle.id}`)}
+										activeOpacity={0.8}
+									>
+										<View className="flex-row items-center mt-2">
+											<Text style={{ color: COLORS.primary, fontWeight: "600" }}>{showRebook ? "Đặt lại" : "Chi tiết xe"}</Text>
+											<MaterialIcons name="chevron-right" size={18} color={COLORS.primary} />
+										</View>
+									</TouchableOpacity>
+								);
+							})()}
 						</View>
 					</View>
 
@@ -568,23 +572,23 @@ export default function RentalDetailScreen() {
 						const isDelivery = Boolean(deliveryAddress) || Number(rental.deliveryFee) > 0;
 						const displayParts = deliveryAddress
 							? {
-									fullAddress: deliveryAddress.fullAddress || "",
-									address: deliveryAddress.address || "",
-									ward: deliveryAddress.ward,
-									district: deliveryAddress.district,
-									city: deliveryAddress.city,
-									lat: deliveryAddress.lat,
-									lng: deliveryAddress.lng,
-								}
+								fullAddress: deliveryAddress.fullAddress || "",
+								address: deliveryAddress.address || "",
+								ward: deliveryAddress.ward,
+								district: deliveryAddress.district,
+								city: deliveryAddress.city,
+								lat: deliveryAddress.lat,
+								lng: deliveryAddress.lng,
+							}
 							: {
-									fullAddress: rental.vehicle?.fullAddress || "",
-									address: rental.vehicle?.address || "",
-									ward: (rental.vehicle as any)?.ward,
-									district: (rental.vehicle as any)?.district,
-									city: (rental.vehicle as any)?.city,
-									lat: (rental.vehicle as any)?.lat,
-									lng: (rental.vehicle as any)?.lng,
-								};
+								fullAddress: rental.vehicle?.fullAddress || "",
+								address: rental.vehicle?.address || "",
+								ward: (rental.vehicle as any)?.ward,
+								district: (rental.vehicle as any)?.district,
+								city: (rental.vehicle as any)?.city,
+								lat: (rental.vehicle as any)?.lat,
+								lng: (rental.vehicle as any)?.lng,
+							};
 						const label = isDelivery ? "Giao xe tại" : "Nhận xe tại";
 						const fullAddress =
 							[
@@ -1026,22 +1030,20 @@ export default function RentalDetailScreen() {
 							<View className="flex-row items-center justify-between mb-3">
 								<Text className="text-base font-semibold text-gray-900">Phàn nàn về đơn thuê</Text>
 								<View
-									className={`px-2 py-1 rounded-full ${
-										rental.dispute.status === "OPEN"
-											? "bg-amber-100"
-											: rental.dispute.status === "RESOLVED"
-												? "bg-green-100"
-												: "bg-gray-100"
-									}`}
+									className={`px-2 py-1 rounded-full ${rental.dispute.status === "OPEN"
+										? "bg-amber-100"
+										: rental.dispute.status === "RESOLVED"
+											? "bg-green-100"
+											: "bg-gray-100"
+										}`}
 								>
 									<Text
-										className={`text-xs font-medium ${
-											rental.dispute.status === "OPEN"
-												? "text-amber-700"
-												: rental.dispute.status === "RESOLVED"
-													? "text-green-700"
-													: "text-gray-700"
-										}`}
+										className={`text-xs font-medium ${rental.dispute.status === "OPEN"
+											? "text-amber-700"
+											: rental.dispute.status === "RESOLVED"
+												? "text-green-700"
+												: "text-gray-700"
+											}`}
 									>
 										{rental.dispute.status === "OPEN"
 											? "Đang xử lý"

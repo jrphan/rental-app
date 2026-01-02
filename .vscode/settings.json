@@ -19,5 +19,8 @@
 	"terminal.integrated.smoothScrolling": true,
 	"editor.cursorBlinking": "smooth",
 	"terminal.integrated.scrollback": 10000,
-	"prisma.pinToPrisma6": true
+	"prisma.pinToPrisma6": true,
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "vscode.typescript-language-features"
+	}
 }

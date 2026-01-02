@@ -6,6 +6,7 @@ export interface FeeSettingsResponse {
   insuranceRateTayCon: string;
   insuranceRateMoto: string;
   insuranceRateDefault: string;
+  insuranceCommissionRatio: string; // Decimal as string (0.20 = 20%)
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -13,6 +14,8 @@ export interface FeeSettingsResponse {
 
 export interface InsuranceStatsResponse {
   totalInsuranceFee: string; // Tổng phí bảo hiểm
+  totalInsuranceCommissionAmount: string; // Tổng hoa hồng bảo hiểm nền tảng
+  totalInsurancePayableToPartner: string; // Tổng tiền phải trả đối tác bảo hiểm
   totalRentals: number; // Tổng số đơn thuê có bảo hiểm
   periodStart: string; // Ngày bắt đầu kỳ
   periodEnd: string; // Ngày kết thúc kỳ
@@ -20,6 +23,8 @@ export interface InsuranceStatsResponse {
     type: string;
     count: number;
     totalFee: string;
+    totalCommissionAmount: string;
+    totalPayableToPartner: string;
   }[];
 }
 

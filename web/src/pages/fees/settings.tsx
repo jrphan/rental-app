@@ -13,6 +13,7 @@ interface SettingsPanelProps {
     insuranceRateTayCon: number
     insuranceRateMoto: number
     insuranceRateDefault?: number
+    insuranceCommissionRatio?: number
   }) => void
   isUpdating: boolean
 }
@@ -28,6 +29,7 @@ export function SettingsPanel({
   const [insuranceRateTayCon, setInsuranceRateTayCon] = useState<string>('50000')
   const [insuranceRateMoto, setInsuranceRateMoto] = useState<string>('50000')
   const [insuranceRateDefault, setInsuranceRateDefault] = useState<string>('30000')
+  const [insuranceCommissionRatio, setInsuranceCommissionRatio] = useState<string>('0.20')
 
   useEffect(() => {
     if (settings) {
@@ -37,8 +39,8 @@ export function SettingsPanel({
       setInsuranceRateTayCon(parseFloat(settings.insuranceRateTayCon).toString())
       setInsuranceRateMoto(parseFloat(settings.insuranceRateMoto).toString())
       setInsuranceRateDefault(parseFloat(settings.insuranceRateDefault).toString())
+      setInsuranceCommissionRatio(parseFloat(settings.insuranceCommissionRatio).toString())
     }
-    
   }, [settings])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,6 +52,7 @@ export function SettingsPanel({
       insuranceRateTayCon: parseFloat(insuranceRateTayCon),
       insuranceRateMoto: parseFloat(insuranceRateMoto),
       insuranceRateDefault: parseFloat(insuranceRateDefault),
+      insuranceCommissionRatio: parseFloat(insuranceCommissionRatio),
     })
   }
 
@@ -57,7 +60,7 @@ export function SettingsPanel({
     <div className="rounded-lg bg-white border border-gray-200">
       <div className="border-b px-4 py-3">
         <h2 className="text-sm font-semibold text-gray-800">
-          Cài đặt khoản phí
+          Cài đặt phụ phí
         </h2>
       </div>
       <div className="p-4">
@@ -90,7 +93,7 @@ export function SettingsPanel({
           {/* Insurance Rates */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-gray-700">Phí bảo hiểm theo loại xe (VNĐ/ngày)</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="insurance-50cc">
@@ -192,6 +195,36 @@ export function SettingsPanel({
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Insurance Commission Ratio */}
+          <div className="space-y-2">
+            <Label htmlFor="insurance-commission-ratio">
+              % Hoa hồng bảo hiểm nền tảng
+            </Label>
+            <Input
+              id="insurance-commission-ratio"
+              type="number"
+              min="0"
+              max="1"
+              step="0.01"
+              value={insuranceCommissionRatio}
+              onChange={(e) => setInsuranceCommissionRatio(e.target.value)}
+              placeholder="0.20"
+              className="max-w-xs"
+            />
+            <p className="text-xs text-gray-500">
+              Tỷ lệ hoa hồng hiện tại:{' '}
+              <span className="font-semibold">
+                {settings
+                  ? `${(parseFloat(settings.insuranceCommissionRatio) * 100).toFixed(1)}%`
+                  : '—'}
+              </span>
+              <br />
+              <span className="text-gray-400">
+                Ví dụ: 0.20 = 20% hoa hồng nền tảng từ phí bảo hiểm
+              </span>
+            </p>
           </div>
 
           <Button type="submit" disabled={isUpdating}>

@@ -55,7 +55,7 @@ const menuItems = [
     href: ROUTES.COMMISSIONS,
   },
   {
-    title: 'Khoản phí',
+    title: 'Phụ phí',
     icon: DollarSign,
     href: ROUTES.FEES,
   },

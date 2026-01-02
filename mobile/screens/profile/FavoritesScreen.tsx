@@ -87,7 +87,7 @@ export default function FavoritesScreen() {
             </Text>
           </View>
         ) : (
-          <View className="px-4 pt-4">
+          <View className="px-4 pt-4 mt-4">
             <Text className="text-sm text-gray-600 mb-4">
               Bạn có {total} xe trong danh sách yêu thích
             </Text>

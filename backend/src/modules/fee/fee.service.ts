@@ -53,6 +53,7 @@ export class FeeService {
           insuranceRateTayCon: new Decimal('50000'),
           insuranceRateMoto: new Decimal('50000'),
           insuranceRateDefault: new Decimal('30000'),
+          insuranceCommissionRatio: new Decimal('0.20'), // Default 20%
           isActive: true,
         },
       });
@@ -65,6 +66,7 @@ export class FeeService {
         insuranceRateTayCon: defaultSettings.insuranceRateTayCon.toString(),
         insuranceRateMoto: defaultSettings.insuranceRateMoto.toString(),
         insuranceRateDefault: defaultSettings.insuranceRateDefault.toString(),
+        insuranceCommissionRatio: defaultSettings.insuranceCommissionRatio.toString(),
         isActive: defaultSettings.isActive,
         createdAt: defaultSettings.createdAt.toISOString(),
         updatedAt: defaultSettings.updatedAt.toISOString(),
@@ -79,6 +81,7 @@ export class FeeService {
       insuranceRateTayCon: settings.insuranceRateTayCon.toString(),
       insuranceRateMoto: settings.insuranceRateMoto.toString(),
       insuranceRateDefault: settings.insuranceRateDefault.toString(),
+      insuranceCommissionRatio: settings.insuranceCommissionRatio.toString(),
       isActive: settings.isActive,
       createdAt: settings.createdAt.toISOString(),
       updatedAt: settings.updatedAt.toISOString(),
@@ -94,7 +97,7 @@ export class FeeService {
   ): Promise<FeeSettingsResponse> {
     await this.assertAdmin(adminId);
 
-    this.logger.log(`Updating fee settings by admin ${adminId}`, dto);
+    // this.logger.log(`Updating fee settings by admin ${adminId}`, dto);
 
     // Deactivate all existing settings
     await this.prismaService.feeSettings.updateMany({
@@ -113,12 +116,13 @@ export class FeeService {
         insuranceRateDefault: new Decimal(
           dto.insuranceRateDefault || 30000,
         ),
+        insuranceCommissionRatio: new Decimal(dto.insuranceCommissionRatio),
         isActive: true,
         createdBy: adminId,
       },
     });
 
-    this.logger.log(`Fee settings updated successfully: ${newSettings.id}`);
+    // this.logger.log(`Fee settings updated successfully: ${newSettings.id}`);
 
     return {
       id: newSettings.id,
@@ -128,6 +132,7 @@ export class FeeService {
       insuranceRateTayCon: newSettings.insuranceRateTayCon.toString(),
       insuranceRateMoto: newSettings.insuranceRateMoto.toString(),
       insuranceRateDefault: newSettings.insuranceRateDefault.toString(),
+      insuranceCommissionRatio: newSettings.insuranceCommissionRatio.toString(),
       isActive: newSettings.isActive,
       createdAt: newSettings.createdAt.toISOString(),
       updatedAt: newSettings.updatedAt.toISOString(),
@@ -178,18 +183,41 @@ export class FeeService {
       new Decimal(0),
     );
 
+    const totalInsuranceCommissionAmount = rentals.reduce(
+      (sum, rental) => sum.plus(rental.insuranceCommissionAmount || new Decimal(0)),
+      new Decimal(0),
+    );
+
+    const totalInsurancePayableToPartner = rentals.reduce(
+      (sum, rental) => sum.plus(rental.insurancePayableToPartner || new Decimal(0)),
+      new Decimal(0),
+    );
+
     // Nhóm theo loại xe
-    const byTypeMap = new Map<string, { count: number; totalFee: Decimal }>();
+    const byTypeMap = new Map<string, {
+      count: number;
+      totalFee: Decimal;
+      totalCommissionAmount: Decimal;
+      totalPayableToPartner: Decimal;
+    }>();
 
     rentals.forEach((rental) => {
       const type = rental.vehicle.type || 'Khác';
       const existing = byTypeMap.get(type) || {
         count: 0,
         totalFee: new Decimal(0),
+        totalCommissionAmount: new Decimal(0),
+        totalPayableToPartner: new Decimal(0),
       };
       byTypeMap.set(type, {
         count: existing.count + 1,
         totalFee: existing.totalFee.plus(rental.insuranceFee),
+        totalCommissionAmount: existing.totalCommissionAmount.plus(
+          rental.insuranceCommissionAmount || new Decimal(0),
+        ),
+        totalPayableToPartner: existing.totalPayableToPartner.plus(
+          rental.insurancePayableToPartner || new Decimal(0),
+        ),
       });
     });
 
@@ -198,11 +226,15 @@ export class FeeService {
         type,
         count: data.count,
         totalFee: data.totalFee.toString(),
+        totalCommissionAmount: data.totalCommissionAmount.toString(),
+        totalPayableToPartner: data.totalPayableToPartner.toString(),
       }),
     );
 
     return {
       totalInsuranceFee: totalInsuranceFee.toString(),
+      totalInsuranceCommissionAmount: totalInsuranceCommissionAmount.toString(),
+      totalInsurancePayableToPartner: totalInsurancePayableToPartner.toString(),
       totalRentals: rentals.length,
       periodStart: start.toISOString(),
       periodEnd: end.toISOString(),

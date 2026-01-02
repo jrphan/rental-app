@@ -140,6 +140,7 @@ export class RentalService {
     discountAmount: number = 0,
     insuranceFee: number = 0,
     depositAmount?: Decimal,
+    insuranceCommissionRatio?: Decimal,
   ): {
     durationMinutes: number;
     durationDays: number;
@@ -149,6 +150,9 @@ export class RentalService {
     platformFee: Decimal;
     ownerEarning: Decimal;
     platformEarning: Decimal;
+    insuranceCommissionRatio: Decimal;
+    insuranceCommissionAmount: Decimal;
+    insurancePayableToPartner: Decimal;
   } {
     const durationMs = endDate.getTime() - startDate.getTime();
     const durationMinutes = Math.floor(durationMs / (1000 * 60));
@@ -174,8 +178,17 @@ export class RentalService {
       .minus(platformFee)
       .plus(new Decimal(deliveryFee));
 
-    // 6. Doanh thu platform thực
-    const platformEarning = platformFee.minus(new Decimal(discountAmount));
+    // 6. Tính hoa hồng bảo hiểm
+    const insuranceFeeDecimal = new Decimal(insuranceFee);
+    const commissionRatio = insuranceCommissionRatio || new Decimal('0.20'); // Default 20%
+    const insuranceCommissionAmount = insuranceFeeDecimal.mul(commissionRatio);
+    const insurancePayableToPartner = insuranceFeeDecimal.minus(insuranceCommissionAmount);
+
+    // 7. Doanh thu platform thực (theo PRICING_BUSINESS_LOGIC.md)
+    // platformEarning = platformFee - discountAmount + insuranceCommissionAmount
+    const platformEarning = platformFee
+      .minus(new Decimal(discountAmount))
+      .plus(insuranceCommissionAmount);
 
     return {
       durationMinutes,
@@ -186,6 +199,9 @@ export class RentalService {
       platformFee,
       ownerEarning,
       platformEarning,
+      insuranceCommissionRatio: commissionRatio,
+      insuranceCommissionAmount,
+      insurancePayableToPartner,
     };
   }
 
@@ -262,6 +278,16 @@ export class RentalService {
       );
     }
 
+    // Get insurance commission ratio from fee settings
+    const feeSettings = await this.prismaService.feeSettings.findFirst({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+      select: { insuranceCommissionRatio: true },
+    });
+
+    const insuranceCommissionRatio =
+      feeSettings?.insuranceCommissionRatio || new Decimal('0.20'); // Default 20%
+
     // Calculate prices
     const priceCalculation = this.calculateRentalPrice(
       vehicle.pricePerDay,
@@ -271,6 +297,7 @@ export class RentalService {
       discountAmount,
       insuranceFee ?? 0,
       vehicle.depositAmount,
+      insuranceCommissionRatio,
     );
 
     // Determine initial status
@@ -293,6 +320,10 @@ export class RentalService {
         deliveryFee: new Decimal(deliveryFee),
         insuranceFee: new Decimal(insuranceFee ?? 0),
         discountAmount: new Decimal(discountAmount),
+        // Insurance commission tracking (snapshot tại thời điểm tạo đơn)
+        insuranceCommissionRatio: priceCalculation.insuranceCommissionRatio,
+        insuranceCommissionAmount: priceCalculation.insuranceCommissionAmount,
+        insurancePayableToPartner: priceCalculation.insurancePayableToPartner,
         // persist deliveryAddress JSON (use undefined when absent and cast to Prisma.InputJsonValue)
         deliveryAddress: deliveryAddress
           ? (deliveryAddress as Prisma.InputJsonValue)

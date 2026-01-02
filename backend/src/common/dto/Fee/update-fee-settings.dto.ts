@@ -1,4 +1,4 @@
-import { IsNumber, Min, IsOptional } from 'class-validator';
+import { IsNumber, Min, Max, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateFeeSettingsDto {
@@ -32,5 +32,11 @@ export class UpdateFeeSettingsDto {
   @IsNumber()
   @Min(0)
   insuranceRateDefault?: number; // VND per day (optional, default 30000)
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  insuranceCommissionRatio: number; // 0.20 = 20% hoa hồng nền tảng
 }
 

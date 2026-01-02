@@ -6,6 +6,7 @@ export type Promo = {
 	type: "PERCENT" | "FIXED" | "FREESHIP";
 	value: number; // percent (e.g. 10) or fixed amount (VND)
 	maxAmount?: number; // cap for percent
+	minAmount?: number; // cap for fixed
 	enabled?: boolean;
 	note?: string;
 };
@@ -35,9 +36,10 @@ export const PROMOS: Promo[] = [
 		id: "p_3",
 		code: "CASH100",
 		title: "Giảm 100.000đ",
-		description: "Giảm thẳng 100.000đ",
+		description: "Giảm 100.000đ đơn tối thiểu 300.000đ",
 		type: "FIXED",
 		value: 100000,
+		minAmount: 300000,
 		enabled: true,
 	},
 ];

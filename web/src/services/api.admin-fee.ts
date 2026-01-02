@@ -9,6 +9,7 @@ export interface FeeSettingsResponse {
   insuranceRateTayCon: string
   insuranceRateMoto: string
   insuranceRateDefault: string
+  insuranceCommissionRatio: string // 0.20 = 20%
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -21,10 +22,13 @@ export interface UpdateFeeSettingsRequest {
   insuranceRateTayCon: number
   insuranceRateMoto: number
   insuranceRateDefault?: number
+  insuranceCommissionRatio: number // 0.20 = 20%
 }
 
 export interface InsuranceStatsResponse {
   totalInsuranceFee: string
+  totalInsuranceCommissionAmount: string
+  totalInsurancePayableToPartner: string
   totalRentals: number
   periodStart: string
   periodEnd: string
@@ -32,6 +36,8 @@ export interface InsuranceStatsResponse {
     type: string
     count: number
     totalFee: string
+    totalCommissionAmount: string
+    totalPayableToPartner: string
   }[]
 }
 
