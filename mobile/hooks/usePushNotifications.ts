@@ -200,6 +200,9 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       // Get push token
       // Note: Cần set EXPO_PUBLIC_PROJECT_ID trong .env hoặc app.config.js
       const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
+
+      console.log("projectId", projectId);
+
       const token = projectId
         ? await Notifications.getExpoPushTokenAsync({ projectId })
         : await Notifications.getExpoPushTokenAsync();
