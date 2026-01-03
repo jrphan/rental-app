@@ -9,6 +9,7 @@ import {
   Body,
   UseGuards,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { NotificationService } from './notification.service';
@@ -20,6 +21,8 @@ import { RegisterDeviceTokenDto } from '@/common/dto/Notification/register-devic
 
 @Controller()
 export class NotificationController {
+  private readonly logger = new Logger(NotificationController.name);
+
   constructor(
     private readonly notificationService: NotificationService,
     private readonly pushNotificationService: PushNotificationService,
@@ -90,17 +93,33 @@ export class NotificationController {
   ) {
     const userId = (req as AuthenticatedRequest).user?.sub;
     if (!userId) {
+      this.logger.error('[DeviceToken] No userId found in request');
       throw new UnauthorizedException('Người dùng không tồn tại');
     }
 
-    await this.pushNotificationService.registerDeviceToken(
-      userId,
-      body.token,
-      body.platform,
-      body.deviceId,
+    this.logger.log(
+      `[DeviceToken] Register request from user ${userId}, platform: ${body.platform}, token: ${body.token.substring(0, 20)}...`,
     );
 
-    return { message: 'Device token registered successfully' };
+    try {
+      await this.pushNotificationService.registerDeviceToken(
+        userId,
+        body.token,
+        body.platform,
+        body.deviceId,
+      );
+
+      this.logger.log(
+        `[DeviceToken] ✅ Successfully registered token for user ${userId}`,
+      );
+      return { message: 'Device token registered successfully' };
+    } catch (error) {
+      this.logger.error(
+        `[DeviceToken] ❌ Failed to register token for user ${userId}`,
+        error,
+      );
+      throw error;
+    }
   }
 
   @Delete(ROUTES.USER.DELETE_NOTIFICATION)

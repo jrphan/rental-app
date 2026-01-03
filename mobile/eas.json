@@ -13,7 +13,9 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_ENV": "preview"
+        "EXPO_PUBLIC_ENV": "preview",
+        "EXPO_PUBLIC_PROJECT_ID": "${EXPO_PUBLIC_PROJECT_ID}",
+        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_API_URL}"
       }
     },
     "production": {
@@ -25,7 +27,9 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_ENV": "production"
+        "EXPO_PUBLIC_ENV": "production",
+        "EXPO_PUBLIC_PROJECT_ID": "${EXPO_PUBLIC_PROJECT_ID}",
+        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_API_URL}"
       }
     },
     "development": {
@@ -38,7 +42,9 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_ENV": "development"
+        "EXPO_PUBLIC_ENV": "development",
+        "EXPO_PUBLIC_PROJECT_ID": "${EXPO_PUBLIC_PROJECT_ID}",
+        "EXPO_PUBLIC_API_URL": "${EXPO_PUBLIC_API_URL}"
       }
     }
   },
