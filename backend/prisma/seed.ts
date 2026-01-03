@@ -3,10 +3,10 @@ import * as bcrypt from 'bcrypt';
 import {
   PrismaClient,
   UserRole,
-  VehicleStatus,
-  LicenseType,
+  // VehicleStatus,
+  // LicenseType,
 } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
+// import { Decimal } from '@prisma/client/runtime/library';
 
 // Load environment variables from .env
 config();
@@ -14,7 +14,8 @@ config();
 const prisma = new PrismaClient();
 
 // ==================== DATA CONSTANTS ====================
-
+// COMMENTED OUT: Không dùng khi chỉ tạo admin và support
+/*
 const VIETNAMESE_FIRST_NAMES = [
   'Nguyễn',
   'Trần',
@@ -93,7 +94,10 @@ const VIETNAMESE_LAST_NAMES = [
   'Quỳnh',
   'Thảo',
 ];
+*/
 
+// COMMENTED OUT: Không dùng khi chỉ tạo admin và support
+/*
 const VEHICLE_BRANDS = [
   'Honda',
   'Yamaha',
@@ -188,9 +192,11 @@ const WARDS = [
   'Xã A',
   'Xã B',
 ];
+*/
 
 // ==================== HELPER FUNCTIONS ====================
-
+// COMMENTED OUT: Không dùng khi chỉ tạo admin và support
+/*
 function randomElement<T>(array: T[]): T {
   return array[Math.floor(Math.random() * array.length)];
 }
@@ -198,7 +204,10 @@ function randomElement<T>(array: T[]): T {
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+*/
 
+// COMMENTED OUT: Không dùng khi chỉ tạo admin và support
+/*
 function randomFloat(min: number, max: number): number {
   return parseFloat((Math.random() * (max - min) + min).toFixed(6));
 }
@@ -370,6 +379,7 @@ function generateLicensePlate(): string {
   const numbers = String(randomInt(10000, 99999)).padStart(5, '0');
   return `${prefix}${letter}-${numbers}`;
 }
+*/
 
 // ==================== MAIN SEED FUNCTION ====================
 
@@ -421,6 +431,8 @@ async function main() {
   console.log(`✅ Created support: ${support.phone}\n`);
 
   // ==================== 2. CREATE REGULAR USERS ====================
+  // COMMENTED OUT: Chỉ tạo admin và support
+  /*
   console.log('👥 Creating regular users...');
 
   const NUM_USERS = 100;
@@ -466,8 +478,11 @@ async function main() {
   }
 
   console.log(`✅ Created ${users.length - 2} regular users\n`);
+  */
 
   // ==================== 3. CREATE VEHICLES ====================
+  // COMMENTED OUT: Chỉ tạo admin và support
+  /*
   console.log('🛵 Creating vehicles...');
 
   const NUM_VEHICLES = 80;
@@ -613,15 +628,13 @@ async function main() {
   }
 
   console.log(`✅ Created ${vehicleIds.length} vehicles\n`);
+  */
 
   // ==================== SUMMARY ====================
   console.log('═══════════════════════════════════════');
   console.log('✅ SEED COMPLETED SUCCESSFULLY!');
   console.log('═══════════════════════════════════════');
-  console.log(
-    `👤 Users: ${users.length} (2 staff + ${users.length - 2} regular)`,
-  );
-  console.log(`🛵 Vehicles: ${vehicleIds.length}`);
+  console.log('👤 Users: 2 (1 admin + 1 support)');
   console.log('═══════════════════════════════════════');
   console.log('\n🔐 Default password for all users: ' + defaultPassword);
   console.log('📱 Admin phone: ' + adminPhone);
