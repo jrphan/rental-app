@@ -1029,7 +1029,7 @@ export default function RentalDetailScreen() {
 					{rental.dispute ? (
 						<View className="bg-red-50 rounded-xl p-4 mb-4 border border-red-200">
 							<View className="flex-row items-center justify-between mb-3">
-								<Text className="text-base font-semibold text-gray-900">khiếu nại về đơn thuê</Text>
+								<Text className="text-base font-semibold text-gray-900">Khiếu nại về đơn thuê</Text>
 								<View
 									className={`px-2 py-1 rounded-full ${rental.dispute.status === "OPEN"
 										? "bg-amber-100"
@@ -1070,7 +1070,7 @@ export default function RentalDetailScreen() {
 						</View>
 					) : canCreateDispute ? (
 						<View className="bg-amber-50 rounded-xl p-4 mb-4 border border-amber-200">
-							<Text className="text-base font-semibold text-gray-900 mb-3">khiếu nại về đơn thuê</Text>
+							<Text className="text-base font-semibold text-gray-900 mb-3">Khiếu nại về đơn thuê</Text>
 							<Text className="text-sm text-gray-600 mb-3">
 								Nếu bạn có khiếu nại về đơn thuê này, vui lòng gửi khiếu nại để chúng tôi xử lý
 							</Text>

@@ -173,8 +173,10 @@ export class RentalService {
     // 4. Phí nền tảng (CHỈ tính trên tiền thuê xe)
     const platformFee = baseRental.mul(this.PLATFORM_FEE_RATIO);
 
-    // 5. Thu nhập chủ xe (KHÔNG trừ platformFee, sẽ thu ở phần chiết khấu)
-    const ownerEarning = baseRental.plus(new Decimal(deliveryFee));
+    // 5. Thu nhập chủ xe
+    const ownerEarning = baseRental
+      .minus(platformFee)
+      .plus(new Decimal(deliveryFee));
 
     // 6. Tính hoa hồng bảo hiểm
     const insuranceFeeDecimal = new Decimal(insuranceFee);
@@ -946,11 +948,12 @@ export class RentalService {
 
     // Validate status transition for admin
     // Admin có thể chuyển từ DISPUTED sang COMPLETED nếu dispute đã được giải quyết
-    if (rental.status === RentalStatus.DISPUTED && status === RentalStatus.COMPLETED) {
+    if (
+      rental.status === RentalStatus.DISPUTED &&
+      status === RentalStatus.COMPLETED
+    ) {
       if (!rental.dispute) {
-        throw new BadRequestException(
-          'Đơn thuê này không có tranh chấp',
-        );
+        throw new BadRequestException('Đơn thuê này không có tranh chấp');
       }
 
       // Chỉ cho phép chuyển sang COMPLETED nếu dispute đã được giải quyết
@@ -971,8 +974,14 @@ export class RentalService {
           RentalStatus.CONFIRMED,
           RentalStatus.CANCELLED,
         ],
-        [RentalStatus.CONFIRMED]: [RentalStatus.ON_TRIP, RentalStatus.CANCELLED],
-        [RentalStatus.ON_TRIP]: [RentalStatus.COMPLETED, RentalStatus.CANCELLED],
+        [RentalStatus.CONFIRMED]: [
+          RentalStatus.ON_TRIP,
+          RentalStatus.CANCELLED,
+        ],
+        [RentalStatus.ON_TRIP]: [
+          RentalStatus.COMPLETED,
+          RentalStatus.CANCELLED,
+        ],
         [RentalStatus.COMPLETED]: [],
         [RentalStatus.CANCELLED]: [],
         [RentalStatus.DISPUTED]: [RentalStatus.COMPLETED], // Admin có thể chuyển từ DISPUTED sang COMPLETED
@@ -1008,7 +1017,10 @@ export class RentalService {
         },
       })
       .catch(error => {
-        this.logger.error('Failed to log admin rental status update audit', error);
+        this.logger.error(
+          'Failed to log admin rental status update audit',
+          error,
+        );
       });
 
     // Send notification to both renter and owner
@@ -1028,7 +1040,8 @@ export class RentalService {
         userId: rental.renterId,
         title: 'Cập nhật đơn thuê',
         message:
-          statusMessages[status] || 'Trạng thái đơn thuê đã được cập nhật bởi quản trị viên',
+          statusMessages[status] ||
+          'Trạng thái đơn thuê đã được cập nhật bởi quản trị viên',
         type: 'RENTAL_UPDATE',
         data: {
           rentalId: rental.id,
@@ -1045,7 +1058,8 @@ export class RentalService {
         userId: rental.ownerId,
         title: 'Cập nhật đơn thuê',
         message:
-          statusMessages[status] || 'Trạng thái đơn thuê đã được cập nhật bởi quản trị viên',
+          statusMessages[status] ||
+          'Trạng thái đơn thuê đã được cập nhật bởi quản trị viên',
         type: 'RENTAL_UPDATE',
         data: {
           rentalId: rental.id,
