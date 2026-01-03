@@ -13,6 +13,7 @@ import { apiUser } from "@/services/api.user";
 import { COLORS } from "@/constants/colors";
 import VehicleCard from "@/screens/vehicles/components/VehicleCard";
 import type { Vehicle } from "@/screens/vehicles/types";
+import { useRefreshControl } from "@/hooks/useRefreshControl";
 
 export default function FavoritesScreen() {
   const {
@@ -20,10 +21,14 @@ export default function FavoritesScreen() {
     isLoading,
     isError,
     refetch,
-    isRefetching,
   } = useQuery({
     queryKey: ["favorites"],
     queryFn: () => apiUser.getFavorites(),
+  });
+
+  const { refreshControl } = useRefreshControl({
+    queryKeys: [["favorites"]],
+    refetchFunctions: [refetch],
   });
 
   if (isLoading) {
@@ -68,13 +73,7 @@ export default function FavoritesScreen() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 24 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            colors={[COLORS.primary]}
-          />
-        }
+        refreshControl={refreshControl}
       >
         {total === 0 ? (
           <View className="flex-1 items-center justify-center px-4 py-20 mt-4">

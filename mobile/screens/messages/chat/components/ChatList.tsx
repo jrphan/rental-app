@@ -10,6 +10,7 @@ interface ChatListProps {
   onItemAction?: (action: string, item: Chat) => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  refreshControl?: React.ReactElement<typeof RefreshControl>;
 }
 
 export default function ChatList({
@@ -17,6 +18,7 @@ export default function ChatList({
   onItemAction,
   onRefresh,
   isRefreshing = false,
+  refreshControl,
 }: ChatListProps) {
   const handleItemPress = (chat: Chat) => {
     router.push(`/messages/chat/${chat.id}` as any);
@@ -87,9 +89,10 @@ export default function ChatList({
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          onRefresh ? (
+          refreshControl ||
+          (onRefresh ? (
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-          ) : undefined
+          ) : undefined)
         }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20 mt-6">

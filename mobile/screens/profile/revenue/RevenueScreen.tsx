@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import HeaderBase from "@/components/header/HeaderBase";
 import { apiCommission, RevenueItem } from "@/services/api.commission";
+import { useRefreshControl } from "@/hooks/useRefreshControl";
 import { formatCurrency } from "@/utils/currency";
 import { COLORS } from "@/constants/colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -144,12 +145,16 @@ export default function RevenueScreen() {
     data: revenueData,
     isLoading,
     refetch,
-    isRefetching,
   } = useQuery({
     queryKey: ["revenue", startDateObj, endDateObj],
     queryFn: () =>
       apiCommission.getRevenue(startDateObj, endDateObj, 100, 0),
     enabled: true,
+  });
+
+  const { refreshControl } = useRefreshControl({
+    queryKeys: [["revenue"]],
+    refetchFunctions: [refetch],
   });
 
   const handleClearFilter = () => {
@@ -166,13 +171,7 @@ export default function RevenueScreen() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            colors={[COLORS.primary]}
-          />
-        }
+        refreshControl={refreshControl}
       >
         {/* Filter Section */}
         <View className="bg-white rounded-2xl p-4 mb-4 border border-gray-200">

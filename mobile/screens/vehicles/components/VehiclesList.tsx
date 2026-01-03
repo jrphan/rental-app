@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { View, Text, FlatList, ListRenderItem, ScrollView } from "react-native";
+import { View, Text, FlatList, ListRenderItem, ScrollView, RefreshControl } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import VehicleCard from "./VehicleCard";
 import type { Vehicle } from "../types";
@@ -8,12 +8,14 @@ interface VehiclesListProps {
   vehicles: Vehicle[];
   onVehiclePress?: (vehicle: Vehicle) => void;
   variant?: "full" | "compact"; // full: vertical scroll, compact: horizontal scroll
+  refreshControl?: React.ReactElement<typeof RefreshControl>;
 }
 
 export default function VehiclesList({
   vehicles,
   onVehiclePress,
   variant = "full",
+  refreshControl,
 }: VehiclesListProps) {
   // Memoize render item to avoid recreating on every render
   const renderItem: ListRenderItem<Vehicle> = useCallback(
@@ -96,6 +98,7 @@ export default function VehiclesList({
       }}
       showsVerticalScrollIndicator={false}
       className="bg-gray-50"
+      refreshControl={refreshControl}
       // Performance optimizations
       removeClippedSubviews={true}
       maxToRenderPerBatch={10}

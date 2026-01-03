@@ -8,6 +8,7 @@ import { COLORS } from "@/constants/colors";
 import { useQuery } from "@tanstack/react-query";
 import { apiChat } from "@/services/api.chat";
 import { useChatSocket } from "@/hooks/chat/useChatSocket";
+import { useRefreshControl } from "@/hooks/useRefreshControl";
 
 export default function ChatScreen() {
   const { isAuthenticated } = useAuthStore();
@@ -26,6 +27,11 @@ export default function ChatScreen() {
     queryKey: ["chats"],
     queryFn: () => apiChat.getMyChats(),
     enabled: isAuthenticated,
+  });
+
+  const { refreshControl } = useRefreshControl({
+    queryKeys: [["chats"]],
+    refetchFunctions: [refetch],
   });
 
   if (!isAuthenticated) {
@@ -79,5 +85,5 @@ export default function ChatScreen() {
     );
   }
 
-  return <ChatList data={chats || []} onRefresh={refetch} />;
+  return <ChatList data={chats || []} refreshControl={refreshControl} />;
 }

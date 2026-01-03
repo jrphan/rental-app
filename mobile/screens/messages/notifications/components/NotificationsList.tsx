@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, FlatList } from "react-native";
+import { View, Text, FlatList, RefreshControl } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import NotificationItem from "./NotificationItem";
 import type { NotificationItem as NotificationItemType } from "../types";
@@ -9,6 +9,7 @@ interface NotificationsListProps {
   onItemAction?: (action: string, item: NotificationItemType) => void;
   onItemNavigate?: (item: NotificationItemType) => void;
   onRefresh?: () => void;
+  refreshControl?: React.ReactElement<typeof RefreshControl>;
 }
 
 export default function NotificationsList({
@@ -16,6 +17,7 @@ export default function NotificationsList({
   onItemAction,
   onItemNavigate,
   onRefresh,
+  refreshControl,
 }: NotificationsListProps) {
   return (
     <View className="flex-1 bg-gray-50">
@@ -30,6 +32,12 @@ export default function NotificationsList({
         )}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          refreshControl ||
+          (onRefresh ? (
+            <RefreshControl refreshing={false} onRefresh={onRefresh} />
+          ) : undefined)
+        }
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20">
             <MaterialIcons

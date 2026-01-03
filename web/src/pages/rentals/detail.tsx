@@ -1,9 +1,15 @@
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { RentalStatusBadge } from './status-badge'
-import type { AdminRentalItem, DisputeStatus } from '@/services/api.admin-rental'
+import type { AdminRentalItem, DisputeStatus, RentalStatus } from '@/services/api.admin-rental'
+import { adminRentalApi } from '@/services/api.admin-rental'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 
 interface RentalDetailPanelProps {
   selected: AdminRentalItem | null
   onClearSelection: () => void
+  onUpdate?: () => void
 }
 
 const disputeStatusLabels: Record<DisputeStatus, string> = {
@@ -25,7 +31,46 @@ const disputeStatusColors: Record<DisputeStatus, string> = {
 export function RentalDetailPanel({
   selected,
   onClearSelection,
+  onUpdate,
 }: RentalDetailPanelProps) {
+  const queryClient = useQueryClient()
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: RentalStatus }) =>
+      adminRentalApi.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminRentals'] })
+      onUpdate?.()
+    },
+    onSettled: () => {
+      setIsUpdating(false)
+    },
+  })
+
+  const handleCompleteDisputedRental = async () => {
+    if (!selected) return
+
+    if (
+      !confirm(
+        'Bạn có chắc chắn muốn chuyển đơn tranh chấp đã giải quyết thành hoàn thành?',
+      )
+    ) {
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      await updateStatusMutation.mutateAsync({
+        id: selected.id,
+        status: 'COMPLETED',
+      })
+    } catch (error) {
+      console.error('Failed to update rental status:', error)
+      alert('Cập nhật trạng thái thất bại. Vui lòng thử lại.')
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('vi-VN', {
       day: '2-digit',
@@ -175,7 +220,7 @@ export function RentalDetailPanel({
                 label="Tổng tiền thuê"
                 value={formatCurrency(
                   Number(selected.pricePerDay) *
-                    (selected.durationMinutes / 60 / 24),
+                  (selected.durationMinutes / 60 / 24),
                 )}
               />
               <DetailRow
@@ -218,34 +263,34 @@ export function RentalDetailPanel({
 
             {(selected.startOdometer !== null ||
               selected.endOdometer !== null) && (
-              <Section title="Số km">
-                <DetailRow
-                  label="Số km bắt đầu"
-                  value={
-                    selected.startOdometer !== null
-                      ? `${selected.startOdometer.toLocaleString('vi-VN')} km`
-                      : '—'
-                  }
-                />
-                <DetailRow
-                  label="Số km kết thúc"
-                  value={
-                    selected.endOdometer !== null
-                      ? `${selected.endOdometer.toLocaleString('vi-VN')} km`
-                      : '—'
-                  }
-                />
-                {selected.startOdometer !== null &&
-                  selected.endOdometer !== null && (
-                    <DetailRow
-                      label="Tổng km đã đi"
-                      value={`${(
-                        selected.endOdometer - selected.startOdometer
-                      ).toLocaleString('vi-VN')} km`}
-                    />
-                  )}
-              </Section>
-            )}
+                <Section title="Số km">
+                  <DetailRow
+                    label="Số km bắt đầu"
+                    value={
+                      selected.startOdometer !== null
+                        ? `${selected.startOdometer.toLocaleString('vi-VN')} km`
+                        : '—'
+                    }
+                  />
+                  <DetailRow
+                    label="Số km kết thúc"
+                    value={
+                      selected.endOdometer !== null
+                        ? `${selected.endOdometer.toLocaleString('vi-VN')} km`
+                        : '—'
+                    }
+                  />
+                  {selected.startOdometer !== null &&
+                    selected.endOdometer !== null && (
+                      <DetailRow
+                        label="Tổng km đã đi"
+                        value={`${(
+                          selected.endOdometer - selected.startOdometer
+                        ).toLocaleString('vi-VN')} km`}
+                      />
+                    )}
+                </Section>
+              )}
 
             {selected.cancelReason && (
               <Section title="Lý do hủy">
@@ -321,6 +366,25 @@ export function RentalDetailPanel({
                       value={formatDate(selected.dispute.resolvedAt)}
                     />
                   )}
+                  {/* Button để chuyển đổi sang COMPLETED khi dispute đã được giải quyết */}
+                  {selected.status === 'DISPUTED' && (
+                    <div className="pt-2 border-t border-orange-200">
+                      <Button
+                        onClick={handleCompleteDisputedRental}
+                        disabled={isUpdating}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {isUpdating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Đang xử lý...
+                          </>
+                        ) : (
+                          'Chuyển thành hoàn thành'
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </Section>
             )}
@@ -344,25 +408,23 @@ export function RentalDetailPanel({
                         </div>
                         <div className="flex flex-col text-right">
                           <span
-                            className={`text-xs font-semibold ${
-                              transaction.type === 'REFUND'
-                                ? 'text-green-600'
-                                : transaction.type === 'PAYMENT'
-                                  ? 'text-red-600'
-                                  : 'text-gray-600'
-                            }`}
+                            className={`text-xs font-semibold ${transaction.type === 'REFUND'
+                              ? 'text-green-600'
+                              : transaction.type === 'PAYMENT'
+                                ? 'text-red-600'
+                                : 'text-gray-600'
+                              }`}
                           >
                             {transaction.type === 'REFUND' ? '+' : '-'}
                             {formatCurrency(transaction.amount)}
                           </span>
                           <span
-                            className={`text-xs ${
-                              transaction.status === 'COMPLETED'
-                                ? 'text-green-600'
-                                : transaction.status === 'FAILED'
-                                  ? 'text-red-600'
-                                  : 'text-yellow-600'
-                            }`}
+                            className={`text-xs ${transaction.status === 'COMPLETED'
+                              ? 'text-green-600'
+                              : transaction.status === 'FAILED'
+                                ? 'text-red-600'
+                                : 'text-yellow-600'
+                              }`}
                           >
                             {transaction.status}
                           </span>

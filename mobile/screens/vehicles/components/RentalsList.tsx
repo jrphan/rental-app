@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { View, Text, FlatList, ListRenderItem } from "react-native";
+import { View, Text, FlatList, ListRenderItem, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import RentalCard from "./RentalCard";
@@ -9,12 +9,14 @@ interface RentalsListProps {
   rentals: Rental[];
   onRentalPress?: (rental: Rental) => void;
   showOwnerActions?: boolean;
+  refreshControl?: React.ReactElement<typeof RefreshControl>;
 }
 
 export default function RentalsList({
   rentals,
   onRentalPress,
   showOwnerActions = false,
+  refreshControl,
 }: RentalsListProps) {
   const router = useRouter();
 
@@ -71,6 +73,7 @@ export default function RentalsList({
       }}
       showsVerticalScrollIndicator={false}
       className="bg-gray-50"
+      refreshControl={refreshControl}
       // Performance optimizations
       removeClippedSubviews={true}
       maxToRenderPerBatch={10}

@@ -918,4 +918,147 @@ export class RentalService {
 
     return rental;
   }
+
+  /**
+   * Admin: Cập nhật trạng thái đơn thuê
+   * Cho phép admin chuyển đơn tranh chấp đã giải quyết thành hoàn thành
+   */
+  async updateRentalStatusAdmin(
+    adminId: string,
+    rentalId: string,
+    updateStatusDto: UpdateRentalStatusDto,
+  ): Promise<UpdateRentalStatusResponse> {
+    await this.assertAdminOrSupport(adminId);
+
+    const { status } = updateStatusDto;
+
+    const rental = await this.prismaService.rental.findUnique({
+      where: { id: rentalId },
+      include: {
+        dispute: true,
+        vehicle: true,
+      },
+    });
+
+    if (!rental) {
+      throw new NotFoundException('Không tìm thấy đơn thuê');
+    }
+
+    // Validate status transition for admin
+    // Admin có thể chuyển từ DISPUTED sang COMPLETED nếu dispute đã được giải quyết
+    if (rental.status === RentalStatus.DISPUTED && status === RentalStatus.COMPLETED) {
+      if (!rental.dispute) {
+        throw new BadRequestException(
+          'Đơn thuê này không có tranh chấp',
+        );
+      }
+
+      // Chỉ cho phép chuyển sang COMPLETED nếu dispute đã được giải quyết
+      const resolvedStatuses = ['RESOLVED_REFUND', 'RESOLVED_NO_REFUND'];
+      if (!resolvedStatuses.includes(rental.dispute.status)) {
+        throw new BadRequestException(
+          'Chỉ có thể chuyển đơn tranh chấp đã giải quyết thành hoàn thành',
+        );
+      }
+    } else {
+      // Các chuyển đổi khác cần tuân theo logic thông thường
+      const validTransitions: Record<RentalStatus, RentalStatus[]> = {
+        [RentalStatus.PENDING_PAYMENT]: [
+          RentalStatus.AWAIT_APPROVAL,
+          RentalStatus.CANCELLED,
+        ],
+        [RentalStatus.AWAIT_APPROVAL]: [
+          RentalStatus.CONFIRMED,
+          RentalStatus.CANCELLED,
+        ],
+        [RentalStatus.CONFIRMED]: [RentalStatus.ON_TRIP, RentalStatus.CANCELLED],
+        [RentalStatus.ON_TRIP]: [RentalStatus.COMPLETED, RentalStatus.CANCELLED],
+        [RentalStatus.COMPLETED]: [],
+        [RentalStatus.CANCELLED]: [],
+        [RentalStatus.DISPUTED]: [RentalStatus.COMPLETED], // Admin có thể chuyển từ DISPUTED sang COMPLETED
+      };
+
+      if (!validTransitions[rental.status]?.includes(status)) {
+        throw new BadRequestException(
+          `Không thể chuyển từ ${rental.status} sang ${status}`,
+        );
+      }
+    }
+
+    // Update rental
+    const updated = await this.prismaService.rental.update({
+      where: { id: rentalId },
+      data: {
+        status,
+      },
+      select: selectRental,
+    });
+
+    // Log audit
+    await this.auditLogService
+      .log({
+        actorId: adminId,
+        action: AuditAction.UPDATE,
+        targetId: rental.id,
+        targetType: AuditTargetType.RENTAL,
+        metadata: {
+          action: 'admin_update_rental_status',
+          oldStatus: rental.status,
+          newStatus: status,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log admin rental status update audit', error);
+      });
+
+    // Send notification to both renter and owner
+    const statusMessages: Record<RentalStatus, string> = {
+      [RentalStatus.PENDING_PAYMENT]: 'Đơn thuê đang chờ thanh toán',
+      [RentalStatus.AWAIT_APPROVAL]: 'Đơn thuê đang chờ xác nhận',
+      [RentalStatus.CONFIRMED]: 'Đơn thuê đã được xác nhận',
+      [RentalStatus.ON_TRIP]: 'Đơn thuê đang diễn ra',
+      [RentalStatus.COMPLETED]: 'Đơn thuê đã hoàn thành',
+      [RentalStatus.CANCELLED]: 'Đơn thuê đã bị hủy',
+      [RentalStatus.DISPUTED]: 'Đơn thuê đang có tranh chấp',
+    };
+
+    // Notify renter
+    await this.notificationService
+      .createNotification({
+        userId: rental.renterId,
+        title: 'Cập nhật đơn thuê',
+        message:
+          statusMessages[status] || 'Trạng thái đơn thuê đã được cập nhật bởi quản trị viên',
+        type: 'RENTAL_UPDATE',
+        data: {
+          rentalId: rental.id,
+          status,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to send notification to renter', error);
+      });
+
+    // Notify owner
+    await this.notificationService
+      .createNotification({
+        userId: rental.ownerId,
+        title: 'Cập nhật đơn thuê',
+        message:
+          statusMessages[status] || 'Trạng thái đơn thuê đã được cập nhật bởi quản trị viên',
+        type: 'RENTAL_UPDATE',
+        data: {
+          rentalId: rental.id,
+          status,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to send notification to owner', error);
+      });
+
+    return {
+      message: statusMessages[status] || 'Trạng thái đơn thuê đã được cập nhật',
+      rental: updated,
+    };
+  }
 }

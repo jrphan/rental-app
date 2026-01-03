@@ -22,6 +22,7 @@ import { useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useAuthStore } from "@/store/auth";
 import { useToast } from "@/hooks/useToast";
+import { useRefreshControl } from "@/hooks/useRefreshControl";
 
 export default function VehiclesScreen() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function VehiclesScreen() {
     data: vehiclesData,
     isLoading: isLoadingVehicles,
     isError: isErrorVehicles,
+    refetch: refetchVehicles,
   } = useQuery({
     queryKey: ["myVehicles", "ALL"],
     queryFn: () => apiVehicle.getMyVehicles(), // Fetch all vehicles (no status filter)
@@ -51,6 +53,7 @@ export default function VehiclesScreen() {
     data: renterRentalsData,
     isLoading: isLoadingRenterRentals,
     isError: isErrorRenterRentals,
+    refetch: refetchRenterRentals,
   } = useQuery({
     queryKey: ["myRentals", "renter"],
     queryFn: () => apiRental.getMyRentals("renter"),
@@ -62,10 +65,23 @@ export default function VehiclesScreen() {
     data: ownerRentalsData,
     isLoading: isLoadingOwnerRentals,
     isError: isErrorOwnerRentals,
+    refetch: refetchOwnerRentals,
   } = useQuery({
     queryKey: ["myRentals", "owner"],
     queryFn: () => apiRental.getMyRentals("owner"),
     enabled: isAuthenticated && activeMainTab === "rentals", // Only fetch when authenticated and rentals tab is active
+  });
+
+  // Setup refresh control for vehicles tab
+  const vehiclesRefreshControl = useRefreshControl({
+    queryKeys: [["myVehicles"]],
+    refetchFunctions: [refetchVehicles],
+  });
+
+  // Setup refresh control for rentals tab
+  const rentalsRefreshControl = useRefreshControl({
+    queryKeys: [["myRentals"]],
+    refetchFunctions: [refetchRenterRentals, refetchOwnerRentals],
   });
 
   // Memoize rentals arrays to avoid creating new arrays on every render
@@ -216,7 +232,10 @@ export default function VehiclesScreen() {
           route: "",
           // Use contentFactory for lazy loading - only render when tab is active
           contentFactory: () => (
-            <VehiclesList vehicles={vehiclesByStatus[tab.value]} />
+            <VehiclesList 
+              vehicles={vehiclesByStatus[tab.value]} 
+              refreshControl={vehiclesRefreshControl.refreshControl}
+            />
           ),
         }))}
         variant="inline"
@@ -299,6 +318,7 @@ export default function VehiclesScreen() {
               <RentalsList
                 rentals={mappedOwnerRentals}
                 showOwnerActions={true}
+                refreshControl={rentalsRefreshControl.refreshControl}
               />
             ),
           },
@@ -310,6 +330,7 @@ export default function VehiclesScreen() {
               <RentalsList
                 rentals={mappedRenterRentals}
                 showOwnerActions={false}
+                refreshControl={rentalsRefreshControl.refreshControl}
               />
             ),
           },

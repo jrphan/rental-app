@@ -175,4 +175,19 @@ export class RentalController {
 
     return this.rentalService.getRentalDetailAdmin(adminId, id);
   }
+
+  @Patch(ROUTES.ADMIN.UPDATE_RENTAL_STATUS)
+  @UseGuards(AuthGuard)
+  updateRentalStatusAdmin(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() updateStatusDto: UpdateRentalStatusDto,
+  ): Promise<UpdateRentalStatusResponse> {
+    const adminId = (req as AuthenticatedRequest).user?.sub;
+    if (!adminId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.rentalService.updateRentalStatusAdmin(adminId, id, updateStatusDto);
+  }
 }

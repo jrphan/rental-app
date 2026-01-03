@@ -3,6 +3,7 @@ import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "rea
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRefreshControl } from "@/hooks/useRefreshControl";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import HeaderBase from "@/components/header/HeaderBase";
 import FilterModal, { type SearchFilters } from "@/components/search/FilterModal";
@@ -163,6 +164,7 @@ export default function SearchResultsScreen() {
 		data: searchResults,
 		isLoading: isLoadingSearch,
 		isError: isErrorSearch,
+		refetch: refetchSearch,
 	} = useQuery({
 		queryKey: ["searchVehicles", builtFilters],
 		queryFn: () =>
@@ -171,6 +173,11 @@ export default function SearchResultsScreen() {
 				startDate: builtFilters.startDate ? builtFilters.startDate.toISOString() : undefined,
 				endDate: builtFilters.endDate ? builtFilters.endDate.toISOString() : undefined,
 			}),
+	});
+
+	const { refreshControl } = useRefreshControl({
+		queryKeys: [["searchVehicles"]],
+		refetchFunctions: [refetchSearch],
 	});
 
 	const renderVehicleList = (vehicles: Vehicle[] | undefined) => {
@@ -266,6 +273,7 @@ export default function SearchResultsScreen() {
 					className="flex-1"
 					showsVerticalScrollIndicator={false}
 					contentContainerStyle={{ paddingBottom: 24 }}
+					refreshControl={refreshControl}
 				>
 					{/* Search Bar */}
 					<View className="px-4 pt-4 pb-2 mb-4">

@@ -161,5 +161,20 @@ export const adminRentalApi = {
     }
     throw new Error(response.message || 'Lấy chi tiết đơn hàng thất bại')
   },
+
+  async updateStatus(
+    id: string,
+    status: RentalStatus,
+  ): Promise<{ message: string; rental: AdminRentalDetail }> {
+    const response = await apiClient.patch<
+      { message: string; rental: AdminRentalDetail }
+    >(API_ENDPOINTS.ADMIN.UPDATE_RENTAL_STATUS(id), {
+      status,
+    })
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data
+    }
+    throw new Error(response.message || 'Cập nhật trạng thái đơn hàng thất bại')
+  },
 }
 
