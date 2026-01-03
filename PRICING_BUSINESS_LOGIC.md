@@ -2,12 +2,12 @@
 
 ### 1. Các khoản chi phí trong hệ thống
 Khoản	           |     Mô tả
-Giá thuê/ngày	   |     Giá thuê xe theo ngày do chủ xe thiết lập
-Phí giao xe	       |     Phí giao xe tận nơi (10.000 VNĐ/km – hệ thống quy định)
-Giảm giá	       |     Mã khuyến mãi do nền tảng cung cấp
-Phí bảo hiểm	   |     Dịch vụ bảo hiểm tự nguyện cho người thuê
-Phí nền tảng	   |     Phí dịch vụ hệ thống thu từ chủ xe
-Tiền cọc	       |     Khoản tiền đảm bảo, hoàn trả sau khi kết thúc thuê
+Giá thuê/ngày	  |     Giá thuê xe theo ngày do chủ xe thiết lập
+Phí giao xe	     |     Phí giao xe tận nơi (10.000 VNĐ/km – hệ thống quy định)
+Giảm giá	        |     Mã khuyến mãi do nền tảng cung cấp
+Phí bảo hiểm	  |     Dịch vụ bảo hiểm tự nguyện cho người thuê
+Phí nền tảng	  |     Phí dịch vụ hệ thống thu từ chủ xe
+Tiền cọc	        |     Khoản tiền đảm bảo, hoàn trả sau khi kết thúc thuê
 
 ### 2. Quy tắc tính thời gian thuê
 
@@ -107,7 +107,7 @@ insuranceCommissionAmount = insuranceFee × insuranceCommissionRatio
 insurancePayableToPartner = insuranceFee - insuranceCommissionAmount
 
 ## Ví dụ
-Thông tin	                   |     Giá trị
+Thông tin	                  |     Giá trị
 insuranceFee	               |     60.000
 insuranceCommissionRatio	   |     20%
 insuranceCommissionAmount	   |     12.000
