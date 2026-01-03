@@ -766,7 +766,7 @@ export class RentalService {
   }
 
   /**
-   * Tạo dispute (phàn nàn) cho rental
+   * Tạo dispute (khiếu nại) cho rental
    */
   async createDispute(rentalId: string, userId: string, dto: CreateDisputeDto) {
     // Verify rental exists and user has access
@@ -819,8 +819,8 @@ export class RentalService {
     await this.notificationService
       .createNotification({
         userId: otherPartyId,
-        title: 'Có phàn nàn về đơn thuê',
-        message: `Đơn thuê ${rental.vehicle.brand} ${rental.vehicle.model} có phàn nàn mới`,
+        title: 'Có khiếu nại về đơn thuê',
+        message: `Đơn thuê ${rental.vehicle.brand} ${rental.vehicle.model} có khiếu nại mới`,
         type: 'RENTAL_UPDATE',
         data: {
           rentalId,

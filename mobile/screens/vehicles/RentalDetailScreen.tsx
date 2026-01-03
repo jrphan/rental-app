@@ -376,19 +376,19 @@ export default function RentalDetailScreen() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["rental", id] });
 			queryClient.invalidateQueries({ queryKey: ["myRentals"] });
-			Alert.alert("Thành công", "Đã gửi phàn nàn thành công");
+			Alert.alert("Thành công", "Đã gửi khiếu nại thành công");
 			setShowDisputeModal(false);
 			setDisputeReason("");
 			setDisputeDescription("");
 		},
 		onError: (error: any) => {
-			Alert.alert("Lỗi", error.message || "Không thể tạo phàn nàn");
+			Alert.alert("Lỗi", error.message || "Không thể tạo khiếu nại");
 		},
 	});
 
 	const handleSubmitDispute = () => {
 		if (!disputeReason.trim()) {
-			Alert.alert("Lỗi", "Vui lòng nhập lý do phàn nàn");
+			Alert.alert("Lỗi", "Vui lòng nhập lý do khiếu nại");
 			return;
 		}
 		createDisputeMutation.mutate({
@@ -1029,7 +1029,7 @@ export default function RentalDetailScreen() {
 					{rental.dispute ? (
 						<View className="bg-red-50 rounded-xl p-4 mb-4 border border-red-200">
 							<View className="flex-row items-center justify-between mb-3">
-								<Text className="text-base font-semibold text-gray-900">Phàn nàn về đơn thuê</Text>
+								<Text className="text-base font-semibold text-gray-900">khiếu nại về đơn thuê</Text>
 								<View
 									className={`px-2 py-1 rounded-full ${rental.dispute.status === "OPEN"
 										? "bg-amber-100"
@@ -1055,7 +1055,7 @@ export default function RentalDetailScreen() {
 								</View>
 							</View>
 							<View className="mb-2">
-								<Text className="text-sm font-medium text-gray-700 mb-1">Lý do phàn nàn:</Text>
+								<Text className="text-sm font-medium text-gray-700 mb-1">Lý do khiếu nại:</Text>
 								<Text className="text-sm text-gray-900">{rental.dispute.reason}</Text>
 							</View>
 							{rental.dispute.description && (
@@ -1070,9 +1070,9 @@ export default function RentalDetailScreen() {
 						</View>
 					) : canCreateDispute ? (
 						<View className="bg-amber-50 rounded-xl p-4 mb-4 border border-amber-200">
-							<Text className="text-base font-semibold text-gray-900 mb-3">Phàn nàn về đơn thuê</Text>
+							<Text className="text-base font-semibold text-gray-900 mb-3">khiếu nại về đơn thuê</Text>
 							<Text className="text-sm text-gray-600 mb-3">
-								Nếu bạn có phàn nàn về đơn thuê này, vui lòng gửi phàn nàn để chúng tôi xử lý
+								Nếu bạn có khiếu nại về đơn thuê này, vui lòng gửi khiếu nại để chúng tôi xử lý
 							</Text>
 							<TouchableOpacity
 								onPress={() => setShowDisputeModal(true)}
@@ -1093,7 +1093,7 @@ export default function RentalDetailScreen() {
 											fontWeight: "600",
 										}}
 									>
-										Gửi phàn nàn
+										Gửi khiếu nại
 									</Text>
 								</View>
 							</TouchableOpacity>
@@ -1300,11 +1300,11 @@ export default function RentalDetailScreen() {
 			>
 				<View className="flex-1 bg-black/50 justify-center items-center px-4">
 					<View className="bg-white rounded-2xl w-full max-w-md p-6">
-						<Text className="text-xl font-bold text-gray-900 mb-4">Gửi phàn nàn</Text>
+						<Text className="text-xl font-bold text-gray-900 mb-4">Gửi khiếu nại</Text>
 
 						<Text className="text-sm text-gray-600 mb-3">Vui lòng mô tả chi tiết vấn đề bạn gặp phải:</Text>
 
-						<Text className="text-sm font-medium text-gray-700 mb-2">Lý do phàn nàn *</Text>
+						<Text className="text-sm font-medium text-gray-700 mb-2">Lý do khiếu nại *</Text>
 						<TextInput
 							value={disputeReason}
 							onChangeText={setDisputeReason}
@@ -1352,7 +1352,7 @@ export default function RentalDetailScreen() {
 								{createDisputeMutation.isPending ? (
 									<ActivityIndicator color="#FFFFFF" />
 								) : (
-									<Text className="text-center font-medium text-white">Gửi phàn nàn</Text>
+									<Text className="text-center font-medium text-white">Gửi khiếu nại</Text>
 								)}
 							</TouchableOpacity>
 						</View>
