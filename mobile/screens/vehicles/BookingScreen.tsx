@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -75,9 +75,14 @@ export default function BookingScreen() {
 		const start = parseLocalDate(startDate);
 		const end = parseLocalDate(endDate);
 		if (start > end) return 0;
+
+		// Nếu cùng ngày, tính là 1 ngày
+		if (startDate === endDate) return 1;
+
+		// Tính số ngày chênh lệch (bao gồm cả ngày bắt đầu và kết thúc)
 		const durationMs = end.getTime() - start.getTime();
-		const durationMinutes = Math.floor(durationMs / (1000 * 60));
-		return Math.ceil(durationMinutes / (60 * 24)); // Round up to days
+		const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+		return days + 1; // +1 vì bao gồm cả ngày bắt đầu
 	}, [startDate, endDate]);
 
 	// 2. Tính giá cơ bản (Base Price)
@@ -245,13 +250,24 @@ export default function BookingScreen() {
 			return;
 		}
 
-		// Gửi ngày dạng "YYYY-MM-DD" để tránh lệch timezone khi convert sang ISO
-		// startDate và endDate đã là dạng "YYYY-MM-DD" từ DatePicker
-		// Backend sẽ parse và normalize đúng
+		// Parse dates trong local timezone và format thành ISO string với UTC
+		// để đảm bảo backend nhận đúng ngày không bị lệch timezone
+		const formatDateForBackend = (dateString: string): string => {
+			// Parse trong local timezone để lấy đúng year/month/day
+			const date = parseLocalDate(dateString);
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, "0");
+			const day = String(date.getDate()).padStart(2, "0");
+
+			// Tạo UTC date với cùng year/month/day để đảm bảo backend parse đúng
+			// Format: "YYYY-MM-DD" - backend sẽ parse như UTC và giữ đúng ngày
+			return `${year}-${month}-${day}`;
+		};
+
 		createRentalMutation.mutate({
 			vehicleId,
-			startDate: startDate, // Gửi trực tiếp dạng "YYYY-MM-DD"
-			endDate: endDate, // Gửi trực tiếp dạng "YYYY-MM-DD"
+			startDate: formatDateForBackend(startDate), // "YYYY-MM-DD" format
+			endDate: formatDateForBackend(endDate), // "YYYY-MM-DD" format
 			deliveryFee,
 			discountAmount,
 			insuranceFee: summary.insuranceFee,
