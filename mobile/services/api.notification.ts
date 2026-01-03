@@ -93,14 +93,32 @@ export const apiNotification = {
     platform: string;
     deviceId?: string;
   }): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>(
-      API_ENDPOINTS.USER.REGISTER_DEVICE_TOKEN,
-      data
-    );
-    if (response.success && response.data && !Array.isArray(response.data)) {
-      return response.data;
+    console.log("[API] RegisterDeviceToken - Request:", {
+      endpoint: API_ENDPOINTS.USER.REGISTER_DEVICE_TOKEN,
+      data: { ...data, token: data.token.substring(0, 20) + "..." },
+    });
+
+    try {
+      const response = await apiClient.post<{ message: string }>(
+        API_ENDPOINTS.USER.REGISTER_DEVICE_TOKEN,
+        data
+      );
+
+      console.log("[API] RegisterDeviceToken - Response:", response);
+
+      if (response.success && response.data && !Array.isArray(response.data)) {
+        return response.data;
+      }
+      throw new Error(response.message || "Đăng ký device token thất bại");
+    } catch (error: any) {
+      console.error("[API] RegisterDeviceToken - Error:", {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        url: error?.config?.url,
+      });
+      throw error;
     }
-    throw new Error(response.message || "Đăng ký device token thất bại");
   },
 
   async deleteNotification(id: string): Promise<{ message: string }> {

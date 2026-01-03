@@ -142,21 +142,28 @@ export function usePushNotifications(): UsePushNotificationsReturn {
    */
   const registerForPushNotifications = useCallback(async () => {
     try {
+      console.log("[PushNotifications] Starting registration...");
+      console.log("[PushNotifications] isAuthenticated:", isAuthenticated);
+      console.log("[PushNotifications] isExpoGo:", isExpoGo);
+      console.log("[PushNotifications] Notifications module:", !!Notifications);
+      console.log("[PushNotifications] Device.isDevice:", Device.isDevice);
+
       // Skip if running in Expo Go (remote push notifications not supported)
       if (isExpoGo || !Notifications) {
+        console.warn(
+          "[PushNotifications] Skipped: Expo Go or Notifications module not available"
+        );
         setExpoPushToken({
           token: null,
           error:
             "Push notifications không được hỗ trợ trong Expo Go. Vui lòng sử dụng development build.",
         });
-        console.warn(
-          "Push notifications are not supported in Expo Go. Use a development build instead."
-        );
         return;
       }
 
       // Chỉ register khi đã đăng nhập
       if (!isAuthenticated) {
+        console.log("[PushNotifications] Skipped: User not authenticated");
         setExpoPushToken({
           token: null,
           error: "User chưa đăng nhập",
@@ -166,6 +173,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       // Check if device is physical device
       if (!Device.isDevice) {
+        console.warn("[PushNotifications] Skipped: Not a physical device");
         setExpoPushToken({
           token: null,
           error: "Push notifications chỉ hoạt động trên thiết bị thật",
@@ -201,11 +209,16 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       // Note: Cần set EXPO_PUBLIC_PROJECT_ID trong .env hoặc app.config.js
       const projectId = process.env.EXPO_PUBLIC_PROJECT_ID;
 
-      console.log("projectId", projectId);
+      console.log("[PushNotifications] projectId:", projectId);
 
       const token = projectId
         ? await Notifications.getExpoPushTokenAsync({ projectId })
         : await Notifications.getExpoPushTokenAsync();
+
+      console.log(
+        "[PushNotifications] Expo push token received:",
+        token.data?.substring(0, 20) + "..."
+      );
 
       setExpoPushToken({
         token: token.data,
@@ -226,18 +239,39 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       }
 
       // Send token to backend
+      console.log(
+        "[PushNotifications] Attempting to register device token with backend..."
+      );
       try {
-        await apiNotification.registerDeviceToken({
+        const registerData = {
           token: token.data,
           platform: Platform.OS,
           deviceId: Device.modelName || undefined,
+        };
+        console.log("[PushNotifications] Register data:", {
+          ...registerData,
+          token: registerData.token.substring(0, 20) + "...",
         });
-        console.log("Device token registered successfully");
+
+        await apiNotification.registerDeviceToken(registerData);
+        console.log(
+          "[PushNotifications] ✅ Device token registered successfully with backend"
+        );
       } catch (error: any) {
-        console.error("Failed to register device token:", error);
+        console.error(
+          "[PushNotifications] ❌ Failed to register device token:",
+          error
+        );
+        console.error("[PushNotifications] Error details:", {
+          message: error?.message,
+          response: error?.response?.data,
+          status: error?.response?.status,
+        });
         // Don't fail the entire registration if backend call fails
       }
     } catch (error: any) {
+      console.error("[PushNotifications] ❌ Registration error:", error);
+      console.error("[PushNotifications] Error message:", error?.message);
       setExpoPushToken({
         token: null,
         error: error?.message || "Lỗi khi đăng ký push notifications",
@@ -247,10 +281,20 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    console.log(
+      "[PushNotifications] useEffect triggered, isAuthenticated:",
+      isAuthenticated
+    );
     // Register for push notifications when authenticated
     if (isAuthenticated) {
+      console.log(
+        "[PushNotifications] User authenticated, calling registerForPushNotifications..."
+      );
       registerForPushNotifications();
     } else {
+      console.log(
+        "[PushNotifications] User not authenticated, resetting token"
+      );
       // Reset khi logout
       setExpoPushToken({ token: null, error: null });
       setIsRegistered(false);
