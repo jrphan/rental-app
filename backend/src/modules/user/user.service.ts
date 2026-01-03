@@ -590,13 +590,25 @@ export class UserService {
     await this.assertAdminOrSupport(adminId);
 
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const thisWeekStart = new Date(now);
     thisWeekStart.setDate(now.getDate() - now.getDay());
     thisWeekStart.setHours(0, 0, 0, 0);
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    const lastMonthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
     // Overview stats
     const [
@@ -621,7 +633,9 @@ export class UserService {
       }),
       this.prismaService.rental.count({
         where: {
-          status: { in: [RentalStatus.PENDING_PAYMENT, RentalStatus.AWAIT_APPROVAL] },
+          status: {
+            in: [RentalStatus.PENDING_PAYMENT, RentalStatus.AWAIT_APPROVAL],
+          },
           deletedAt: null,
         },
       }),
@@ -637,12 +651,12 @@ export class UserService {
           deletedAt: null,
         },
         _sum: {
-          platformFee: true,
+          platformEarning: true,
         },
       }),
     ]);
 
-    const totalRevenue = totalRevenueResult._sum.platformFee || 0;
+    const totalRevenue = totalRevenueResult._sum.platformEarning || 0;
 
     // Revenue by period
     const [todayRevenue, thisWeekRevenue, thisMonthRevenue, lastMonthRevenue] =
@@ -653,7 +667,7 @@ export class UserService {
             deletedAt: null,
             updatedAt: { gte: todayStart },
           },
-          _sum: { platformFee: true },
+          _sum: { platformEarning: true },
         }),
         this.prismaService.rental.aggregate({
           where: {
@@ -661,7 +675,7 @@ export class UserService {
             deletedAt: null,
             updatedAt: { gte: thisWeekStart },
           },
-          _sum: { platformFee: true },
+          _sum: { platformEarning: true },
         }),
         this.prismaService.rental.aggregate({
           where: {
@@ -669,7 +683,7 @@ export class UserService {
             deletedAt: null,
             updatedAt: { gte: thisMonthStart },
           },
-          _sum: { platformFee: true },
+          _sum: { platformEarning: true },
         }),
         this.prismaService.rental.aggregate({
           where: {
@@ -677,7 +691,7 @@ export class UserService {
             deletedAt: null,
             updatedAt: { gte: lastMonthStart, lte: lastMonthEnd },
           },
-          _sum: { platformFee: true },
+          _sum: { platformEarning: true },
         }),
       ]);
 
@@ -688,13 +702,14 @@ export class UserService {
       _count: { id: true },
     });
 
-    const rentalsByStatus = rentalsByStatusRaw.map((item) => ({
+    const rentalsByStatus = rentalsByStatusRaw.map(item => ({
       status: item.status,
       count: item._count.id,
     }));
 
     // Revenue chart data (last 30 days)
-    const chartData: Array<{ date: string; revenue: string; count: number }> = [];
+    const chartData: Array<{ date: string; revenue: string; count: number }> =
+      [];
     for (let i = 29; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
@@ -708,13 +723,13 @@ export class UserService {
           deletedAt: null,
           updatedAt: { gte: date, lt: nextDate },
         },
-        _sum: { platformFee: true },
+        _sum: { platformEarning: true },
         _count: { id: true },
       });
 
       chartData.push({
         date: date.toISOString().split('T')[0],
-        revenue: (dayData._sum.platformFee || 0).toString(),
+        revenue: (dayData._sum.platformEarning || 0).toString(),
         count: dayData._count.id,
       });
     }
@@ -743,7 +758,7 @@ export class UserService {
       },
     });
 
-    const recentRentals = recentRentalsData.map((rental) => ({
+    const recentRentals = recentRentalsData.map(rental => ({
       id: rental.id,
       renterName: rental.renter.fullName,
       vehicleName: `${rental.vehicle.brand} ${rental.vehicle.model}`,
@@ -764,7 +779,7 @@ export class UserService {
       take: 10,
     });
 
-    const vehicleIds = topVehiclesData.map((v) => v.vehicleId);
+    const vehicleIds = topVehiclesData.map(v => v.vehicleId);
     const vehicles = await this.prismaService.vehicle.findMany({
       where: { id: { in: vehicleIds } },
       select: {
@@ -775,11 +790,11 @@ export class UserService {
       },
     });
 
-    const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
+    const vehicleMap = new Map(vehicles.map(v => [v.id, v]));
 
     // Calculate revenue for each top vehicle
     const topVehiclesWithRevenue = await Promise.all(
-      topVehiclesData.map(async (item) => {
+      topVehiclesData.map(async item => {
         const vehicle = vehicleMap.get(item.vehicleId);
         if (!vehicle) return null;
 
@@ -789,7 +804,7 @@ export class UserService {
             status: RentalStatus.COMPLETED,
             deletedAt: null,
           },
-          _sum: { platformFee: true },
+          _sum: { platformEarning: true },
         });
 
         return {
@@ -798,7 +813,7 @@ export class UserService {
           model: vehicle.model,
           licensePlate: vehicle.licensePlate,
           rentalCount: item._count.id,
-          totalRevenue: (revenueData._sum.platformFee || 0).toString(),
+          totalRevenue: (revenueData._sum.platformEarning || 0).toString(),
         };
       }),
     );
@@ -820,10 +835,10 @@ export class UserService {
         disputedRentals,
       },
       revenue: {
-        today: (todayRevenue._sum.platformFee || 0).toString(),
-        thisWeek: (thisWeekRevenue._sum.platformFee || 0).toString(),
-        thisMonth: (thisMonthRevenue._sum.platformFee || 0).toString(),
-        lastMonth: (lastMonthRevenue._sum.platformFee || 0).toString(),
+        today: (todayRevenue._sum.platformEarning || 0).toString(),
+        thisWeek: (thisWeekRevenue._sum.platformEarning || 0).toString(),
+        thisMonth: (thisMonthRevenue._sum.platformEarning || 0).toString(),
+        lastMonth: (lastMonthRevenue._sum.platformEarning || 0).toString(),
       },
       rentalsByStatus,
       revenueChart: chartData,

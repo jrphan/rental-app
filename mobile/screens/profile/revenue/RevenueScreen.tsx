@@ -31,7 +31,7 @@ interface RevenueCardProps {
 
 function RevenueCard({ item }: RevenueCardProps) {
   const platformFee = item.platformFee || "0";
-  const deliveryFee = item.deliveryFee || "0";
+  // const deliveryFee = item.deliveryFee || "0";
   const insuranceFee = item.insuranceFee || "0";
   const discountAmount = item.discountAmount || "0";
 
@@ -96,14 +96,14 @@ function RevenueCard({ item }: RevenueCardProps) {
           </View>
         )}
         
-        {parseFloat(deliveryFee) > 0 && (
+        {/* {parseFloat(deliveryFee) > 0 && (
           <View className="flex-row justify-between mb-1">
             <Text className="text-xs text-gray-600">Phí giao xe:</Text>
             <Text className="text-xs font-medium text-blue-600">
               +{formatCurrency(deliveryFee)} đ
             </Text>
           </View>
-        )}
+        )} */}
         
         <View className="flex-row justify-between mt-2 pt-2 border-t border-gray-200">
           <Text className="text-sm font-semibold text-gray-900">Thu nhập của bạn:</Text>
@@ -114,7 +114,7 @@ function RevenueCard({ item }: RevenueCardProps) {
         
         <View className="mt-2 pt-2 border-t border-gray-100 bg-gray-50 rounded-lg p-2">
           <Text className="text-xs text-gray-600">
-            💡 <Text className="font-medium">Giải thích:</Text> Thu nhập = Tổng tiền - Phí nền tảng (15%) - Phí bảo hiểm + Giảm giá + Phí giao xe
+            💡 <Text className="font-medium">Giải thích:</Text> Thu nhập = Tổng tiền - Phí nền tảng (15%) - Phí bảo hiểm + Giảm giá
           </Text>
         </View>
       </View>

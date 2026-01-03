@@ -226,9 +226,7 @@ export class UserController {
 
   @Get(ROUTES.ADMIN.STATS)
   @UseGuards(AuthGuard)
-  getAdminStats(
-    @Req() req: Request,
-  ): Promise<AdminStatsResponse> {
+  getAdminStats(@Req() req: Request): Promise<AdminStatsResponse> {
     const adminId = (req as AuthenticatedRequest).user?.sub;
     if (!adminId) {
       throw new UnauthorizedException('Người dùng không tồn tại');
