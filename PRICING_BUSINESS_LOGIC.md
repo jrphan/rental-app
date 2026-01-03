@@ -145,9 +145,9 @@ Nền tảng (thu hộ)
    ├─ insuranceCommissionAmount  → Doanh thu nền tảng
    └─ insurancePayableToPartner → Đối tác bảo hiểm
 
-9. Kết luận
+### 9. Kết luận
 
-# Hệ thống tách bạch rõ:
+## Hệ thống tách bạch rõ:
 
 - Doanh thu chủ xe
 
@@ -155,7 +155,7 @@ Nền tảng (thu hộ)
 
 - Khoản thu hộ bảo hiểm
 
-# Đảm bảo:
+## Đảm bảo:
 
 - Minh bạch dòng tiền
 
