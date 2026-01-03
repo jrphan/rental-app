@@ -55,7 +55,7 @@ export class RentalService {
    */
   private normalizeDateToStartOfDay(date: Date): Date {
     const normalized = new Date(date);
-    normalized.setHours(0, 0, 0, 0);
+    // normalized.setHours(0, 0, 0, 0);
     return normalized;
   }
 
@@ -64,7 +64,7 @@ export class RentalService {
    */
   private normalizeDateToEndOfDay(date: Date): Date {
     const normalized = new Date(date);
-    normalized.setHours(23, 59, 59, 999);
+    // normalized.setHours(23, 59, 59, 999);
     return normalized;
   }
 

@@ -174,8 +174,7 @@ export class CommissionService {
   ): Promise<OwnerCommission> {
     const { weekStart, weekEnd } = this.getWeekRange(weekStartDate);
 
-    // Lấy completed rentals trong tuần
-    // Query rentals COMPLETED mà có endDate trong tuần (vì endDate là khi rental kết thúc)
+    // 1. Cập nhật query để lấy thêm insuranceFee và discountAmount
     const completedRentals = await this.prismaService.rental.findMany({
       where: {
         ownerId,
@@ -191,42 +190,51 @@ export class CommissionService {
         durationMinutes: true,
         deliveryFee: true,
         platformFeeRatio: true,
+        // [FIX] Thêm 2 trường này
+        insuranceFee: true,
+        discountAmount: true,
       },
     });
 
-    // Tính lại ownerEarning và platformFee từ dữ liệu rental
-    // Vì dữ liệu cũ trong database có thể đã trừ platformFee rồi
-    // Nên cần tính lại: ownerEarning = baseRental + deliveryFee (không trừ platformFee)
     let totalEarning = new Decimal(0);
-    let totalPlatformFee = new Decimal(0);
+    // [FIX] Đổi tên biến để phản ánh đúng nghĩa vụ thanh toán
+    let totalRefundToPlatform = new Decimal(0);
 
     for (const rental of completedRentals) {
-      // Tính baseRental từ pricePerDay và durationDays
       const durationDays = Math.ceil(rental.durationMinutes / (60 * 24));
       const baseRental = rental.pricePerDay.mul(durationDays);
 
-      // Tính platformFee = baseRental × platformFeeRatio
       const platformFee = baseRental.mul(
         rental.platformFeeRatio || new Decimal('0.15'),
       );
 
-      // Tính ownerEarning mới = baseRental + deliveryFee (KHÔNG trừ platformFee)
-      // Đảm bảo KHÔNG trừ platformFee trong totalEarning
       const deliveryFee = rental.deliveryFee || new Decimal(0);
-      const ownerEarning = baseRental.plus(deliveryFee);
+      const insuranceFee = rental.insuranceFee || new Decimal(0);
+      const discountAmount = rental.discountAmount || new Decimal(0);
 
+      // Tính ownerEarning (Thu nhập thực nhận của chủ xe)
+      // ownerEarning = baseRental - platformFee + deliveryFee
+      const ownerEarning = baseRental.minus(platformFee).plus(deliveryFee);
       totalEarning = totalEarning.plus(ownerEarning);
-      totalPlatformFee = totalPlatformFee.plus(platformFee);
+
+      // [FIX] Tính số tiền phải trả lại Platform theo đúng công thức:
+      // refund = platformFee + insuranceFee - discountAmount
+      // (Chủ xe trả phí sàn + trả tiền thu hộ bảo hiểm - được sàn bù tiền giảm giá)
+      const rentalRefund = platformFee.plus(insuranceFee).minus(discountAmount);
+
+      totalRefundToPlatform = totalRefundToPlatform.plus(rentalRefund);
     }
 
-    // Commission = platformFee (thu ở phần chiết khấu thay vì trừ trực tiếp trong ownerEarning)
-    const commissionAmount = totalPlatformFee;
+    // [FIX] Đảm bảo không âm (Trường hợp sàn trợ giá quá nhiều > phí sàn + bảo hiểm)
+    // Nếu âm nghĩa là Sàn nợ tiền Chủ xe (Logic Payout khác), ở đây ta chặn dưới 0 cho luồng Commission
+    const commissionAmount = totalRefundToPlatform.isNeg()
+      ? new Decimal(0)
+      : totalRefundToPlatform;
 
-    // Lấy commission rate để hiển thị
     const settings = await this.getCommissionSettings();
     const commissionRate = new Decimal(settings.commissionRate);
 
-    // Tạo hoặc update commission record
+    // Update DB
     const commission = await this.prismaService.ownerCommission.upsert({
       where: {
         ownerId_weekStartDate: {
@@ -237,7 +245,7 @@ export class CommissionService {
       update: {
         totalEarning,
         commissionRate,
-        commissionAmount,
+        commissionAmount, // Giá trị đã fix
         rentalCount: completedRentals.length,
       },
       create: {
@@ -246,7 +254,7 @@ export class CommissionService {
         weekEndDate: weekEnd,
         totalEarning,
         commissionRate,
-        commissionAmount,
+        commissionAmount, // Giá trị đã fix
         rentalCount: completedRentals.length,
         paymentStatus: CommissionPaymentStatus.PENDING,
       },

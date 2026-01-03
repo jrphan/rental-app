@@ -75,7 +75,7 @@ platformEarning = platformFee - discountAmount + insuranceCommissionAmount
 
 - insuranceCommissionAmount: hoa hồng bảo hiểm được hưởng
 
-## Bonus. Tiền chủ xe nhận từ khách thuê và cần hoàn trả cho Platform (không phải doanh thu - màn hình Chiết khấu) 
+## Bonus. Tiền chủ xe nhận từ khách thuê và cần hoàn trả cho Platform (không phải doanh thu) 
 refundToPlatform = totalPrice - ownerEarning = platformFee - discountAmount + insuranceFee
 
 <!-- BẢO HIỂM -->

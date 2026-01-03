@@ -71,7 +71,7 @@ export default function DashboardPage() {
           value={formatCurrency(data.overview.totalRevenue)}
           icon={DollarSign}
           trend={null}
-          description="Tổng phí nền tảng từ các đơn đã hoàn thành"
+          description="Tổng doanh thu thực nhận từ các đơn đã hoàn thành"
         />
         <StatsWidget
           title="Tổng đơn hàng"

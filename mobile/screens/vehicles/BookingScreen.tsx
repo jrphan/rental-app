@@ -82,7 +82,7 @@ export default function BookingScreen() {
 		// Tính số ngày chênh lệch (bao gồm cả ngày bắt đầu và kết thúc)
 		const durationMs = end.getTime() - start.getTime();
 		const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
-		return days + 1; // +1 vì bao gồm cả ngày bắt đầu
+		return days;
 	}, [startDate, endDate]);
 
 	// 2. Tính giá cơ bản (Base Price)

@@ -1,56 +1,53 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { adminFeeApi } from '@/services/api.admin-fee'
 import { SettingsPanel } from './settings'
 import { StatsPanel } from './stats'
+import { adminFeeApi } from '@/services/api.admin-fee'
 
 export default function FeesPage() {
   const queryClient = useQueryClient()
 
+  // Lấy dữ liệu cài đặt phí
   const { data: settingsData, refetch: refetchSettings } = useQuery({
     queryKey: ['adminFeeSettings'],
     queryFn: () => adminFeeApi.getFeeSettings(),
   })
 
-  const [filterType, setFilterType] = useState<'day' | 'month' | 'year'>('month')
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().slice(0, 10) // YYYY-MM-DD format for day
-  )
-  const [selectedMonth, setSelectedMonth] = useState<string>(
-    new Date().toISOString().slice(0, 7) // YYYY-MM format for month
-  )
-  const [selectedYear, setSelectedYear] = useState<string>(
-    new Date().getFullYear().toString() // YYYY format for year
-  )
+  // State cho bộ lọc khoảng thời gian
+  // Mặc định: Từ ngày 1 của tháng hiện tại đến ngày cuối cùng của tháng hiện tại
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date()
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    
+    // Format YYYY-MM-DD để dùng cho input type="date"
+    return {
+      startDate: firstDay.toISOString().slice(0, 10),
+      endDate: lastDay.toISOString().slice(0, 10)
+    }
+  })
 
+  // Query lấy dữ liệu thống kê
   const { data: statsData, refetch: refetchStats } = useQuery({
-    queryKey: ['adminInsuranceStats', filterType, selectedDate, selectedMonth, selectedYear],
+    queryKey: ['adminInsuranceStats', dateRange.startDate, dateRange.endDate],
     queryFn: () => {
-      let startDate: Date
-      let endDate: Date
+      // Chuyển đổi sang đối tượng Date để set giờ cụ thể
+      // startDate: bắt đầu từ 00:00:00
+      const start = new Date(dateRange.startDate)
+      start.setHours(0, 0, 0, 0)
 
-      if (filterType === 'day') {
-        const [year, month, day] = selectedDate.split('-').map(Number)
-        startDate = new Date(year, month - 1, day, 0, 0, 0, 0)
-        endDate = new Date(year, month - 1, day, 23, 59, 59, 999)
-      } else if (filterType === 'month') {
-        const [year, month] = selectedMonth.split('-').map(Number)
-        startDate = new Date(year, month - 1, 1, 0, 0, 0, 0)
-        endDate = new Date(year, month, 0, 23, 59, 59, 999)
-      } else {
-        // year
-        const year = Number(selectedYear)
-        startDate = new Date(year, 0, 1, 0, 0, 0, 0)
-        endDate = new Date(year, 11, 31, 23, 59, 59, 999)
-      }
+      // endDate: kết thúc lúc 23:59:59
+      const end = new Date(dateRange.endDate)
+      end.setHours(23, 59, 59, 999)
 
       return adminFeeApi.getInsuranceStats({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
       })
     },
   })
 
+  // Mutation cập nhật cài đặt phí
   const updateSettingsMutation = useMutation({
     mutationFn: (data: {
       deliveryFeePerKm: number
@@ -84,20 +81,15 @@ export default function FeesPage() {
         isUpdating={updateSettingsMutation.isPending}
       />
 
-      {/* Stats Panel */}
+      {/* Stats Panel với bộ lọc khoảng thời gian */}
       <StatsPanel
         stats={statsData}
-        filterType={filterType}
-        selectedDate={selectedDate}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        onFilterTypeChange={setFilterType}
-        onDateChange={setSelectedDate}
-        onMonthChange={setSelectedMonth}
-        onYearChange={setSelectedYear}
+        startDate={dateRange.startDate}
+        endDate={dateRange.endDate}
+        onStartDateChange={(date) => setDateRange(prev => ({ ...prev, startDate: date }))}
+        onEndDateChange={(date) => setDateRange(prev => ({ ...prev, endDate: date }))}
         onRefetch={() => refetchStats()}
       />
     </div>
   )
 }
-
