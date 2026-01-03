@@ -28,6 +28,7 @@ const API_ENDPOINTS = {
     MY_COMMISSIONS: "/user/commissions",
     CURRENT_WEEK_COMMISSION: "/user/commissions/current-week",
     COMMISSION_PAYMENT: "/user/commissions/:commissionId/payment",
+    REVENUE: "/user/revenue",
   },
   VEHICLE: {
     CREATE: "/vehicle/create",

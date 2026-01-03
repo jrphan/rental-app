@@ -55,7 +55,7 @@ export class RentalService {
    */
   private normalizeDateToStartOfDay(date: Date): Date {
     const normalized = new Date(date);
-    // normalized.setHours(0, 0, 0, 0);
+    normalized.setHours(0, 0, 0, 0);
     return normalized;
   }
 
@@ -64,7 +64,7 @@ export class RentalService {
    */
   private normalizeDateToEndOfDay(date: Date): Date {
     const normalized = new Date(date);
-    // normalized.setHours(23, 59, 59, 999);
+    normalized.setHours(23, 59, 59, 999);
     return normalized;
   }
 
@@ -173,16 +173,16 @@ export class RentalService {
     // 4. Phí nền tảng (CHỈ tính trên tiền thuê xe)
     const platformFee = baseRental.mul(this.PLATFORM_FEE_RATIO);
 
-    // 5. Thu nhập chủ xe
-    const ownerEarning = baseRental
-      .minus(platformFee)
-      .plus(new Decimal(deliveryFee));
+    // 5. Thu nhập chủ xe (KHÔNG trừ platformFee, sẽ thu ở phần chiết khấu)
+    const ownerEarning = baseRental.plus(new Decimal(deliveryFee));
 
     // 6. Tính hoa hồng bảo hiểm
     const insuranceFeeDecimal = new Decimal(insuranceFee);
     const commissionRatio = insuranceCommissionRatio || new Decimal('0.20'); // Default 20%
     const insuranceCommissionAmount = insuranceFeeDecimal.mul(commissionRatio);
-    const insurancePayableToPartner = insuranceFeeDecimal.minus(insuranceCommissionAmount);
+    const insurancePayableToPartner = insuranceFeeDecimal.minus(
+      insuranceCommissionAmount,
+    );
 
     // 7. Doanh thu platform thực (theo PRICING_BUSINESS_LOGIC.md)
     // platformEarning = platformFee - discountAmount + insuranceCommissionAmount
@@ -226,9 +226,15 @@ export class RentalService {
     const start = this.normalizeDateToStartOfDay(new Date(startDate));
     const end = this.normalizeDateToEndOfDay(new Date(endDate));
 
-    // Validate dates
+    // Validate dates - endDate must be >= startDate (allow same day rentals)
+    // After normalization: start is 00:00:00 of startDate, end is 23:59:59 of endDate
+    // So if same day: start (00:00:00) < end (23:59:59) = valid
+    // If endDate is after startDate: start < end = valid
+    // If endDate is before startDate: start >= end = invalid
     if (start >= end) {
-      throw new BadRequestException('Ngày kết thúc phải sau ngày bắt đầu');
+      throw new BadRequestException(
+        'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu',
+      );
     }
 
     const today = this.normalizeDateToStartOfDay(new Date());

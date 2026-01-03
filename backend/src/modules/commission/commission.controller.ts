@@ -20,6 +20,8 @@ import {
   OwnerCommissionListResponse,
   CommissionPaymentResponse,
   AdminCommissionPaymentListResponse,
+  RevenueResponse,
+  PendingCommissionAlertsResponse,
 } from '@/types/commission.type';
 import { UpdateCommissionSettingsDto } from '@/common/dto/Commission/update-commission-settings.dto';
 import { UploadInvoiceDto } from '@/common/dto/Commission/upload-invoice.dto';
@@ -86,6 +88,19 @@ export class CommissionController {
     return this.commissionService.reviewPayment(adminId, paymentId, body);
   }
 
+  @Get(ROUTES.ADMIN.COMMISSION_ALERTS)
+  @UseGuards(AuthGuard)
+  async getCommissionAlerts(
+    @Req() req: Request,
+  ): Promise<PendingCommissionAlertsResponse> {
+    const adminId = (req as AuthenticatedRequest).user?.sub;
+    if (!adminId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.commissionService.getPendingCommissionAlerts(adminId);
+  }
+
   // ==================== OWNER ROUTES ====================
 
   @Get(ROUTES.USER.MY_COMMISSIONS)
@@ -136,6 +151,32 @@ export class CommissionController {
       ownerId,
       commissionId,
       body,
+    );
+  }
+
+  @Get(ROUTES.USER.REVENUE)
+  @UseGuards(AuthGuard)
+  async getRevenue(
+    @Req() req: Request,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<RevenueResponse> {
+    const ownerId = (req as AuthenticatedRequest).user?.sub;
+    if (!ownerId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+
+    return this.commissionService.getOwnerRevenue(
+      ownerId,
+      start,
+      end,
+      limit ? parseInt(limit, 10) : 50,
+      offset ? parseInt(offset, 10) : 0,
     );
   }
 }

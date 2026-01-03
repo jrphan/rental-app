@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Modal } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -60,15 +60,29 @@ export default function BookingScreen() {
 
 	// --- LOGIC TÍNH TOÁN GIÁ & DISCOUNT (Cập nhật tự động) ---
 
+	// Helper to parse date string in local timezone
+	const parseLocalDate = (dateString: string): Date => {
+		const [year, month, day] = dateString.split("-").map(Number);
+		const date = new Date();
+		date.setFullYear(year, month - 1, day);
+		date.setHours(0, 0, 0, 0);
+		return date;
+	};
+
 	// 1. Tính số ngày thuê (Duration Days)
 	const durationDays = useMemo(() => {
 		if (!startDate || !endDate) return 0;
-		const start = new Date(startDate);
-		const end = new Date(endDate);
+		const start = parseLocalDate(startDate);
+		const end = parseLocalDate(endDate);
 		if (start > end) return 0;
+
+		// Nếu cùng ngày, tính là 1 ngày
+		if (startDate === endDate) return 1;
+
+		// Tính số ngày chênh lệch (bao gồm cả ngày bắt đầu và kết thúc)
 		const durationMs = end.getTime() - start.getTime();
-		const durationMinutes = Math.floor(durationMs / (1000 * 60));
-		return Math.ceil(durationMinutes / (60 * 24)); // Round up to days
+		const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+		return days + 1; // +1 vì bao gồm cả ngày bắt đầu
 	}, [startDate, endDate]);
 
 	// 2. Tính giá cơ bản (Base Price)
@@ -218,26 +232,42 @@ export default function BookingScreen() {
 			}
 		}
 
-		// Normalize dates
-		const start = new Date(startDate);
-		const end = new Date(endDate);
+		// Parse dates in local timezone để validate
+		const start = parseLocalDate(startDate);
+		const end = parseLocalDate(endDate);
 
-		if (start > end) {
-			Alert.alert("Lỗi", "Ngày kết thúc không được trước ngày bắt đầu");
-			return;
-		}
-
+		// Validation: start >= today, end >= start
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
+
 		if (start < today) {
-			Alert.alert("Lỗi", "Ngày bắt đầu không được trong quá khứ");
+			Alert.alert("Lỗi", "Ngày bắt đầu phải bằng hoặc lớn hơn ngày hiện tại");
 			return;
 		}
+
+		if (end < start) {
+			Alert.alert("Lỗi", "Ngày kết thúc phải bằng hoặc lớn hơn ngày bắt đầu");
+			return;
+		}
+
+		// Parse dates trong local timezone và format thành ISO string với UTC
+		// để đảm bảo backend nhận đúng ngày không bị lệch timezone
+		const formatDateForBackend = (dateString: string): string => {
+			// Parse trong local timezone để lấy đúng year/month/day
+			const date = parseLocalDate(dateString);
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, "0");
+			const day = String(date.getDate()).padStart(2, "0");
+
+			// Tạo UTC date với cùng year/month/day để đảm bảo backend parse đúng
+			// Format: "YYYY-MM-DD" - backend sẽ parse như UTC và giữ đúng ngày
+			return `${year}-${month}-${day}`;
+		};
 
 		createRentalMutation.mutate({
 			vehicleId,
-			startDate: start.toISOString(),
-			endDate: end.toISOString(),
+			startDate: formatDateForBackend(startDate), // "YYYY-MM-DD" format
+			endDate: formatDateForBackend(endDate), // "YYYY-MM-DD" format
 			deliveryFee,
 			discountAmount,
 			insuranceFee: summary.insuranceFee,
@@ -288,7 +318,7 @@ export default function BookingScreen() {
 				contentContainerStyle={{ paddingBottom: 24 }}
 				showsVerticalScrollIndicator={false}
 			>
-				<View className="px-4 pt-4">
+				<View className="px-4 pt-4 mt-4">
 					{/* Vehicle Info Summary */}
 					<View className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
 						<Text className="text-lg font-bold text-gray-900 mb-2">

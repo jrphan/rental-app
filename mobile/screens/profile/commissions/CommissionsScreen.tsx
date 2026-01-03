@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -85,17 +86,26 @@ function CommissionCard({ commission, onUploadInvoice }: CommissionCardProps) {
             Từ {commission.rentalCount} đơn thuê • Tổng thu nhập:{" "}
             {formatCurrency(commission.totalEarning)} đ
           </Text>
+          <View className="mt-2 pt-2 border-t border-gray-100">
+            <Text className="text-xs text-gray-600">
+              💡 Chiết khấu = Tổng thu nhập × {(
+                parseFloat(commission.commissionRate) * 100
+              ).toFixed(0)}% = {formatCurrency(commission.commissionAmount)} đ
+            </Text>
+            <Text className="text-xs text-gray-500 mt-1">
+              (Phí nền tảng được thu ở phần chiết khấu)
+            </Text>
+          </View>
         </View>
         <View
-          className={`px-3 py-1 rounded-full ${
-            commission.paymentStatus === "PENDING"
-              ? "bg-amber-100"
-              : commission.paymentStatus === "PAID"
-                ? "bg-blue-100"
-                : commission.paymentStatus === "APPROVED"
-                  ? "bg-green-100"
-                  : "bg-red-100"
-          }`}
+          className={`px-3 py-1 rounded-full ${commission.paymentStatus === "PENDING"
+            ? "bg-amber-100"
+            : commission.paymentStatus === "PAID"
+              ? "bg-blue-100"
+              : commission.paymentStatus === "APPROVED"
+                ? "bg-green-100"
+                : "bg-red-100"
+            }`}
         >
           <Text className={`text-xs font-medium ${statusColor}`}>
             {statusLabel}
@@ -222,52 +232,68 @@ function UploadInvoiceModal({
   if (!commission) return null;
 
   return (
-    <View className="absolute inset-0 bg-black/50 justify-center items-center z-50">
-      <View className="bg-white rounded-2xl p-6 mx-4 w-full max-w-md">
-        <Text className="text-xl font-semibold text-gray-900 mb-2">
-          Upload hóa đơn thanh toán
-        </Text>
-        <Text className="text-sm text-gray-600 mb-4">
-          Vui lòng chụp hoặc upload hóa đơn thanh toán cho số tiền:{" "}
-          <Text className="font-semibold">
-            {formatCurrency(commission.commissionAmount)} đ
+    <Modal
+      visible={!!commission}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+        {/* Header */}
+        <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200">
+          <Text className="text-lg font-bold text-gray-900">
+            Upload hóa đơn thanh toán
           </Text>
-        </Text>
+          <TouchableOpacity onPress={onClose}>
+            <MaterialIcons name="close" size={24} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
 
-        {isUploading || uploadInvoiceMutation.isPending ? (
-          <View className="py-4 items-center">
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text className="text-sm text-gray-600 mt-2">Đang upload...</Text>
-          </View>
-        ) : (
-          <View>
-            <TouchableOpacity
-              onPress={handlePickImage}
-              className="bg-orange-500 rounded-xl py-3 px-4 flex-row items-center justify-center mb-3"
-            >
-              <MaterialIcons name="photo-library" size={20} color="#FFF" />
-              <Text className="text-white font-semibold ml-2">
-                Chọn ảnh từ thư viện
-              </Text>
-            </TouchableOpacity>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ padding: 16 }}
+        >
+          <Text className="text-sm text-gray-600 mb-4">
+            Vui lòng chụp hoặc upload hóa đơn thanh toán cho số tiền:{" "}
+            <Text className="font-semibold text-gray-900">
+              {formatCurrency(commission.commissionAmount)} đ
+            </Text>
+          </Text>
 
-            <TouchableOpacity
-              onPress={onClose}
-              className="bg-gray-200 rounded-xl py-3 px-4"
-            >
-              <Text className="text-gray-700 font-semibold text-center">
-                Hủy
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-    </View>
+          {isUploading || uploadInvoiceMutation.isPending ? (
+            <View className="py-8 items-center">
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text className="text-sm text-gray-600 mt-4">Đang upload...</Text>
+            </View>
+          ) : (
+            <View>
+              <TouchableOpacity
+                onPress={handlePickImage}
+                className="bg-orange-500 rounded-xl py-3 px-4 flex-row items-center justify-center mb-3"
+              >
+                <MaterialIcons name="photo-library" size={20} color="#FFF" />
+                <Text className="text-white font-semibold ml-2">
+                  Chọn ảnh từ thư viện
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={onClose}
+                className="bg-gray-200 rounded-xl py-3 px-4"
+              >
+                <Text className="text-gray-700 font-semibold text-center">
+                  Hủy
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
 export default function CommissionsScreen() {
-  const toast = useToast();
   const [selectedCommission, setSelectedCommission] =
     useState<OwnerCommission | null>(null);
 
@@ -290,6 +316,9 @@ export default function CommissionsScreen() {
     queryKey: ["commissions"],
     queryFn: () => apiCommission.getMyCommissions(20, 0),
   });
+
+
+  console.log("commissionsData", commissionsData);
 
   const isLoading = isLoadingCurrent || isLoadingList;
   const isRefetching = isRefetchingCurrent || isRefetchingList;
@@ -329,7 +358,7 @@ export default function CommissionsScreen() {
 
   const allCommissions = [
     ...(currentCommission &&
-    !commissionsData?.items.find((c) => c.id === currentCommission.id)
+      !commissionsData?.items.find((c) => c.id === currentCommission.id)
       ? [currentCommission]
       : []),
     ...(commissionsData?.items || []),
@@ -356,12 +385,29 @@ export default function CommissionsScreen() {
           parseFloat(currentCommission.commissionAmount) > 0 && (
             <View className="mb-4">
               <Text className="text-lg font-semibold text-gray-900 mb-3">
-                Tuần hiện tại
+                Tuần trước (Cần thanh toán)
               </Text>
               <CommissionCard
                 commission={currentCommission}
                 onUploadInvoice={handleUploadInvoice}
               />
+              {/* Hiển thị cảnh báo nếu đang trong thời gian yêu cầu thanh toán */}
+              {(() => {
+                const now = new Date();
+                const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+                const isPaymentPeriod = dayOfWeek >= 1 && dayOfWeek <= 3; // Thứ 2-4
+
+                if (isPaymentPeriod) {
+                  return (
+                    <View className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <Text className="text-xs font-medium text-amber-900">
+                        ⚠️ Thời gian yêu cầu thanh toán: Thứ 2 - Thứ 4 hằng tuần
+                      </Text>
+                    </View>
+                  );
+                }
+                return null;
+              })()}
             </View>
           )}
 

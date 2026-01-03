@@ -75,9 +75,9 @@ export default function ChatList({
               onAction={
                 onItemAction && chatData
                   ? () => {
-                      // onAction will be called with action and item
-                      // We'll handle it in ChatItem component
-                    }
+                    // onAction will be called with action and item
+                    // We'll handle it in ChatItem component
+                  }
                   : undefined
               }
               onPress={() => chatData && handleItemPress(chatData)}
@@ -92,9 +92,9 @@ export default function ChatList({
           ) : undefined
         }
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center py-20">
+          <View className="flex-1 items-center justify-center py-20 mt-6">
             <Text className="text-gray-500 text-base">
-              Không có tin nhắn nào
+              Không có tin nhắn
             </Text>
           </View>
         }
