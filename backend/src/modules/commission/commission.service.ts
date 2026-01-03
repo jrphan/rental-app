@@ -13,6 +13,8 @@ import {
   OwnerCommissionListResponse,
   CommissionPaymentResponse,
   AdminCommissionPaymentListResponse,
+  RevenueResponse,
+  PendingCommissionAlertsResponse,
 } from '@/types/commission.type';
 import {
   CommissionPaymentStatus,
@@ -61,6 +63,35 @@ export class CommissionService {
     weekEnd.setHours(23, 59, 59, 999);
 
     return { weekStart, weekEnd };
+  }
+
+  /**
+   * Lấy tuần trước (thứ 2 tuần trước đến chủ nhật tuần trước)
+   */
+  private getLastWeekRange(): { weekStart: Date; weekEnd: Date } {
+    const now = new Date();
+    const { weekStart: currentWeekStart } = this.getWeekRange(now);
+
+    // Tuần trước = tuần hiện tại - 7 ngày
+    const lastWeekStart = new Date(currentWeekStart);
+    lastWeekStart.setDate(currentWeekStart.getDate() - 7);
+    lastWeekStart.setHours(0, 0, 0, 0);
+
+    const lastWeekEnd = new Date(lastWeekStart);
+    lastWeekEnd.setDate(lastWeekStart.getDate() + 6);
+    lastWeekEnd.setHours(23, 59, 59, 999);
+
+    return { weekStart: lastWeekStart, weekEnd: lastWeekEnd };
+  }
+
+  /**
+   * Kiểm tra xem có đang trong thời gian yêu cầu thanh toán không (thứ 2-4 hằng tuần)
+   */
+  private isPaymentRequestPeriod(): boolean {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    // Thứ 2 = 1, Thứ 3 = 2, Thứ 4 = 3
+    return dayOfWeek >= 1 && dayOfWeek <= 3;
   }
 
   /**
@@ -155,18 +186,45 @@ export class CommissionService {
         },
         deletedAt: null,
       },
+      select: {
+        pricePerDay: true,
+        durationMinutes: true,
+        deliveryFee: true,
+        platformFeeRatio: true,
+      },
     });
 
-    // Tính tổng ownerEarning
-    const totalEarning = completedRentals.reduce(
-      (sum, rental) => sum.plus(rental.ownerEarning),
-      new Decimal(0),
-    );
+    // Tính lại ownerEarning và platformFee từ dữ liệu rental
+    // Vì dữ liệu cũ trong database có thể đã trừ platformFee rồi
+    // Nên cần tính lại: ownerEarning = baseRental + deliveryFee (không trừ platformFee)
+    let totalEarning = new Decimal(0);
+    let totalPlatformFee = new Decimal(0);
 
-    // Lấy commission rate hiện tại
+    for (const rental of completedRentals) {
+      // Tính baseRental từ pricePerDay và durationDays
+      const durationDays = Math.ceil(rental.durationMinutes / (60 * 24));
+      const baseRental = rental.pricePerDay.mul(durationDays);
+
+      // Tính platformFee = baseRental × platformFeeRatio
+      const platformFee = baseRental.mul(
+        rental.platformFeeRatio || new Decimal('0.15'),
+      );
+
+      // Tính ownerEarning mới = baseRental + deliveryFee (KHÔNG trừ platformFee)
+      // Đảm bảo KHÔNG trừ platformFee trong totalEarning
+      const deliveryFee = rental.deliveryFee || new Decimal(0);
+      const ownerEarning = baseRental.plus(deliveryFee);
+
+      totalEarning = totalEarning.plus(ownerEarning);
+      totalPlatformFee = totalPlatformFee.plus(platformFee);
+    }
+
+    // Commission = platformFee (thu ở phần chiết khấu thay vì trừ trực tiếp trong ownerEarning)
+    const commissionAmount = totalPlatformFee;
+
+    // Lấy commission rate để hiển thị
     const settings = await this.getCommissionSettings();
     const commissionRate = new Decimal(settings.commissionRate);
-    const commissionAmount = totalEarning.mul(commissionRate);
 
     // Tạo hoặc update commission record
     const commission = await this.prismaService.ownerCommission.upsert({
@@ -218,8 +276,24 @@ export class CommissionService {
       this.prismaService.ownerCommission.count({ where: { ownerId } }),
     ]);
 
+    // Recalculate commission cho mỗi item để đảm bảo dữ liệu mới nhất
+    const recalculatedItems = await Promise.all(
+      items.map(async item => {
+        // Recalculate commission cho tuần này
+        const recalculated = await this.calculateWeeklyCommission(
+          ownerId,
+          item.weekStartDate,
+        );
+        // Giữ payment từ item cũ
+        return {
+          ...recalculated,
+          payment: item.payment,
+        };
+      }),
+    );
+
     return {
-      items: items.map(item => ({
+      items: recalculatedItems.map(item => ({
         id: item.id,
         weekStartDate: item.weekStartDate.toISOString(),
         weekEndDate: item.weekEndDate.toISOString(),
@@ -252,15 +326,15 @@ export class CommissionService {
   }
 
   /**
-   * Owner: Lấy commission của tuần hiện tại
+   * Owner: Lấy commission của tuần trước (thứ 2 tuần trước đến chủ nhật tuần trước)
    */
   async getCurrentWeekCommission(
     ownerId: string,
   ): Promise<OwnerCommissionResponse | null> {
-    const now = new Date();
-    const { weekStart } = this.getWeekRange(now);
+    // Lấy tuần trước (thứ 2 tuần trước đến chủ nhật tuần trước)
+    const { weekStart } = this.getLastWeekRange();
 
-    // Tính toán commission cho tuần hiện tại
+    // Tính toán commission cho tuần trước
     await this.calculateWeeklyCommission(ownerId, weekStart);
 
     const commission = await this.prismaService.ownerCommission.findUnique({
@@ -514,6 +588,225 @@ export class CommissionService {
       reviewedAt: updatedPayment.reviewedAt?.toISOString() || null,
       createdAt: updatedPayment.createdAt.toISOString(),
       updatedAt: updatedPayment.updatedAt.toISOString(),
+    };
+  }
+
+  /**
+   * Owner: Lấy doanh thu theo khoảng thời gian
+   */
+  async getOwnerRevenue(
+    ownerId: string,
+    startDate?: Date,
+    endDate?: Date,
+    limit: number = 50,
+    offset: number = 0,
+  ): Promise<RevenueResponse> {
+    const where: any = {
+      ownerId,
+      status: RentalStatus.COMPLETED,
+      deletedAt: null,
+    };
+
+    // Filter theo khoảng thời gian (dựa trên endDate của rental)
+    if (startDate || endDate) {
+      where.endDate = {};
+      if (startDate) {
+        where.endDate.gte = startDate;
+      }
+      if (endDate) {
+        // Set endDate về cuối ngày
+        const endOfDay = new Date(endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        where.endDate.lte = endOfDay;
+      }
+    }
+
+    const [rentals, total, revenueStats] = await Promise.all([
+      this.prismaService.rental.findMany({
+        where,
+        select: {
+          id: true,
+          vehicleId: true,
+          startDate: true,
+          endDate: true,
+          ownerEarning: true,
+          totalPrice: true,
+          platformFee: true,
+          platformFeeRatio: true,
+          deliveryFee: true,
+          insuranceFee: true,
+          discountAmount: true,
+          status: true,
+          createdAt: true,
+          vehicle: {
+            select: {
+              id: true,
+              brand: true,
+              model: true,
+            },
+          },
+        },
+        orderBy: { endDate: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      this.prismaService.rental.count({ where }),
+      this.prismaService.rental.aggregate({
+        where,
+        _sum: {
+          ownerEarning: true,
+          totalPrice: true,
+        },
+      }),
+    ]);
+
+    const totalRevenue = revenueStats._sum.totalPrice || new Decimal(0);
+    const totalEarning = revenueStats._sum.ownerEarning || new Decimal(0);
+
+    // Tính lại ownerEarning theo đúng công thức trong PRICING_BUSINESS_LOGIC.md
+    // ownerEarning = baseRental - platformFee + deliveryFee
+    // Trong đó: baseRental có thể tính từ totalPrice
+    // totalPrice = baseRental + deliveryFee + insuranceFee - discountAmount
+    // => baseRental = totalPrice - deliveryFee - insuranceFee + discountAmount
+    // => ownerEarning = (totalPrice - deliveryFee - insuranceFee + discountAmount) - platformFee + deliveryFee
+    // => ownerEarning = totalPrice - insuranceFee + discountAmount - platformFee
+
+    const validatedItems = rentals.map(rental => {
+      const platformFee = rental.platformFee || new Decimal(0);
+      const insuranceFee = rental.insuranceFee || new Decimal(0);
+      const discountAmount = rental.discountAmount || new Decimal(0);
+
+      // Tính lại ownerEarning theo công thức chuẩn
+      // ownerEarning = totalPrice - insuranceFee + discountAmount - platformFee
+      let ownerEarning = rental.totalPrice
+        .minus(insuranceFee)
+        .plus(discountAmount)
+        .minus(platformFee);
+
+      // Validate: ownerEarning không được âm và không được lớn hơn totalPrice
+      if (ownerEarning.lt(0)) {
+        ownerEarning = new Decimal(0);
+      }
+      if (ownerEarning.gt(rental.totalPrice)) {
+        // Nếu vẫn sai, có thể do dữ liệu không đầy đủ
+        // Dùng giá trị từ database nếu hợp lý, nếu không thì tính lại
+        if (rental.ownerEarning.lte(rental.totalPrice)) {
+          ownerEarning = rental.ownerEarning;
+        } else {
+          // Fallback: ước tính ownerEarning = totalPrice - platformFee (giả sử không có insurance và discount)
+          ownerEarning = rental.totalPrice.minus(platformFee);
+          if (ownerEarning.lt(0)) {
+            ownerEarning = rental.totalPrice.mul(new Decimal('0.85')); // 85% nếu platformFee = 15%
+          }
+        }
+      }
+
+      return {
+        id: rental.id,
+        vehicleId: rental.vehicleId,
+        vehicleBrand: rental.vehicle.brand,
+        vehicleModel: rental.vehicle.model,
+        startDate: rental.startDate.toISOString(),
+        endDate: rental.endDate.toISOString(),
+        ownerEarning: ownerEarning.toString(),
+        totalPrice: rental.totalPrice.toString(),
+        platformFee: platformFee.toString(),
+        deliveryFee: rental.deliveryFee.toString(),
+        insuranceFee: insuranceFee.toString(),
+        discountAmount: discountAmount.toString(),
+        status: rental.status,
+        createdAt: rental.createdAt.toISOString(),
+      };
+    });
+
+    // Tính lại totalEarning từ validated items
+    const validatedTotalEarning = validatedItems.reduce(
+      (sum, item) => sum.plus(new Decimal(item.ownerEarning)),
+      new Decimal(0),
+    );
+
+    return {
+      items: validatedItems,
+      total,
+      totalRevenue: totalRevenue.toString(),
+      totalEarning: validatedTotalEarning.toString(),
+    };
+  }
+
+  /**
+   * Admin: Lấy danh sách commission chưa thanh toán cần cảnh báo
+   * Commission cần cảnh báo khi:
+   * - paymentStatus = PENDING
+   * - commissionAmount > 0
+   * - Thuộc tuần trước (thứ 2 tuần trước đến chủ nhật tuần trước)
+   */
+  async getPendingCommissionAlerts(
+    adminId: string,
+  ): Promise<PendingCommissionAlertsResponse> {
+    await this.assertAdmin(adminId);
+
+    const now = new Date();
+    const { weekStart: lastWeekStart } = this.getLastWeekRange();
+
+    // Lấy tất cả commission của tuần trước chưa thanh toán
+    const pendingCommissions =
+      await this.prismaService.ownerCommission.findMany({
+        where: {
+          weekStartDate: lastWeekStart,
+          paymentStatus: CommissionPaymentStatus.PENDING,
+          commissionAmount: {
+            gt: 0,
+          },
+        },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+        },
+        orderBy: { commissionAmount: 'desc' },
+      });
+
+    // Tính toán thời gian quá hạn
+    // Thời gian yêu cầu thanh toán: thứ 2-4 của tuần hiện tại
+    const { weekStart: currentWeekStart } = this.getWeekRange(now);
+    const paymentDeadline = new Date(currentWeekStart); // Thứ 2 tuần hiện tại
+    paymentDeadline.setDate(currentWeekStart.getDate() + 2); // Thứ 4 (thứ 2 + 2 ngày)
+    paymentDeadline.setHours(23, 59, 59, 999);
+
+    const items = pendingCommissions.map(commission => {
+      const isOverdue = now > paymentDeadline;
+      const daysOverdue = isOverdue
+        ? Math.floor(
+            (now.getTime() - paymentDeadline.getTime()) / (1000 * 60 * 60 * 24),
+          )
+        : undefined;
+
+      return {
+        id: commission.id,
+        ownerId: commission.ownerId,
+        ownerName: commission.owner.fullName,
+        ownerPhone: commission.owner.phone,
+        weekStartDate: commission.weekStartDate.toISOString(),
+        weekEndDate: commission.weekEndDate.toISOString(),
+        commissionAmount: commission.commissionAmount.toString(),
+        totalEarning: commission.totalEarning.toString(),
+        rentalCount: commission.rentalCount,
+        paymentStatus: commission.paymentStatus,
+        isOverdue,
+        daysOverdue,
+      };
+    });
+
+    const overdueCount = items.filter(item => item.isOverdue).length;
+
+    return {
+      items,
+      total: items.length,
+      overdueCount,
     };
   }
 }

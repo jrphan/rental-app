@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Image, StyleSheet, Alert } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -219,26 +219,24 @@ export default function VehicleDetailScreen() {
 							</View>
 							{isOwner && (
 								<View
-									className={`px-3 py-1 rounded-full ${
-										vehicle.status === "APPROVED"
-											? "bg-green-100"
-											: vehicle.status === "PENDING"
-												? "bg-yellow-100"
-												: vehicle.status === "REJECTED"
-													? "bg-red-100"
-													: "bg-gray-100"
-									}`}
+									className={`px-3 py-1 rounded-full ${vehicle.status === "APPROVED"
+										? "bg-green-100"
+										: vehicle.status === "PENDING"
+											? "bg-yellow-100"
+											: vehicle.status === "REJECTED"
+												? "bg-red-100"
+												: "bg-gray-100"
+										}`}
 								>
 									<Text
-										className={`text-xs font-medium ${
-											vehicle.status === "APPROVED"
-												? "text-green-700"
-												: vehicle.status === "PENDING"
-													? "text-yellow-700"
-													: vehicle.status === "REJECTED"
-														? "text-red-700"
-														: "text-gray-700"
-										}`}
+										className={`text-xs font-medium ${vehicle.status === "APPROVED"
+											? "text-green-700"
+											: vehicle.status === "PENDING"
+												? "text-yellow-700"
+												: vehicle.status === "REJECTED"
+													? "text-red-700"
+													: "text-gray-700"
+											}`}
 									>
 										{getVehicleStatusLabel(vehicle.status)}
 									</Text>
@@ -432,7 +430,6 @@ export default function VehicleDetailScreen() {
 							style={{ backgroundColor: COLORS.primary }}
 						>
 							<View className="flex-row items-center justify-center">
-								<MaterialIcons name="directions-bike" size={24} color="#FFFFFF" />
 								<Text className="ml-2 text-lg font-semibold text-white">
 									{isAuthenticated && user ? "Thuê xe" : "Đăng nhập để thuê xe"}
 								</Text>

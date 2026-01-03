@@ -28,6 +28,7 @@ export const ROUTES = {
     MY_COMMISSIONS: '/user/commissions',
     CURRENT_WEEK_COMMISSION: '/user/commissions/current-week',
     COMMISSION_PAYMENT: '/user/commissions/:commissionId/payment',
+    REVENUE: '/user/revenue',
   },
   VEHICLE: {
     CREATE: '/vehicle/create',
@@ -66,6 +67,7 @@ export const ROUTES = {
     COMMISSION_SETTINGS: '/admin/commission-settings',
     COMMISSION_PAYMENTS: '/admin/commission-payments',
     COMMISSION_PAYMENT_REVIEW: '/admin/commission-payments/:id/review',
+    COMMISSION_ALERTS: '/admin/commission-alerts',
     FEE_SETTINGS: '/admin/fee-settings',
     INSURANCE_STATS: '/admin/insurance-stats',
   },

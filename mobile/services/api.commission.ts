@@ -39,6 +39,30 @@ export interface UploadInvoiceRequest {
   invoiceFileId: string;
 }
 
+export interface RevenueItem {
+  id: string;
+  vehicleId: string;
+  vehicleBrand: string;
+  vehicleModel: string;
+  startDate: string;
+  endDate: string;
+  ownerEarning: string;
+  totalPrice: string;
+  platformFee?: string; // Phí nền tảng
+  deliveryFee?: string; // Phí giao xe
+  insuranceFee?: string; // Phí bảo hiểm
+  discountAmount?: string; // Giảm giá
+  status: string;
+  createdAt: string;
+}
+
+export interface RevenueResponse {
+  items: RevenueItem[];
+  total: number;
+  totalRevenue: string;
+  totalEarning: string;
+}
+
 export const apiCommission = {
   async getMyCommissions(
     limit?: number,
@@ -55,6 +79,31 @@ export const apiCommission = {
       return response.data;
     }
     throw new Error(response.message || "Lấy danh sách commission thất bại");
+  },
+
+  async getRevenue(
+    startDate?: Date,
+    endDate?: Date,
+    limit?: number,
+    offset?: number
+  ): Promise<RevenueResponse> {
+    const params = new URLSearchParams();
+    if (startDate) {
+      params.append("startDate", startDate.toISOString());
+    }
+    if (endDate) {
+      params.append("endDate", endDate.toISOString());
+    }
+    if (limit) params.append("limit", limit.toString());
+    if (offset) params.append("offset", offset.toString());
+
+    const url = `${API_ENDPOINTS.USER.REVENUE}${params.toString() ? `?${params.toString()}` : ""}`;
+    const response = await apiClient.get<RevenueResponse>(url);
+
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data;
+    }
+    throw new Error(response.message || "Lấy doanh thu thất bại");
   },
 
   async getCurrentWeekCommission(): Promise<OwnerCommission | null> {

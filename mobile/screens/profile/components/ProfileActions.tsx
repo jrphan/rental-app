@@ -96,6 +96,14 @@ export default function ProfileActions({
       showCondition: () => user?.isVendor ?? false,
     },
     {
+      id: "revenue",
+      icon: "attach-money",
+      iconType: "MaterialIcons",
+      title: "Doanh thu",
+      route: "/(tabs)/profile/revenue",
+      showCondition: () => user?.isVendor ?? false,
+    },
+    {
       id: "change-password",
       icon: "lock",
       iconType: "MaterialIcons",

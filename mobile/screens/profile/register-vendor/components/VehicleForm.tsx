@@ -95,7 +95,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         instantBook: false,
         deliveryAvailable: (vehicleData as any).deliveryAvailable || false,
         deliveryFeePerKm:
-        String(deliveryFeePerKm) ?? DELIVERY_FEE_PER_KM ?? (vehicleData as any).deliveryFeePerKm?.toString(),  
+          String(deliveryFeePerKm) ?? DELIVERY_FEE_PER_KM ?? (vehicleData as any).deliveryFeePerKm?.toString(),
         deliveryRadiusKm:
           (vehicleData as any).deliveryRadiusKm?.toString() || "",
         imageUrls: imageUrls.length > 0 ? imageUrls : [],
@@ -125,7 +125,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         order: index,
       }));
 
-      const vehiclePayload = {
+      const vehiclePayload: any = {
         type: data.type,
         brand: data.brand,
         model: data.model,
@@ -148,15 +148,22 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         cavetBack: data.cavetBack,
         instantBook: false, // Always false, feature disabled
         deliveryAvailable: data.deliveryAvailable,
-        // system default: fee per km from API settings if owner doesn't supply
-        deliveryFeePerKm: data.deliveryFeePerKm
-          ? parseFloat(data.deliveryFeePerKm)
-          : deliveryFeePerKm ?? DELIVERY_FEE_PER_KM,
-        deliveryRadiusKm: data.deliveryRadiusKm
-          ? parseInt(data.deliveryRadiusKm, 10)
-          : null,
         images,
       };
+
+      // Chỉ gửi deliveryFeePerKm và deliveryRadiusKm nếu deliveryAvailable = true
+      if (data.deliveryAvailable) {
+        vehiclePayload.deliveryFeePerKm = data.deliveryFeePerKm
+          ? parseFloat(data.deliveryFeePerKm)
+          : deliveryFeePerKm ?? DELIVERY_FEE_PER_KM;
+        vehiclePayload.deliveryRadiusKm = data.deliveryRadiusKm
+          ? parseInt(data.deliveryRadiusKm, 10)
+          : null;
+      } else {
+        // Không gửi các field này khi deliveryAvailable = false
+        vehiclePayload.deliveryFeePerKm = undefined;
+        vehiclePayload.deliveryRadiusKm = undefined;
+      }
 
       // If vehicle exists, update it
       if (vehicleId && vehicleData) {
@@ -201,14 +208,40 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
   });
 
   const onSubmit = async (values: VehicleInput) => {
+    console.log("Form submitted with values:", values);
+    console.log("Form errors:", form.formState.errors);
     setIsSubmitting(true);
     try {
       await mutation.mutateAsync(values);
     } catch (error) {
       console.error("Vehicle submission error:", error);
+      // Log validation errors if any
+      if (form.formState.errors) {
+        console.error("Validation errors:", form.formState.errors);
+      }
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSubmitPress = () => {
+    console.log("Submit button pressed");
+    console.log("Form state:", {
+      isValid: form.formState.isValid,
+      errors: form.formState.errors,
+      values: form.getValues(),
+    });
+    form.handleSubmit(
+      onSubmit,
+      (errors) => {
+        console.error("Validation failed:", errors);
+        // Scroll to first error field
+        const firstError = Object.keys(errors)[0];
+        if (firstError) {
+          form.setFocus(firstError as any);
+        }
+      }
+    )();
   };
 
   // Check if user is eligible
@@ -910,24 +943,24 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         vehicleData.status === "REJECTED" ||
         vehicleData.status === "DRAFT" ||
         vehicleData.status === "APPROVED") && (
-        <Button
-          onPress={form.handleSubmit(onSubmit)}
-          disabled={isSubmitting || mutation.isPending || isReadOnly}
-          className="mt-4"
-        >
-          {isSubmitting || mutation.isPending ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : vehicleData?.status === "REJECTED" ? (
-            "Cập nhật và gửi lại"
-          ) : vehicleData?.status === "APPROVED" ? (
-            "Cập nhật thông tin"
-          ) : vehicleData ? (
-            "Cập nhật xe"
-          ) : (
-            "Đăng ký xe"
-          )}
-        </Button>
-      )}
+          <Button
+            onPress={handleSubmitPress}
+            disabled={isSubmitting || mutation.isPending || isReadOnly}
+            className="mt-4"
+          >
+            {isSubmitting || mutation.isPending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : vehicleData?.status === "REJECTED" ? (
+              "Cập nhật và gửi lại"
+            ) : vehicleData?.status === "APPROVED" ? (
+              "Cập nhật thông tin"
+            ) : vehicleData ? (
+              "Cập nhật xe"
+            ) : (
+              "Đăng ký xe"
+            )}
+          </Button>
+        )}
 
       {vehicleData && vehicleData.status === "PENDING" && (
         <View className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">

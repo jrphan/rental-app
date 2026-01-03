@@ -60,11 +60,20 @@ export default function BookingScreen() {
 
 	// --- LOGIC TÍNH TOÁN GIÁ & DISCOUNT (Cập nhật tự động) ---
 
+	// Helper to parse date string in local timezone
+	const parseLocalDate = (dateString: string): Date => {
+		const [year, month, day] = dateString.split("-").map(Number);
+		const date = new Date();
+		date.setFullYear(year, month - 1, day);
+		date.setHours(0, 0, 0, 0);
+		return date;
+	};
+
 	// 1. Tính số ngày thuê (Duration Days)
 	const durationDays = useMemo(() => {
 		if (!startDate || !endDate) return 0;
-		const start = new Date(startDate);
-		const end = new Date(endDate);
+		const start = parseLocalDate(startDate);
+		const end = parseLocalDate(endDate);
 		if (start > end) return 0;
 		const durationMs = end.getTime() - start.getTime();
 		const durationMinutes = Math.floor(durationMs / (1000 * 60));
@@ -218,26 +227,31 @@ export default function BookingScreen() {
 			}
 		}
 
-		// Normalize dates
-		const start = new Date(startDate);
-		const end = new Date(endDate);
+		// Parse dates in local timezone để validate
+		const start = parseLocalDate(startDate);
+		const end = parseLocalDate(endDate);
 
-		if (start > end) {
-			Alert.alert("Lỗi", "Ngày kết thúc không được trước ngày bắt đầu");
-			return;
-		}
-
+		// Validation: start >= today, end >= start
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
+
 		if (start < today) {
-			Alert.alert("Lỗi", "Ngày bắt đầu không được trong quá khứ");
+			Alert.alert("Lỗi", "Ngày bắt đầu phải bằng hoặc lớn hơn ngày hiện tại");
 			return;
 		}
 
+		if (end < start) {
+			Alert.alert("Lỗi", "Ngày kết thúc phải bằng hoặc lớn hơn ngày bắt đầu");
+			return;
+		}
+
+		// Gửi ngày dạng "YYYY-MM-DD" để tránh lệch timezone khi convert sang ISO
+		// startDate và endDate đã là dạng "YYYY-MM-DD" từ DatePicker
+		// Backend sẽ parse và normalize đúng
 		createRentalMutation.mutate({
 			vehicleId,
-			startDate: start.toISOString(),
-			endDate: end.toISOString(),
+			startDate: startDate, // Gửi trực tiếp dạng "YYYY-MM-DD"
+			endDate: endDate, // Gửi trực tiếp dạng "YYYY-MM-DD"
 			deliveryFee,
 			discountAmount,
 			insuranceFee: summary.insuranceFee,
@@ -288,7 +302,7 @@ export default function BookingScreen() {
 				contentContainerStyle={{ paddingBottom: 24 }}
 				showsVerticalScrollIndicator={false}
 			>
-				<View className="px-4 pt-4">
+				<View className="px-4 pt-4 mt-4">
 					{/* Vehicle Info Summary */}
 					<View className="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
 						<Text className="text-lg font-bold text-gray-900 mb-2">

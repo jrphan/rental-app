@@ -25,6 +25,7 @@ import {
   Prisma,
   RentalStatus,
 } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { NotificationService } from '@/modules/notification/notification.service';
 import { AuditAction, AuditTargetType } from '@prisma/client';
@@ -99,6 +100,15 @@ export class VehicleService {
         requiredLicense: vehicleData.requiredLicense || 'A1',
         instantBook: false, // Feature disabled
         deliveryAvailable: vehicleData.deliveryAvailable || false,
+        // Chỉ set deliveryFeePerKm và deliveryRadiusKm nếu deliveryAvailable = true
+        deliveryFeePerKm: vehicleData.deliveryAvailable
+          ? vehicleData.deliveryFeePerKm
+            ? new Decimal(vehicleData.deliveryFeePerKm)
+            : undefined
+          : undefined,
+        deliveryRadiusKm: vehicleData.deliveryAvailable
+          ? vehicleData.deliveryRadiusKm
+          : undefined,
         images: {
           create: images.map((img, index) => ({
             url: img.url,
@@ -171,23 +181,38 @@ export class VehicleService {
       where: { vehicleId },
     });
 
+    // Prepare update data
+    const updateData: Prisma.VehicleUpdateInput = {
+      ...vehicleData,
+      depositAmount: vehicleData.depositAmount || 0,
+      requiredLicense: vehicleData.requiredLicense || 'A1',
+      instantBook: false, // Feature disabled
+      deliveryAvailable: vehicleData.deliveryAvailable || false,
+      images: {
+        create: images.map((img, index) => ({
+          url: img.url,
+          isPrimary: img.isPrimary ?? index === 0,
+          order: img.order ?? index,
+        })),
+      },
+    };
+
+    // Chỉ set deliveryFeePerKm và deliveryRadiusKm nếu deliveryAvailable = true
+    if (vehicleData.deliveryAvailable) {
+      updateData.deliveryFeePerKm = vehicleData.deliveryFeePerKm
+        ? new Decimal(vehicleData.deliveryFeePerKm)
+        : undefined;
+      updateData.deliveryRadiusKm = vehicleData.deliveryRadiusKm;
+    } else {
+      // Khi deliveryAvailable = false, set về undefined
+      updateData.deliveryFeePerKm = undefined;
+      updateData.deliveryRadiusKm = undefined;
+    }
+
     // Update vehicle
     const updated = await this.prismaService.vehicle.update({
       where: { id: vehicleId },
-      data: {
-        ...vehicleData,
-        depositAmount: vehicleData.depositAmount || 0,
-        requiredLicense: vehicleData.requiredLicense || 'A1',
-        instantBook: false, // Feature disabled
-        deliveryAvailable: vehicleData.deliveryAvailable || false,
-        images: {
-          create: images.map((img, index) => ({
-            url: img.url,
-            isPrimary: img.isPrimary ?? index === 0,
-            order: img.order ?? index,
-          })),
-        },
-      },
+      data: updateData,
       select: selectVehicle,
     });
 
