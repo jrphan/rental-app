@@ -77,7 +77,6 @@ export class SmsService {
 
       let snsModule: any;
       try {
-        // @ts-expect-error - Dynamic import, module may not exist in dev
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         snsModule = await import('@aws-sdk/client-sns');
       } catch {
