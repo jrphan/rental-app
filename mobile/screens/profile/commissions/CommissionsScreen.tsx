@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRefreshControl } from "@/hooks/useRefreshControl";
 import * as ImagePicker from "expo-image-picker";
 import HeaderBase from "@/components/header/HeaderBase";
 import { apiCommission, OwnerCommission } from "@/services/api.commission";
@@ -321,12 +322,11 @@ export default function CommissionsScreen() {
   console.log("commissionsData", commissionsData);
 
   const isLoading = isLoadingCurrent || isLoadingList;
-  const isRefetching = isRefetchingCurrent || isRefetchingList;
 
-  const handleRefetch = () => {
-    refetchCurrent();
-    refetchList();
-  };
+  const { refreshControl } = useRefreshControl({
+    queryKeys: [["currentWeekCommission"], ["commissions"]],
+    refetchFunctions: [refetchCurrent, refetchList],
+  });
 
   const handleUploadInvoice = (commission: OwnerCommission) => {
     setSelectedCommission(commission);
@@ -338,7 +338,8 @@ export default function CommissionsScreen() {
 
   const handleUploadSuccess = () => {
     setSelectedCommission(null);
-    handleRefetch();
+    refetchCurrent();
+    refetchList();
   };
 
   if (isLoading) {
@@ -373,13 +374,7 @@ export default function CommissionsScreen() {
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={handleRefetch}
-            colors={[COLORS.primary]}
-          />
-        }
+        refreshControl={refreshControl}
       >
         {currentCommission &&
           parseFloat(currentCommission.commissionAmount) > 0 && (

@@ -85,6 +85,9 @@ export default function RentalsPage() {
         onClearSelection={() => {
           setSelected(null)
         }}
+        onUpdate={() => {
+          refetch()
+        }}
       />
     </div>
   )

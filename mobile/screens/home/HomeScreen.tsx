@@ -5,9 +5,10 @@ import {
   ScrollView,
   ActivityIndicator,
   StatusBar,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { apiVehicle } from "@/services/api.vehicle";
@@ -20,6 +21,7 @@ import type { Vehicle } from "@/screens/vehicles/types";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [location, setLocation] = useState<{
     city?: string;
     district?: string;
@@ -30,9 +32,10 @@ export default function HomeScreen() {
     startDate?: Date;
     endDate?: Date;
   }>({});
+  const [refreshing, setRefreshing] = useState(false);
 
   // Fetch popular vehicles
-  const { data: popularVehicles, isLoading: isLoadingPopular } = useQuery({
+  const { data: popularVehicles, isLoading: isLoadingPopular, refetch: refetchPopular } = useQuery({
     queryKey: ["popularVehicles"],
     queryFn: () => apiVehicle.getPopularVehicles(10),
   });
@@ -108,6 +111,26 @@ export default function HomeScreen() {
     setDateRange({ startDate, endDate });
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Invalidate queries to bypass cache completely
+      await queryClient.invalidateQueries({ queryKey: ["popularVehicles"] });
+      await queryClient.invalidateQueries({ queryKey: ["vehiclesByCity"] });
+
+      // Refetch all queries after invalidation
+      await Promise.all([
+        refetchPopular(),
+        hanoiQuery.refetch(),
+        hcmQuery.refetch(),
+        danangQuery.refetch(),
+        haiphongQuery.refetch(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <>
       <StatusBar
@@ -133,6 +156,14 @@ export default function HomeScreen() {
           decelerationRate="fast"
           overScrollMode="never"
           nestedScrollEnabled={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={COLORS.primary}
+              colors={[COLORS.primary]}
+            />
+          }
         >
           {/* Search Bar */}
           <View className="px-4 pt-4 pb-2">

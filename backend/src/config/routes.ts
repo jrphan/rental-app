@@ -63,6 +63,7 @@ export const ROUTES = {
     REJECT_VEHICLE: '/admin/vehicles/:id/reject',
     LIST_RENTALS: '/admin/rentals',
     GET_RENTAL_DETAIL: '/admin/rentals/:id',
+    UPDATE_RENTAL_STATUS: '/admin/rentals/:id/status',
     STATS: '/admin/stats',
     COMMISSION_SETTINGS: '/admin/commission-settings',
     COMMISSION_PAYMENTS: '/admin/commission-payments',

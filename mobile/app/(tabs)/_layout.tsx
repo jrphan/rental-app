@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter, useSegments } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Platform, View, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,6 +20,8 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { isAuthenticated } = useAuthStore();
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const router = useRouter();
+  const segments = useSegments();
 
   // Fetch unread count from API (initial load only, updates via WebSocket)
   const { data: unreadCountData } = useQuery({
@@ -181,6 +183,25 @@ export default function TabLayout() {
     ]
   );
 
+  // Handler to reset profile tab navigation when pressed while already focused
+  const handleProfileTabPress = useCallback(
+    (e: any) => {
+      // Check if we're currently on a profile child screen
+      // segments will be like ["(tabs)", "profile", "favorites"] for child screens
+      // or ["(tabs)", "profile"] for the index
+      const profileIndex = segments.findIndex((s) => s === "profile");
+      const isOnProfileChildScreen =
+        profileIndex !== -1 && segments.length > profileIndex + 1;
+
+      // If we're on a profile child screen and profile tab is pressed, reset to profile index
+      if (isOnProfileChildScreen) {
+        e.preventDefault();
+        router.replace("/(tabs)/profile");
+      }
+    },
+    [segments, router]
+  );
+
   return (
     <Tabs screenOptions={screenOptions}>
       {tabItems.map((item) => (
@@ -194,6 +215,13 @@ export default function TabLayout() {
             // Enable lazy loading for each tab screen
             lazy: true,
           }}
+          listeners={
+            item.name === "profile"
+              ? {
+                tabPress: handleProfileTabPress,
+              }
+              : undefined
+          }
         />
       ))}
     </Tabs>

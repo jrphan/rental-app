@@ -17,6 +17,7 @@ import { router } from "expo-router";
 import { useToast } from "@/hooks/useToast";
 import ROUTES from "@/constants/routes";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useRefreshControl } from "@/hooks/useRefreshControl";
 
 export default function NotificationsScreen() {
   const queryClient = useQueryClient();
@@ -84,6 +85,17 @@ export default function NotificationsScreen() {
     () => (unreadNotificationsData?.items || []).map(mapNotificationToItem),
     [unreadNotificationsData]
   );
+
+  // Setup refresh control for notifications
+  const allRefreshControl = useRefreshControl({
+    queryKeys: [["notifications", "all"]],
+    refetchFunctions: [refetchAll],
+  });
+
+  const unreadRefreshControl = useRefreshControl({
+    queryKeys: [["notifications", "unread"]],
+    refetchFunctions: [refetchUnread],
+  });
 
   const handleItemAction = useCallback(
     async (action: string, item: NotificationItem) => {
@@ -203,7 +215,7 @@ export default function NotificationsScreen() {
         ) : (
           <NotificationsList
             data={unreadNotifications}
-            onRefresh={refetchUnread}
+            refreshControl={unreadRefreshControl.refreshControl}
             onItemAction={handleItemAction}
             onItemNavigate={handleItemNavigate}
           />
@@ -220,7 +232,7 @@ export default function NotificationsScreen() {
         ) : (
           <NotificationsList
             data={allNotifications}
-            onRefresh={refetchAll}
+            refreshControl={allRefreshControl.refreshControl}
             onItemAction={handleItemAction}
             onItemNavigate={handleItemNavigate}
           />
