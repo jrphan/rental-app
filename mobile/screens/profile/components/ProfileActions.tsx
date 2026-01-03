@@ -144,7 +144,7 @@ export default function ProfileActions({
     return (
       <View className="pt-4 border-t border-gray-200">
         <View
-          className={`${bgColor} ${borderColor} rounded-xl p-3 border w-fit`}
+          className={`${bgColor} ${borderColor} rounded-xl p-3 border w-fit mt-2`}
         >
           <View className="flex-row items-center">
             <View
@@ -158,7 +158,7 @@ export default function ProfileActions({
               />
             </View>
             <View className="flex-1">
-              <View className="flex-row items-center mb-1">
+              <View className="flex-row items-center mb-1 gap-2">
                 <View
                   className={`w-2 h-2 rounded-full ${getKycStatusColor(
                     status
