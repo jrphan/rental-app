@@ -95,7 +95,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
         instantBook: false,
         deliveryAvailable: (vehicleData as any).deliveryAvailable || false,
         deliveryFeePerKm:
-          String(deliveryFeePerKm) ?? DELIVERY_FEE_PER_KM ?? (vehicleData as any).deliveryFeePerKm?.toString(),
+          String(deliveryFeePerKm ?? DELIVERY_FEE_PER_KM) ?? (vehicleData as any).deliveryFeePerKm?.toString(),
         deliveryRadiusKm:
           (vehicleData as any).deliveryRadiusKm?.toString() || "",
         imageUrls: imageUrls.length > 0 ? imageUrls : [],
@@ -829,7 +829,7 @@ export default function VehicleForm({ vehicleId }: VehicleFormProps) {
                 <Text className="text-xs text-gray-500">
                   Bật nếu bạn muốn hỗ trợ giao/nhận xe tận nơi. Hệ thống mặc
                   định phí giao:
-                  {formatPrice(deliveryFeePerKm)}/km. Bạn chỉ cần nhập Giới
+                  {formatPrice(deliveryFeePerKm || DELIVERY_FEE_PER_KM)}/km. Bạn chỉ cần nhập Giới
                   hạn khoảng cách (km).
                 </Text>
               </View>

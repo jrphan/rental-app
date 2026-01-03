@@ -620,7 +620,7 @@ export default function BookingScreen() {
 										<Text className="text-sm text-gray-600">
 											Phí giao xe{" "}
 											<Text style={{ color: "#9CA3AF" }}>
-												({formatPrice(deliveryFeePerKm)} x {deliveryDistanceKm?.toFixed(1)} km)
+												({formatPrice(deliveryFeePerKm || DELIVERY_FEE_PER_KM)} x {deliveryDistanceKm?.toFixed(1)} km)
 											</Text>
 										</Text>
 										<Text className="text-sm font-semibold text-gray-900">
