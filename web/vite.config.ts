@@ -14,6 +14,10 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  preview: {
+    port: 4173,
+    host: true,
+  },
 })
 
 export default config
