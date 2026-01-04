@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
-  RefreshControl,
   TouchableOpacity,
   Alert,
   Image,
@@ -21,6 +20,7 @@ import { COLORS } from "@/constants/colors";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useToast } from "@/hooks/useToast";
 import { useUploadUserFile } from "@/hooks/files/useUserFiles";
+import CommissionDetailModal from "./CommissionDetailModal";
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -63,14 +63,20 @@ function getStatusColor(status: string): string {
 interface CommissionCardProps {
   commission: OwnerCommission;
   onUploadInvoice: (commission: OwnerCommission) => void;
+  onViewDetail: (commission: OwnerCommission) => void;
 }
 
-function CommissionCard({ commission, onUploadInvoice }: CommissionCardProps) {
+function CommissionCard({ commission, onUploadInvoice, onViewDetail }: CommissionCardProps) {
   const statusLabel = getStatusLabel(commission.paymentStatus);
   const statusColor = getStatusColor(commission.paymentStatus);
+
+  // Chỉ enable upload khi: status PENDING, amount > 0, và thời gian hiện tại đã qua weekEndDate
+  const now = new Date();
+  const weekEndDate = new Date(commission.weekEndDate);
   const canUploadInvoice =
     commission.paymentStatus === "PENDING" &&
-    parseFloat(commission.commissionAmount) > 0;
+    parseFloat(commission.commissionAmount) > 0 &&
+    now > weekEndDate;
 
   return (
     <View className="bg-white rounded-2xl p-4 mb-3 border border-gray-200">
@@ -87,26 +93,6 @@ function CommissionCard({ commission, onUploadInvoice }: CommissionCardProps) {
             Từ {commission.rentalCount} đơn thuê • Tổng thu nhập:{" "}
             {formatCurrency(commission.totalEarning)} đ
           </Text>
-          <View className="mt-2 pt-2 border-t border-gray-100">
-            {/* [FIX] Sửa lại phần giải thích cách tính */}
-            <Text className="text-xs text-gray-600">
-              💡 Số tiền thanh toán bao gồm:
-            </Text>
-            <View className="ml-2 mt-1">
-              <Text className="text-xs text-gray-500">
-                + Phí nền tảng ({(parseFloat(commission.commissionRate) * 100).toFixed(0)}%)
-              </Text>
-              <Text className="text-xs text-gray-500">
-                + Thu hộ phí bảo hiểm (trả lại nền tảng)
-              </Text>
-              <Text className="text-xs text-green-600">
-                - Sàn hỗ trợ mã giảm giá (nếu có)
-              </Text>
-            </View>
-            <Text className="text-xs font-semibold text-gray-700 mt-1">
-              = {formatCurrency(commission.commissionAmount)} đ
-            </Text>
-          </View>
         </View>
         <View
           className={`px-3 py-1 rounded-full ${commission.paymentStatus === "PENDING"
@@ -146,17 +132,32 @@ function CommissionCard({ commission, onUploadInvoice }: CommissionCardProps) {
         </View>
       )}
 
-      {canUploadInvoice && (
+      <View className="flex-row gap-2">
         <TouchableOpacity
-          onPress={() => onUploadInvoice(commission)}
-          className="bg-orange-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
+          onPress={() => onViewDetail(commission)}
+          className="flex-1 bg-gray-100 rounded-xl py-3 px-4 flex-row items-center justify-center"
         >
-          <MaterialIcons name="upload-file" size={20} color="#FFF" />
-          <Text className="text-white font-semibold ml-2">
-            Tải hóa đơn thanh toán
+          <MaterialIcons name="receipt-long" size={20} color="#374151" />
+          <Text className="text-gray-700 font-semibold ml-2">
+            Xem chi tiết
           </Text>
         </TouchableOpacity>
-      )}
+
+        {canUploadInvoice && (
+          <TouchableOpacity
+            onPress={() => onUploadInvoice(commission)}
+            className="flex-1 bg-orange-500 rounded-xl py-3 px-4 flex-row items-center justify-center"
+            style={{
+              backgroundColor: COLORS.primary,
+            }}
+          >
+            <MaterialIcons name="upload-file" size={20} color="#FFF" />
+            <Text className="text-white font-semibold ml-2">
+              Tải hóa đơn
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {commission.paymentStatus === "APPROVED" && (
         <View className="bg-green-50 rounded-lg p-2 mt-2">
@@ -281,6 +282,9 @@ function UploadInvoiceModal({
               <TouchableOpacity
                 onPress={handlePickImage}
                 className="bg-orange-500 rounded-xl py-3 px-4 flex-row items-center justify-center mb-3"
+                style={{
+                  backgroundColor: COLORS.primary,
+                }}
               >
                 <MaterialIcons name="photo-library" size={20} color="#FFF" />
                 <Text className="text-white font-semibold ml-2">
@@ -307,35 +311,23 @@ function UploadInvoiceModal({
 export default function CommissionsScreen() {
   const [selectedCommission, setSelectedCommission] =
     useState<OwnerCommission | null>(null);
-
-  const {
-    data: currentCommission,
-    isLoading: isLoadingCurrent,
-    refetch: refetchCurrent,
-    isRefetching: isRefetchingCurrent,
-  } = useQuery({
-    queryKey: ["currentWeekCommission"],
-    queryFn: () => apiCommission.getCurrentWeekCommission(),
-  });
+  const [detailCommission, setDetailCommission] =
+    useState<OwnerCommission | null>(null);
 
   const {
     data: commissionsData,
     isLoading: isLoadingList,
     refetch: refetchList,
-    isRefetching: isRefetchingList,
   } = useQuery({
     queryKey: ["commissions"],
-    queryFn: () => apiCommission.getMyCommissions(20, 0),
+    queryFn: () => apiCommission.getMyCommissions(50, 0), // Tăng limit để lấy nhiều hơn
   });
 
-
-  console.log("commissionsData", commissionsData);
-
-  const isLoading = isLoadingCurrent || isLoadingList;
+  const isLoading = isLoadingList;
 
   const { refreshControl } = useRefreshControl({
-    queryKeys: [["currentWeekCommission"], ["commissions"]],
-    refetchFunctions: [refetchCurrent, refetchList],
+    queryKeys: [["commissions"]],
+    refetchFunctions: [refetchList],
   });
 
   const handleUploadInvoice = (commission: OwnerCommission) => {
@@ -348,8 +340,15 @@ export default function CommissionsScreen() {
 
   const handleUploadSuccess = () => {
     setSelectedCommission(null);
-    refetchCurrent();
     refetchList();
+  };
+
+  const handleViewDetail = (commission: OwnerCommission) => {
+    setDetailCommission(commission);
+  };
+
+  const handleCloseDetail = () => {
+    setDetailCommission(null);
   };
 
   if (isLoading) {
@@ -367,13 +366,46 @@ export default function CommissionsScreen() {
     );
   }
 
-  const allCommissions = [
-    ...(currentCommission &&
-      !commissionsData?.items.find((c) => c.id === currentCommission.id)
-      ? [currentCommission]
-      : []),
-    ...(commissionsData?.items || []),
-  ];
+  const commissions = commissionsData?.items || [];
+
+  // Đảm bảo không có duplicate IDs bằng cách dùng Map
+  const commissionsMap = new Map<string, OwnerCommission>();
+  commissions.forEach((c) => {
+    if (!commissionsMap.has(c.id)) {
+      commissionsMap.set(c.id, c);
+    }
+  });
+  const uniqueCommissions = Array.from(commissionsMap.values());
+
+  // Phân loại commission: tuần hiện tại và các tuần trước
+  // Tính thứ 2 của tuần hiện tại
+  const getCurrentWeekStart = () => {
+    const now = new Date();
+    const d = new Date(now);
+    const day = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    const weekStart = new Date(d.setDate(diff));
+    weekStart.setHours(0, 0, 0, 0);
+    return weekStart;
+  };
+
+  const currentWeekStart = getCurrentWeekStart();
+
+  const currentWeekCommission = uniqueCommissions.find((c) => {
+    const commissionWeekStart = new Date(c.weekStartDate);
+    commissionWeekStart.setHours(0, 0, 0, 0);
+    return commissionWeekStart.getTime() === currentWeekStart.getTime();
+  });
+
+  const pastCommissions = uniqueCommissions.filter((c) => {
+    // Loại bỏ currentWeekCommission khỏi pastCommissions
+    if (currentWeekCommission && c.id === currentWeekCommission.id) {
+      return false;
+    }
+    const commissionWeekStart = new Date(c.weekStartDate);
+    commissionWeekStart.setHours(0, 0, 0, 0);
+    return commissionWeekStart.getTime() < currentWeekStart.getTime();
+  });
 
   return (
     <SafeAreaView
@@ -383,58 +415,42 @@ export default function CommissionsScreen() {
       <HeaderBase title="Chiết khấu" showBackButton />
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 24, flexGrow: 1 }}
         refreshControl={refreshControl}
+        showsVerticalScrollIndicator={false}
       >
-        {currentCommission &&
-          parseFloat(currentCommission.commissionAmount) > 0 && (
-            <View className="mb-4">
-              <Text className="text-lg font-semibold text-gray-900 mb-3">
-                Tuần trước (Cần thanh toán)
-              </Text>
-              <CommissionCard
-                commission={currentCommission}
-                onUploadInvoice={handleUploadInvoice}
-              />
-              {/* Hiển thị cảnh báo nếu đang trong thời gian yêu cầu thanh toán */}
-              {(() => {
-                const now = new Date();
-                const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-                const isPaymentPeriod = dayOfWeek >= 1 && dayOfWeek <= 3; // Thứ 2-4
-
-                if (isPaymentPeriod) {
-                  return (
-                    <View className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                      <Text className="text-xs font-medium text-amber-900">
-                        ⚠️ Thời gian yêu cầu thanh toán: Thứ 2 - Thứ 4 hằng tuần
-                      </Text>
-                    </View>
-                  );
-                }
-                return null;
-              })()}
-            </View>
-          )}
-
-        {allCommissions.length > (currentCommission ? 1 : 0) && (
+        {currentWeekCommission && (
           <View className="mb-4">
             <Text className="text-lg font-semibold text-gray-900 mb-3">
-              Lịch sử chiết khấu
+              Tuần này
             </Text>
-            {allCommissions
-              .filter((c) => c.id !== currentCommission?.id)
-              .map((commission) => (
-                <CommissionCard
-                  key={commission.id}
-                  commission={commission}
-                  onUploadInvoice={handleUploadInvoice}
-                />
-              ))}
+            <CommissionCard
+              key={currentWeekCommission.id}
+              commission={currentWeekCommission}
+              onUploadInvoice={handleUploadInvoice}
+              onViewDetail={handleViewDetail}
+            />
           </View>
         )}
 
-        {allCommissions.length === 0 && (
-          <View className="flex-1 items-center justify-center py-20">
+        {pastCommissions.length > 0 && (
+          <View className="mb-4">
+            <Text className="text-lg font-semibold text-gray-900 mb-3">
+              Các tuần trước
+            </Text>
+            {pastCommissions.map((commission) => (
+              <CommissionCard
+                key={commission.id}
+                commission={commission}
+                onUploadInvoice={handleUploadInvoice}
+                onViewDetail={handleViewDetail}
+              />
+            ))}
+          </View>
+        )}
+
+        {uniqueCommissions.length === 0 && (
+          <View className="items-center justify-center py-20" style={{ minHeight: 300 }}>
             <MaterialIcons name="receipt-long" size={64} color="#9CA3AF" />
             <Text className="text-lg font-medium text-gray-900 mt-4 mb-2">
               Chưa có chiết khấu
@@ -452,6 +468,13 @@ export default function CommissionsScreen() {
           commission={selectedCommission}
           onClose={handleCloseModal}
           onSuccess={handleUploadSuccess}
+        />
+      )}
+
+      {detailCommission && (
+        <CommissionDetailModal
+          commission={detailCommission}
+          onClose={handleCloseDetail}
         />
       )}
     </SafeAreaView>

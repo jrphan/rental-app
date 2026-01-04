@@ -21,6 +21,7 @@ import {
   RentalStatus,
   UserRole,
   OwnerCommission,
+  Prisma,
 } from '@prisma/client';
 import { UpdateCommissionSettingsDto } from '@/common/dto/Commission/update-commission-settings.dto';
 import { UploadInvoiceDto } from '@/common/dto/Commission/upload-invoice.dto';
@@ -174,7 +175,7 @@ export class CommissionService {
   ): Promise<OwnerCommission> {
     const { weekStart, weekEnd } = this.getWeekRange(weekStartDate);
 
-    // 1. Cập nhật query để lấy thêm insuranceFee và discountAmount
+    // Lấy các rental completed trong tuần
     const completedRentals = await this.prismaService.rental.findMany({
       where: {
         ownerId,
@@ -186,53 +187,42 @@ export class CommissionService {
         deletedAt: null,
       },
       select: {
-        pricePerDay: true,
-        durationMinutes: true,
-        deliveryFee: true,
-        platformFeeRatio: true,
-        // [FIX] Thêm 2 trường này
+        platformFee: true,
+        ownerEarning: true,
         insuranceFee: true,
         discountAmount: true,
       },
     });
 
+    // Tính tổng: commission = platformFee + insuranceFee - discountAmount (theo PRICING_BUSINESS_LOGIC.md)
+    // refundToPlatform = platformFee - discountAmount + insuranceFee
     let totalEarning = new Decimal(0);
-    // [FIX] Đổi tên biến để phản ánh đúng nghĩa vụ thanh toán
-    let totalRefundToPlatform = new Decimal(0);
+    let commissionAmount = new Decimal(0);
 
     for (const rental of completedRentals) {
-      const durationDays = Math.ceil(rental.durationMinutes / (60 * 24));
-      const baseRental = rental.pricePerDay.mul(durationDays);
-
-      const platformFee = baseRental.mul(
-        rental.platformFeeRatio || new Decimal('0.15'),
-      );
-
-      const deliveryFee = rental.deliveryFee || new Decimal(0);
+      totalEarning = totalEarning.plus(rental.ownerEarning);
+      const platformFee = rental.platformFee;
       const insuranceFee = rental.insuranceFee || new Decimal(0);
       const discountAmount = rental.discountAmount || new Decimal(0);
-
-      // Tính ownerEarning (Thu nhập thực nhận của chủ xe)
-      // ownerEarning = baseRental - platformFee + deliveryFee
-      const ownerEarning = baseRental.minus(platformFee).plus(deliveryFee);
-      totalEarning = totalEarning.plus(ownerEarning);
-
-      // [FIX] Tính số tiền phải trả lại Platform theo đúng công thức:
-      // refund = platformFee + insuranceFee - discountAmount
-      // (Chủ xe trả phí sàn + trả tiền thu hộ bảo hiểm - được sàn bù tiền giảm giá)
-      const rentalRefund = platformFee.plus(insuranceFee).minus(discountAmount);
-
-      totalRefundToPlatform = totalRefundToPlatform.plus(rentalRefund);
+      // commission = platformFee + insuranceFee - discountAmount
+      commissionAmount = commissionAmount
+        .plus(platformFee)
+        .plus(insuranceFee)
+        .minus(discountAmount);
     }
 
-    // [FIX] Đảm bảo không âm (Trường hợp sàn trợ giá quá nhiều > phí sàn + bảo hiểm)
-    // Nếu âm nghĩa là Sàn nợ tiền Chủ xe (Logic Payout khác), ở đây ta chặn dưới 0 cho luồng Commission
-    const commissionAmount = totalRefundToPlatform.isNeg()
-      ? new Decimal(0)
-      : totalRefundToPlatform;
+    // Đảm bảo commission không âm (nếu discount quá lớn, platform chịu, không nợ owner)
+    if (commissionAmount.isNeg()) {
+      commissionAmount = new Decimal(0);
+    }
 
     const settings = await this.getCommissionSettings();
     const commissionRate = new Decimal(settings.commissionRate);
+
+    // Nếu commissionAmount = 0, tự động approve (không cần thanh toán)
+    const paymentStatus = commissionAmount.eq(0)
+      ? CommissionPaymentStatus.APPROVED
+      : CommissionPaymentStatus.PENDING;
 
     // Update DB
     const commission = await this.prismaService.ownerCommission.upsert({
@@ -247,6 +237,7 @@ export class CommissionService {
         commissionRate,
         commissionAmount, // Giá trị đã fix
         rentalCount: completedRentals.length,
+        paymentStatus, // Cập nhật status dựa trên commissionAmount
       },
       create: {
         ownerId,
@@ -256,7 +247,7 @@ export class CommissionService {
         commissionRate,
         commissionAmount, // Giá trị đã fix
         rentalCount: completedRentals.length,
-        paymentStatus: CommissionPaymentStatus.PENDING,
+        paymentStatus, // Nếu = 0 thì APPROVED, không thì PENDING
       },
     });
 
@@ -265,12 +256,19 @@ export class CommissionService {
 
   /**
    * Owner: Lấy danh sách commission của mình
+   * Bao gồm tất cả các tuần có commission (kể cả tuần hiện tại)
    */
   async getOwnerCommissions(
     ownerId: string,
     limit: number = 20,
     offset: number = 0,
   ): Promise<OwnerCommissionListResponse> {
+    const now = new Date();
+    const { weekStart: currentWeekStart } = this.getWeekRange(now);
+
+    // Đảm bảo commission cho tuần hiện tại được tính toán
+    await this.calculateWeeklyCommission(ownerId, currentWeekStart);
+
     const [items, total] = await Promise.all([
       this.prismaService.ownerCommission.findMany({
         where: { ownerId },
@@ -416,6 +414,14 @@ export class CommissionService {
 
     if (commission.commissionAmount.lte(0)) {
       throw new BadRequestException('Số tiền commission phải lớn hơn 0');
+    }
+
+    // Chỉ cho phép upload hóa đơn khi thời gian hiện tại đã qua ngày cuối tuần (weekEndDate)
+    const now = new Date();
+    if (now <= commission.weekEndDate) {
+      throw new BadRequestException(
+        'Chỉ có thể upload hóa đơn sau khi tuần đã kết thúc',
+      );
     }
 
     // Kiểm tra file tồn tại
@@ -609,25 +615,23 @@ export class CommissionService {
     limit: number = 50,
     offset: number = 0,
   ): Promise<RevenueResponse> {
-    const where: any = {
+    const where: Prisma.RentalWhereInput = {
       ownerId,
       status: RentalStatus.COMPLETED,
       deletedAt: null,
+      ...(startDate || endDate
+        ? {
+            endDate: {
+              ...(startDate ? { gte: startDate } : {}),
+              ...(endDate
+                ? {
+                    lte: new Date(new Date(endDate).setHours(23, 59, 59, 999)),
+                  }
+                : {}),
+            },
+          }
+        : {}),
     };
-
-    // Filter theo khoảng thời gian (dựa trên endDate của rental)
-    if (startDate || endDate) {
-      where.endDate = {};
-      if (startDate) {
-        where.endDate.gte = startDate;
-      }
-      if (endDate) {
-        // Set endDate về cuối ngày
-        const endOfDay = new Date(endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        where.endDate.lte = endOfDay;
-      }
-    }
 
     const [rentals, total, revenueStats] = await Promise.all([
       this.prismaService.rental.findMany({
@@ -669,7 +673,6 @@ export class CommissionService {
     ]);
 
     const totalRevenue = revenueStats._sum.totalPrice || new Decimal(0);
-    const totalEarning = revenueStats._sum.ownerEarning || new Decimal(0);
 
     // Tính lại ownerEarning theo đúng công thức trong PRICING_BUSINESS_LOGIC.md
     // ownerEarning = baseRental - platformFee + deliveryFee
