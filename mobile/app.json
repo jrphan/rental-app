@@ -49,6 +49,16 @@
       "expo-web-browser",
       "expo-font",
       [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Cho phép $(PRODUCT_NAME) sử dụng vị trí của bạn để tìm xe gần nhất.",
+          "locationAlwaysPermission": "Cho phép $(PRODUCT_NAME) sử dụng vị trí của bạn để tìm xe gần nhất.",
+          "locationWhenInUsePermission": "Cho phép $(PRODUCT_NAME) sử dụng vị trí của bạn để tìm xe gần nhất.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
