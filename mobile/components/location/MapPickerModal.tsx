@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from "react-native";
+import { Modal, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/constants/colors";
@@ -340,7 +340,7 @@ export default function MapPickerModal({ visible, onClose, onSelect, initialLat,
 					onPress={handleMapPress}
 					showsUserLocation={true}
 					showsMyLocationButton={false}
-					{...(Platform.OS === "ios" ? { provider: "google" } : {})}
+					provider="google"
 					onMapReady={() => {
 						// Map is ready
 						console.log("MapView ready");
