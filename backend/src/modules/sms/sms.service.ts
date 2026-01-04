@@ -48,6 +48,16 @@ export class SmsService {
         ENV.sms?.awsAccessKeyId &&
         ENV.sms?.awsSecretAccessKey
       ) {
+        // Log OTP ra terminal ngay cả khi gửi SMS thật
+        await this.loggerService.logFormatted(
+          '📱 SMS OTP (Production Mode)',
+          {
+            To: formattedPhone,
+            'OTP Code': otpCode,
+            Message: message,
+          },
+          { category: LOG_CATEGORY.SMS },
+        );
         return await this.sendSMSViaAWS(formattedPhone, message);
       }
 
