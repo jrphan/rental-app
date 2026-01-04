@@ -89,6 +89,7 @@ export default function VehiclesMap({
 				style={StyleSheet.absoluteFill}
 				initialRegion={safeInitialRegion}
 				showsUserLocation
+				provider="google"
 			>
 				{!viewVehicleLocation &&
 					clusters.map((c, idx) => (

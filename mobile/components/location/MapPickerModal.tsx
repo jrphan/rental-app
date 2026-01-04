@@ -38,9 +38,9 @@ export default function MapPickerModal({ visible, onClose, onSelect, initialLat,
 	} | null>(
 		initialLat && initialLng
 			? {
-					lat: parseFloat(initialLat),
-					lng: parseFloat(initialLng),
-				}
+				lat: parseFloat(initialLat),
+				lng: parseFloat(initialLng),
+			}
 			: null
 	);
 	const [isLoadingLocation, setIsLoadingLocation] = useState(false);
@@ -315,6 +315,7 @@ export default function MapPickerModal({ visible, onClose, onSelect, initialLat,
 					onPress={handleMapPress}
 					showsUserLocation={true}
 					showsMyLocationButton={false}
+					provider="google"
 				>
 					{selectedLocation && (
 						<Marker

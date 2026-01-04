@@ -52,15 +52,14 @@ function getStatusBadge(status: string) {
   const labels = {
     PENDING: 'Chờ thanh toán',
     PAID: 'Đã gửi hóa đơn',
-    APPROVED: 'Đã duyệt',
+    APPROVED: 'Duyệt',
     REJECTED: 'Đã từ chối',
   }
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-        styles[status as keyof typeof styles] || styles.PENDING
-      }`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status as keyof typeof styles] || styles.PENDING
+        }`}
     >
       {labels[status as keyof typeof labels] || status}
     </span>
