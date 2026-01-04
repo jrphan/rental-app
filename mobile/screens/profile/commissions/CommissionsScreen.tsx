@@ -88,13 +88,23 @@ function CommissionCard({ commission, onUploadInvoice }: CommissionCardProps) {
             {formatCurrency(commission.totalEarning)} đ
           </Text>
           <View className="mt-2 pt-2 border-t border-gray-100">
+            {/* [FIX] Sửa lại phần giải thích cách tính */}
             <Text className="text-xs text-gray-600">
-              💡 Chiết khấu = Tổng thu nhập × {(
-                parseFloat(commission.commissionRate) * 100
-              ).toFixed(0)}% = {formatCurrency(commission.commissionAmount)} đ
+              💡 Số tiền thanh toán bao gồm:
             </Text>
-            <Text className="text-xs text-gray-500 mt-1">
-              (Phí nền tảng được thu ở phần chiết khấu)
+            <View className="ml-2 mt-1">
+              <Text className="text-xs text-gray-500">
+                + Phí nền tảng ({(parseFloat(commission.commissionRate) * 100).toFixed(0)}%)
+              </Text>
+              <Text className="text-xs text-gray-500">
+                + Thu hộ phí bảo hiểm (trả lại nền tảng)
+              </Text>
+              <Text className="text-xs text-green-600">
+                - Sàn hỗ trợ mã giảm giá (nếu có)
+              </Text>
+            </View>
+            <Text className="text-xs font-semibold text-gray-700 mt-1">
+              = {formatCurrency(commission.commissionAmount)} đ
             </Text>
           </View>
         </View>
