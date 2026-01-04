@@ -88,7 +88,8 @@ export default function VehiclesMap({
 				}}
 				style={StyleSheet.absoluteFill}
 				initialRegion={safeInitialRegion}
-				showsUserLocation
+				showsUserLocation={true}
+				showsMyLocationButton
 				provider="google"
 			>
 				{!viewVehicleLocation &&
@@ -174,7 +175,7 @@ const styles = StyleSheet.create({
 		paddingVertical: 3,
 		borderRadius: 20,
 		borderWidth: 1,
-		borderColor: "#eee",
+		borderColor: COLORS.primary,
 		display: "flex",
 		flexDirection: "row",
 		alignItems: "center",

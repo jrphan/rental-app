@@ -424,6 +424,7 @@ export default function VehicleDetailScreen() {
 							onPress={() => {
 								if (!isAuthenticated || !user) {
 									toast.showInfo("Vui lòng đăng nhập để sử dụng chức năng này");
+									router.push("/(auth)/login")
 								} else {
 									router.push(`/booking?vehicleId=${vehicle.id}`);
 								}
