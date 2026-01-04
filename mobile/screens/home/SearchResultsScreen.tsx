@@ -202,13 +202,13 @@ export default function SearchResultsScreen() {
 					const distanceKm =
 						refLat && refLng && vehicle.lat != null && vehicle.lng != null
 							? Number(
-									calculateDistanceKm(
-										refLat,
-										refLng,
-										Number(vehicle.lat),
-										Number(vehicle.lng)
-									).toFixed(1)
-								)
+								calculateDistanceKm(
+									refLat,
+									refLng,
+									Number(vehicle.lat),
+									Number(vehicle.lng)
+								).toFixed(1)
+							)
 							: undefined;
 
 					return <VehicleCard key={vehicle.id} vehicle={vehicle} variant="full" distanceKm={distanceKm} />;
@@ -263,8 +263,8 @@ export default function SearchResultsScreen() {
 				/* Render map full screen area (below header) */
 				<VehiclesMap
 					vehicles={searchResults?.items || []}
-					initialLat={builtFilters.lat as number}
-					initialLng={builtFilters.lng as number}
+					initialLat={builtFilters.lat}
+					initialLng={builtFilters.lng}
 					fullScreen
 					onToggleFullScreen={() => setMapFullScreen(false)}
 				/>
@@ -341,8 +341,8 @@ export default function SearchResultsScreen() {
 						) : (
 							<VehiclesMap
 								vehicles={searchResults?.items || []}
-								initialLat={builtFilters.lat as number}
-								initialLng={builtFilters.lng as number}
+								initialLat={builtFilters.lat}
+								initialLng={builtFilters.lng}
 								onToggleFullScreen={() => setMapFullScreen(true)}
 							/>
 						)}

@@ -308,13 +308,15 @@ export default function VehicleDetailScreen() {
 									{vehicle.city && `, ${vehicle.city}`}
 								</Text>
 							</View>
-							<VehiclesMap
-								vehicles={[vehicle]}
-								initialLat={Number(vehicle.lat)}
-								initialLng={Number(vehicle.lng)}
-								viewVehicleLocation
-								onToggleFullScreen={() => setMapFullScreen(true)}
-							/>
+							{vehicle.lat != null && vehicle.lng != null && (
+								<VehiclesMap
+									vehicles={[vehicle]}
+									initialLat={Number(vehicle.lat)}
+									initialLng={Number(vehicle.lng)}
+									viewVehicleLocation
+									onToggleFullScreen={() => setMapFullScreen(true)}
+								/>
+							)}
 						</View>
 					</View>
 
