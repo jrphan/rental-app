@@ -102,11 +102,10 @@ export function VehicleCard({
                 {images.map((_, index) => (
                   <View
                     key={index}
-                    className={`mx-1 rounded-full ${
-                      index === currentIndex
-                        ? "bg-white w-2 h-2"
-                        : "bg-white/50 w-1.5 h-1.5"
-                    }`}
+                    className={`mx-1 rounded-full ${index === currentIndex
+                      ? "bg-white w-2 h-2"
+                      : "bg-white/50 w-1.5 h-1.5"
+                      }`}
                   />
                 ))}
               </View>
@@ -139,7 +138,7 @@ export function VehicleCard({
             <View className="flex-row items-center bg-green-50 px-2 py-1 rounded-full">
               <MaterialIcons name="verified" size={16} color="#22c55e" />
               <Text className="ml-1 text-xs text-green-700 font-medium">
-                Đã duyệt
+                Đã xác thực
               </Text>
             </View>
           )}

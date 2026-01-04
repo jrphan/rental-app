@@ -78,20 +78,19 @@ export function PaymentDetailPanel({
                 label="Trạng thái hiện tại"
                 value={
                   <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      selected.status === 'PAID'
-                        ? 'bg-blue-100 text-blue-800'
-                        : selected.status === 'APPROVED'
-                          ? 'bg-green-100 text-green-800'
-                          : selected.status === 'REJECTED'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-gray-100 text-gray-800'
-                    }`}
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${selected.status === 'PAID'
+                      ? 'bg-blue-100 text-blue-800'
+                      : selected.status === 'APPROVED'
+                        ? 'bg-green-100 text-green-800'
+                        : selected.status === 'REJECTED'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
                   >
                     {selected.status === 'PAID'
                       ? 'Đã gửi hóa đơn'
                       : selected.status === 'APPROVED'
-                        ? 'Đã duyệt'
+                        ? 'Đã xác thực'
                         : selected.status === 'REJECTED'
                           ? 'Đã từ chối'
                           : 'Chờ thanh toán'}

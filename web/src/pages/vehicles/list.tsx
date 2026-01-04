@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button'
 const statusOptions: Array<{ label: string; value?: VehicleStatus }> = [
   { label: 'Tất cả', value: undefined },
   { label: 'Chờ duyệt', value: 'PENDING' },
-  { label: 'Đã duyệt', value: 'APPROVED' },
+  { label: 'Đã xác thực', value: 'APPROVED' },
   { label: 'Từ chối', value: 'REJECTED' },
   { label: 'Nháp', value: 'DRAFT' },
   { label: 'Bảo trì', value: 'MAINTENANCE' },

@@ -37,7 +37,7 @@ function getStatusLabel(status: string): string {
     case "PAID":
       return "Đã gửi hóa đơn";
     case "APPROVED":
-      return "Đã duyệt";
+      return "Đã xác thực";
     case "REJECTED":
       return "Đã từ chối";
     default:

@@ -11,7 +11,7 @@ export function StatusBadge({ status }: { status: KycStatus }) {
       dotClass: 'bg-amber-500',
     },
     APPROVED: {
-      label: 'Đã duyệt',
+      label: 'Đã xác thực',
       className: 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
       dotClass: 'bg-emerald-500',
     },

@@ -165,7 +165,7 @@ export function UsersListTable({
               <SelectContent>
                 <SelectItem value="all">Tất cả KYC</SelectItem>
                 <SelectItem value="PENDING">Đang chờ duyệt</SelectItem>
-                <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+                <SelectItem value="APPROVED">Đã xác thực</SelectItem>
                 <SelectItem value="REJECTED">Từ chối</SelectItem>
                 <SelectItem value="NEEDS_UPDATE">Cần cập nhật</SelectItem>
               </SelectContent>
