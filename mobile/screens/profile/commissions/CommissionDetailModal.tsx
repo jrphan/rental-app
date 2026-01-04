@@ -32,9 +32,7 @@ function formatDateFull(dateString: string): string {
     const day = date.getDate();
     const month = date.getMonth() + 1;
     const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+    return `${day}/${month}/${year}`;
 }
 
 function RentalDetailCard({ rental }: { rental: RevenueItem }) {
@@ -158,7 +156,7 @@ export default function CommissionDetailModal({
             presentationStyle="pageSheet"
             onRequestClose={onClose}
         >
-            <SafeAreaView className="flex-1 bg-gray-50" edges={["top"]}>
+            <SafeAreaView className="flex-1 p-4 bg-gray-50" edges={["top"]}>
                 {/* Header */}
                 <View className="bg-white border-b border-gray-200">
                     <View className="flex-row items-center justify-between px-4 py-3">
