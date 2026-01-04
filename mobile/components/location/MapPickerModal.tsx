@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import { Modal, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { COLORS } from "@/constants/colors";
@@ -26,12 +26,23 @@ interface MapPickerModalProps {
 }
 
 export default function MapPickerModal({ visible, onClose, onSelect, initialLat, initialLng }: MapPickerModalProps) {
-	const [region, setRegion] = useState<Region>({
-		latitude: initialLat ? parseFloat(initialLat) : 10.762622, // Default to HCM
-		longitude: initialLng ? parseFloat(initialLng) : 106.660172,
-		latitudeDelta: 0.01,
-		longitudeDelta: 0.01,
-	});
+	// Helper to get safe region values
+	const getSafeRegion = (lat?: string, lng?: string): Region => {
+		const defaultLat = 10.762622; // HCM
+		const defaultLng = 106.660172;
+
+		const parsedLat = lat ? parseFloat(lat) : defaultLat;
+		const parsedLng = lng ? parseFloat(lng) : defaultLng;
+
+		return {
+			latitude: isFinite(parsedLat) ? parsedLat : defaultLat,
+			longitude: isFinite(parsedLng) ? parsedLng : defaultLng,
+			latitudeDelta: 0.01,
+			longitudeDelta: 0.01,
+		};
+	};
+
+	const [region, setRegion] = useState<Region>(getSafeRegion(initialLat, initialLng));
 	const [selectedLocation, setSelectedLocation] = useState<{
 		lat: number;
 		lng: number;
@@ -56,6 +67,14 @@ export default function MapPickerModal({ visible, onClose, onSelect, initialLat,
 
 	const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
+	// Update region when initial values change
+	useEffect(() => {
+		if (initialLat && initialLng) {
+			const newRegion = getSafeRegion(initialLat, initialLng);
+			setRegion(newRegion);
+		}
+	}, [initialLat, initialLng]);
+
 	// Try to get current location when modal opens
 	useEffect(() => {
 		if (visible && !initialLat && !initialLng) {
@@ -66,6 +85,7 @@ export default function MapPickerModal({ visible, onClose, onSelect, initialLat,
 
 	// ref để clear input
 	const placesRef = useRef<any>(null);
+	const mapRef = useRef<MapView | null>(null);
 
 	// helper to set selected parts after Google result
 	const applyGoogleResult = (formatted: string | undefined, components: any[] | undefined, geometry?: any) => {
@@ -88,6 +108,8 @@ export default function MapPickerModal({ visible, onClose, onSelect, initialLat,
 			};
 			setRegion(newRegion);
 			setSelectedLocation({ lat: loc.lat, lng: loc.lng });
+			// Animate map to new region
+			mapRef.current?.animateToRegion(newRegion, 500);
 		}
 	};
 
@@ -129,6 +151,8 @@ export default function MapPickerModal({ visible, onClose, onSelect, initialLat,
 				lat: location.coords.latitude,
 				lng: location.coords.longitude,
 			});
+			// Animate map to new region
+			mapRef.current?.animateToRegion(newRegion, 500);
 
 			// Use Google reverse geocode for consistent address components
 			if (API_KEY) {
@@ -309,13 +333,18 @@ export default function MapPickerModal({ visible, onClose, onSelect, initialLat,
 
 				{/* Map */}
 				<MapView
+					ref={mapRef}
 					style={styles.map}
-					region={region}
+					initialRegion={region}
 					onRegionChangeComplete={setRegion}
 					onPress={handleMapPress}
 					showsUserLocation={true}
 					showsMyLocationButton={false}
-					provider="google"
+					{...(Platform.OS === "ios" ? { provider: "google" } : {})}
+					onMapReady={() => {
+						// Map is ready
+						console.log("MapView ready");
+					}}
 				>
 					{selectedLocation && (
 						<Marker
