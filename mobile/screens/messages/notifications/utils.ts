@@ -1,10 +1,9 @@
 import { COLORS } from "@/constants/colors";
-import type { NotificationItem } from "./types";
 
 export const getNotificationIcon = (type: string) => {
   switch (type) {
     case "booking":
-      return "directions-car";
+      return "motorcycle";
     case "message":
       return "message";
     case "payment":
@@ -38,4 +37,3 @@ export const getNotificationColor = (type: string) => {
       return COLORS.primary;
   }
 };
-
