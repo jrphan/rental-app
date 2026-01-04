@@ -10,8 +10,8 @@ import { calculateDistanceKm } from "@/utils/geo";
 
 interface VehiclesMapProps {
 	vehicles: Vehicle[];
-	initialLat: number;
-	initialLng: number;
+	initialLat?: number;
+	initialLng?: number;
 	fullScreen?: boolean;
 	viewVehicleLocation?: boolean;
 	onToggleFullScreen?: () => void;
@@ -41,12 +41,22 @@ export default function VehiclesMap({
 		return Array.from(m.values());
 	}, [vehicles]);
 
-	const initialRegion = {
-		latitude: initialLat ?? clusters[0]?.lat ?? 10.762622,
-		longitude: initialLng ?? clusters[0]?.lng ?? 106.660172,
-		latitudeDelta: 0.03,
-		longitudeDelta: 0.03,
-	};
+	// Ensure initialRegion has valid numeric values (not NaN or Infinity) for Android
+	const safeInitialRegion = useMemo(() => {
+		const lat = initialLat ?? clusters[0]?.lat ?? 10.762622;
+		const lng = initialLng ?? clusters[0]?.lng ?? 106.660172;
+
+		// Validate that values are finite numbers
+		const safeLat = isFinite(lat) ? lat : 10.762622;
+		const safeLng = isFinite(lng) ? lng : 106.660172;
+
+		return {
+			latitude: safeLat,
+			longitude: safeLng,
+			latitudeDelta: 0.03,
+			longitudeDelta: 0.03,
+		};
+	}, [initialLat, initialLng, clusters]);
 
 	const onMarkerPress = (index: number) => {
 		const c = clusters[index];
@@ -65,17 +75,19 @@ export default function VehiclesMap({
 	const containerStyle = fullScreen
 		? { flex: 1 }
 		: {
-				height: Dimensions.get("window").height * (viewVehicleLocation ? 0.2 : 0.5),
-				borderRadius: 16,
-				overflow: "hidden",
-			};
+			height: Dimensions.get("window").height * (viewVehicleLocation ? 0.2 : 0.5),
+			borderRadius: 16,
+			overflow: "hidden" as const,
+		};
 
 	return (
 		<View style={containerStyle}>
 			<MapView
-				ref={(r) => (mapRef.current = r)}
+				ref={(r) => {
+					mapRef.current = r;
+				}}
 				style={StyleSheet.absoluteFill}
-				initialRegion={initialRegion}
+				initialRegion={safeInitialRegion}
 				showsUserLocation
 			>
 				{!viewVehicleLocation &&
@@ -91,13 +103,15 @@ export default function VehiclesMap({
 							</View>
 						</Marker>
 					))}
-				<Marker
-					coordinate={{
-						latitude: initialLat,
-						longitude: initialLng,
-					}}
-					pinColor={COLORS.primary}
-				/>
+				{initialLat != null && initialLng != null && (
+					<Marker
+						coordinate={{
+							latitude: initialLat,
+							longitude: initialLng,
+						}}
+						pinColor={COLORS.primary}
+					/>
+				)}
 			</MapView>
 
 			{/* Zoom / Fullscreen toggle button (top-right) */}
@@ -123,13 +137,13 @@ export default function VehiclesMap({
 							const distance =
 								refLat && refLng && item.lat != null && item.lng != null
 									? Number(
-											calculateDistanceKm(
-												refLat,
-												refLng,
-												Number(item.lat),
-												Number(item.lng)
-											).toFixed(1)
-										)
+										calculateDistanceKm(
+											refLat,
+											refLng,
+											Number(item.lat),
+											Number(item.lng)
+										).toFixed(1)
+									)
 									: undefined;
 							return (
 								<MiniVehicleCard
