@@ -865,7 +865,7 @@ export default function RentalDetailScreen() {
 					})()}
 
 					{/* Owner Actions */}
-					{isOwner && (canApprove || canUpdateToOnTrip || canUpdateToCompleted || canCancel) && (
+					{(canApprove || canUpdateToOnTrip || canUpdateToCompleted || canCancel) && (
 						<View className="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
 							<Text className="text-base font-semibold text-gray-900 mb-3">Hành động</Text>
 
