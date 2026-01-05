@@ -590,8 +590,11 @@ export class RentalService {
             );
           });
       }
-    } else if (status === RentalStatus.CANCELLED) {
-      // Xóa unavailability khi rental bị hủy
+    } else if (
+      status === RentalStatus.CANCELLED ||
+      status === RentalStatus.COMPLETED
+    ) {
+      // Xóa unavailability khi rental bị hủy hoặc hoàn thành
       await this.prismaService.vehicleUnavailability
         .deleteMany({
           where: {
@@ -601,7 +604,7 @@ export class RentalService {
         })
         .catch(error => {
           this.logger.error(
-            'Failed to delete vehicle unavailability on cancel',
+            'Failed to delete vehicle unavailability on cancel/completion',
             error,
           );
         });
