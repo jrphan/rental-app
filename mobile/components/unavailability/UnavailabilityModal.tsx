@@ -38,7 +38,6 @@ export default function UnavailabilityModal({ visible, onClose, items }: Props) 
 							items.map((it, idx) => {
 								const from = formatDate(String(it.startDate));
 								const to = formatDate(String(it.endDate));
-								console.log("Unavailability item:", String(it.startDate), String(it.endDate), from, to);
 								return (
 									<View key={idx} className="mb-3">
 										<Text className="text-sm text-red-600">
