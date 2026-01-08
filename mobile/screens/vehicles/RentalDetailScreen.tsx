@@ -539,8 +539,7 @@ export default function RentalDetailScreen() {
 						</View>
 					</View>
 
-					{/* Owner Info: show only when viewer is renter (not owner) */}
-					{!isOwner && rental.owner && <OwnerInfo owner={rental.owner} ownerId={rental.ownerId} />}
+					<OwnerInfo owner={isRenter ? rental.owner : rental.renter} ownerId={isRenter ? rental.ownerId : rental.renterId} />
 
 					{/* Rental Period */}
 					<View className="bg-gray-50 rounded-xl p-4 mb-4">
