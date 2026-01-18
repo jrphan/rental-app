@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { adminCommissionApi, type CommissionPayment } from '@/services/api.admin-commission'
 import { PaymentListTable } from './list'
 import { PaymentDetailPanel } from './detail'
-// import { SettingsPanel } from './settings'
+import type { CommissionPayment } from '@/services/api.admin-commission';
+import { adminCommissionApi } from '@/services/api.admin-commission'
+import { SettingsPanel } from './settings'
 
 export default function CommissionsPage() {
   const queryClient = useQueryClient()
@@ -86,11 +87,11 @@ export default function CommissionsPage() {
   return (
     <div className="space-y-6">
       {/* Settings Panel */}
-      {/* <SettingsPanel
+      <SettingsPanel
         settings={settingsData}
         onUpdate={(rate) => updateSettingsMutation.mutate(rate)}
         isUpdating={updateSettingsMutation.isPending}
-      /> */}
+      />
 
       {/* Payments List and Detail */}
       <div className="grid gap-4 lg:grid-cols-3">
