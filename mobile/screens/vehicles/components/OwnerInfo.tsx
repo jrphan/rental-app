@@ -13,9 +13,11 @@ export default function OwnerInfo({ owner, ownerId }: { owner: VehicleOwner | un
 
 	const handlePress = () => {
 		const params = new URLSearchParams({
-			ownerName: owner.fullName || "Chủ xe",
+			ownerName: owner.fullName || "Người dùng",
 		});
 		if (owner.avatar) params.append("ownerAvatar", owner.avatar);
+		if (owner.email) params.append("ownerEmail", owner.email);
+		if (owner.phone) params.append("ownerPhone", owner.phone);
 		router.push(`/owner/${ownerId}?${params.toString()}`);
 	};
 
@@ -49,7 +51,7 @@ export default function OwnerInfo({ owner, ownerId }: { owner: VehicleOwner | un
 						</View>
 					) : null}
 					<View className="flex-row items-center mt-2">
-						<Text className="text-sm text-primary-600 font-medium">Xem tất cả xe cho thuê</Text>
+						<Text className="text-sm text-primary-600 font-medium">Xem hồ sơ</Text>
 					</View>
 				</View>
 			</View>

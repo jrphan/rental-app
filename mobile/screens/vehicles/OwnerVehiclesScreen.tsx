@@ -4,21 +4,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import * as Clipboard from "expo-clipboard";
 import HeaderBase from "@/components/header/HeaderBase";
 import { apiVehicle } from "@/services/api.vehicle";
 import { apiChat } from "@/services/api.chat";
 import { useAuthStore } from "@/store/auth";
 import { COLORS } from "@/constants/colors";
+import { useToast } from "@/hooks/useToast";
 import VehicleCard from "./components/VehicleCard";
 
 export default function OwnerVehiclesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const toast = useToast();
   const [avatarError, setAvatarError] = useState(false);
-  const { ownerId, ownerName, ownerAvatar } = useLocalSearchParams<{
+  const { ownerId, ownerName, ownerAvatar, ownerEmail, ownerPhone } = useLocalSearchParams<{
     ownerId: string;
     ownerName?: string;
     ownerAvatar?: string;
+    ownerEmail?: string;
+    ownerPhone?: string;
   }>();
 
   // Fetch vehicles by owner
@@ -50,19 +55,32 @@ export default function OwnerVehiclesScreen() {
   const vehicles = vehiclesData?.items || [];
 
   // Get owner info from first vehicle (all vehicles have same owner)
+  // Use params first, fallback to API response
   const ownerInfo = vehicles.length > 0 ? vehicles[0].owner : null;
-  const displayName = ownerName || ownerInfo?.fullName || "Chủ xe";
-  const ownerEmail = ownerInfo?.email;
-  const ownerPhone = ownerInfo?.phone;
+  const displayName = ownerName || ownerInfo?.fullName || "Người dùng";
+  const finalOwnerEmail = ownerEmail || ownerInfo?.email;
+  const finalOwnerPhone = ownerPhone || ownerInfo?.phone;
   const ownerAvatarFromApi = ownerInfo?.avatar;
 
   // Use avatar from params first, fallback to API response
   const finalOwnerAvatar = ownerAvatar || ownerAvatarFromApi;
   const shouldShowAvatar = finalOwnerAvatar && !avatarError;
 
+  // Display name for loading/error states (use params only)
+  const loadingDisplayName = ownerName || "Hồ sơ";
+
   useEffect(() => {
     setAvatarError(false);
   }, [finalOwnerAvatar]);
+
+  const handleCopyToClipboard = async (text: string, label: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      toast.showSuccess(`${label} đã được sao chép`);
+    } catch (error) {
+      toast.showError("Không thể sao chép");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -70,10 +88,10 @@ export default function OwnerVehiclesScreen() {
         className="flex-1 bg-white"
         edges={["top", "left", "right"]}
       >
-        <HeaderBase title="Xe cho thuê" showBackButton />
+        <HeaderBase title={loadingDisplayName} showBackButton />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text className="mt-4 text-gray-600">Đang tải danh sách xe...</Text>
+          <Text className="mt-4 text-gray-600">Đang tải thông tin...</Text>
         </View>
       </SafeAreaView>
     );
@@ -85,11 +103,11 @@ export default function OwnerVehiclesScreen() {
         className="flex-1 bg-white"
         edges={["top", "left", "right"]}
       >
-        <HeaderBase title="Xe cho thuê" showBackButton />
+        <HeaderBase title={loadingDisplayName} showBackButton />
         <View className="flex-1 items-center justify-center px-4">
           <MaterialIcons name="error-outline" size={64} color="#EF4444" />
           <Text className="mt-4 text-red-600 text-center">
-            Không thể tải danh sách xe. Vui lòng thử lại.
+            Không thể tải thông tin. Vui lòng thử lại.
           </Text>
         </View>
       </SafeAreaView>
@@ -153,46 +171,60 @@ export default function OwnerVehiclesScreen() {
             </View>
           </View>
 
-          {/* Owner Name & Info */}
+          {/* User Name & Info */}
           <View className="items-center mb-6">
             {/* Contact Info */}
-            {(ownerEmail || ownerPhone) && (
+            {(finalOwnerEmail || finalOwnerPhone) && (
               <View className="mt-2 w-full">
-                {ownerPhone && (
+                {finalOwnerPhone && (
                   <View className="flex-row items-center justify-center mb-2">
                     <MaterialIcons name="phone" size={18} color="#6B7280" />
                     <Text className="ml-2 text-base text-gray-700">
-                      {ownerPhone}
+                      {finalOwnerPhone}
                     </Text>
+                    <TouchableOpacity
+                      onPress={() => handleCopyToClipboard(finalOwnerPhone, "Số điện thoại")}
+                      activeOpacity={0.7}
+                    >
+                      <MaterialIcons name="content-copy" size={16} color="#6B7280" style={{ marginLeft: 8 }} />
+                    </TouchableOpacity>
                   </View>
                 )}
-                {ownerEmail && (
+                {finalOwnerEmail && (
                   <View className="flex-row items-center justify-center">
                     <MaterialIcons name="email" size={18} color="#6B7280" />
                     <Text className="ml-2 text-base text-gray-700">
-                      {ownerEmail}
+                      {finalOwnerEmail}
                     </Text>
+                    <TouchableOpacity
+                      onPress={() => handleCopyToClipboard(finalOwnerEmail, "Email")}
+                      activeOpacity={0.7}
+                    >
+                      <MaterialIcons name="content-copy" size={16} color="#6B7280" style={{ marginLeft: 8 }} />
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
             )}
 
             {/* Stats */}
-            <View className="flex-row items-center justify-center gap-6 mt-4">
-              <View className="items-center">
-                <View className="flex-row items-center">
-                  <MaterialIcons
-                    name="directions-bike"
-                    size={20}
-                    color={COLORS.primary}
-                  />
-                  <Text className="text-2xl font-bold text-gray-900 ml-2">
-                    {vehicles.length}
-                  </Text>
+            {vehicles.length > 0 && (
+              <View className="flex-row items-center justify-center gap-6 mt-4">
+                <View className="items-center">
+                  <View className="flex-row items-center">
+                    <MaterialIcons
+                      name="directions-bike"
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                    <Text className="text-2xl font-bold text-gray-900 ml-2">
+                      {vehicles.length}
+                    </Text>
+                  </View>
+                  <Text className="text-sm text-gray-600 mt-1">Xe cho thuê</Text>
                 </View>
-                <Text className="text-sm text-gray-600 mt-1">Xe cho thuê</Text>
               </View>
-            </View>
+            )}
 
             {/* Message Button - Only show if user is logged in, not viewing own profile, and chat exists */}
             {user && user.id !== ownerId && chatWithOwner && (
@@ -230,7 +262,7 @@ export default function OwnerVehiclesScreen() {
               <MaterialIcons name="directions-bike" size={48} color="#D1D5DB" />
             </View>
             <Text className="text-gray-500 text-center text-base font-medium">
-              Chủ xe này chưa có xe nào sẵn sàng cho thuê
+              {displayName} chưa có xe nào sẵn sàng cho thuê
             </Text>
           </View>
         ) : (
