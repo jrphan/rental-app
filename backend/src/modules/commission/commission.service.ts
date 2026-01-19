@@ -219,12 +219,48 @@ export class CommissionService {
     const settings = await this.getCommissionSettings();
     const commissionRate = new Decimal(settings.commissionRate);
 
+    // Kiểm tra commission hiện tại có tồn tại không và payment đã được admin review chưa
+    const existingCommission = await this.prismaService.ownerCommission.findUnique({
+      where: {
+        ownerId_weekStartDate: {
+          ownerId,
+          weekStartDate: weekStart,
+        },
+      },
+      include: {
+        payment: true,
+      },
+    });
+
     // Nếu commissionAmount = 0, tự động approve (không cần thanh toán)
-    const paymentStatus = commissionAmount.eq(0)
+    const newPaymentStatus = commissionAmount.eq(0)
       ? CommissionPaymentStatus.APPROVED
       : CommissionPaymentStatus.PENDING;
 
+    // Nếu đã có payment được admin review (APPROVED hoặc REJECTED), giữ nguyên paymentStatus
+    // Chỉ update paymentStatus nếu:
+    // - Chưa có commission (create), HOẶC
+    // - Chưa có payment, HOẶC
+    // - Payment status là PENDING hoặc PAID (chưa được admin review)
+    const shouldUpdatePaymentStatus =
+      !existingCommission ||
+      !existingCommission.payment ||
+      (existingCommission.payment.status !== CommissionPaymentStatus.APPROVED &&
+        existingCommission.payment.status !== CommissionPaymentStatus.REJECTED);
+
     // Update DB
+    const updateData: any = {
+      totalEarning,
+      commissionRate,
+      commissionAmount, // Giá trị đã fix
+      rentalCount: completedRentals.length,
+    };
+
+    // Chỉ update paymentStatus nếu chưa được admin review
+    if (shouldUpdatePaymentStatus) {
+      updateData.paymentStatus = newPaymentStatus;
+    }
+
     const commission = await this.prismaService.ownerCommission.upsert({
       where: {
         ownerId_weekStartDate: {
@@ -232,13 +268,7 @@ export class CommissionService {
           weekStartDate: weekStart,
         },
       },
-      update: {
-        totalEarning,
-        commissionRate,
-        commissionAmount, // Giá trị đã fix
-        rentalCount: completedRentals.length,
-        paymentStatus, // Cập nhật status dựa trên commissionAmount
-      },
+      update: updateData,
       create: {
         ownerId,
         weekStartDate: weekStart,
@@ -247,7 +277,7 @@ export class CommissionService {
         commissionRate,
         commissionAmount, // Giá trị đã fix
         rentalCount: completedRentals.length,
-        paymentStatus, // Nếu = 0 thì APPROVED, không thì PENDING
+        paymentStatus: newPaymentStatus, // Nếu = 0 thì APPROVED, không thì PENDING
       },
     });
 
