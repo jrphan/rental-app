@@ -62,7 +62,7 @@ export function PaymentDetailPanel({
               <DetailRow label="Số điện thoại" value={selected.owner.phone} />
             </Section>
 
-            <Section title="Thông tin commission">
+            <Section title="Thông tin hóa đơn">
               <DetailRow
                 label="Tuần"
                 value={`${formatDate(selected.commission.weekStartDate)} - ${formatDate(selected.commission.weekEndDate)}`}
