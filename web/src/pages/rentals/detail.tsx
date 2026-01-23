@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { RentalStatusBadge } from './status-badge'
 import type { AdminRentalItem, DisputeStatus, RentalStatus } from '@/services/api.admin-rental'
 import { adminRentalApi } from '@/services/api.admin-rental'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface RentalDetailPanelProps {
   selected: AdminRentalItem | null
@@ -35,13 +42,54 @@ export function RentalDetailPanel({
 }: RentalDetailPanelProps) {
   const queryClient = useQueryClient()
   const [isUpdating, setIsUpdating] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+  const [disputeStatus, setDisputeStatus] = useState<DisputeStatus>('OPEN')
+  const [disputeAdminNotes, setDisputeAdminNotes] = useState('')
 
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: RentalStatus }) =>
-      adminRentalApi.updateStatus(id, status),
+  // Reset cancel reason when selected rental changes
+  useEffect(() => {
+    setCancelReason('')
+    setDisputeStatus(selected?.dispute?.status ?? 'OPEN')
+    setDisputeAdminNotes(selected?.dispute?.adminNotes ?? '')
+  }, [selected?.id])
+
+  const updateDisputeMutation = useMutation({
+    mutationFn: (payload: { id: string; status: DisputeStatus; adminNotes?: string }) =>
+      adminRentalApi.updateDispute(payload.id, {
+        status: payload.status,
+        adminNotes: payload.adminNotes,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminRentals'] })
       onUpdate?.()
+    },
+  })
+
+  const handleUpdateDispute = async () => {
+    if (!selected?.dispute) return
+
+    setIsUpdating(true)
+    try {
+      await updateDisputeMutation.mutateAsync({
+        id: selected.id,
+        status: disputeStatus,
+        adminNotes: disputeAdminNotes.trim() || undefined,
+      })
+    } catch (error) {
+      console.error('Failed to update dispute:', error)
+      alert('Cập nhật tranh chấp thất bại. Vui lòng thử lại.')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status, cancelReason }: { id: string; status: RentalStatus; cancelReason?: string }) =>
+      adminRentalApi.updateStatus(id, status, cancelReason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminRentals'] })
+      onUpdate?.()
+      setCancelReason('') // Reset cancel reason after success
     },
     onSettled: () => {
       setIsUpdating(false)
@@ -64,6 +112,30 @@ export function RentalDetailPanel({
       await updateStatusMutation.mutateAsync({
         id: selected.id,
         status: 'COMPLETED',
+      })
+    } catch (error) {
+      console.error('Failed to update rental status:', error)
+      alert('Cập nhật trạng thái thất bại. Vui lòng thử lại.')
+    }
+  }
+
+  const handleCancelDisputedRental = async () => {
+    if (!selected) return
+
+    if (
+      !confirm(
+        'Bạn có chắc chắn muốn hủy đơn tranh chấp này?',
+      )
+    ) {
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      await updateStatusMutation.mutateAsync({
+        id: selected.id,
+        status: 'CANCELLED',
+        cancelReason: cancelReason.trim() || undefined,
       })
     } catch (error) {
       console.error('Failed to update rental status:', error)
@@ -366,23 +438,110 @@ export function RentalDetailPanel({
                       value={formatDate(selected.dispute.resolvedAt)}
                     />
                   )}
-                  {/* Button để chuyển đổi sang COMPLETED khi dispute đã được giải quyết */}
+                  {/* Buttons để chuyển đổi trạng thái khi dispute đã được giải quyết */}
                   {selected.status === 'DISPUTED' && (
-                    <div className="pt-2 border-t border-orange-200">
-                      <Button
-                        onClick={handleCompleteDisputedRental}
-                        disabled={isUpdating}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white"
-                      >
-                        {isUpdating ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Đang xử lý...
-                          </>
-                        ) : (
-                          'Chuyển thành hoàn thành'
-                        )}
-                      </Button>
+                    <div className="pt-2 border-t border-orange-200 space-y-3">
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-gray-700">
+                          Trạng thái tranh chấp
+                        </label>
+                        <p></p>
+                        <Select
+                          value={disputeStatus}
+                          onValueChange={(value) => setDisputeStatus(value as DisputeStatus)}
+                          disabled={isUpdating}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Chọn trạng thái" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="OPEN">Mở</SelectItem>
+                            <SelectItem value="UNDER_REVIEW">Đang xem xét</SelectItem>
+                            <SelectItem value="RESOLVED_REFUND">Đã giải quyết (Hoàn tiền)</SelectItem>
+                            <SelectItem value="RESOLVED_NO_REFUND">Đã giải quyết (Không hoàn tiền)</SelectItem>
+                            <SelectItem value="CANCELLED">Đã hủy</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <label className="text-xs font-medium text-gray-700">
+                          Ghi chú admin (tùy chọn)
+                        </label>
+                        <textarea
+                          rows={3}
+                          className="bg-white mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-300"
+                          placeholder="Nhập ghi chú xử lý tranh chấp..."
+                          value={disputeAdminNotes}
+                          onChange={(e) => setDisputeAdminNotes(e.target.value)}
+                          disabled={isUpdating}
+                        />
+
+                        <Button
+                          onClick={handleUpdateDispute}
+                          disabled={isUpdating}
+                          className="w-full bg-orange-600 hover:bg-orange-700 text-white disabled:cursor-not-allowed disabled:bg-orange-400"
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Đang xử lý...
+                            </>
+                          ) : (
+                            'Cập nhật tranh chấp'
+                          )}
+                        </Button>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleCompleteDisputedRental}
+                          disabled={isUpdating}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Đang xử lý...
+                            </>
+                          ) : (
+                            'Hoàn thành'
+                          )}
+                        </Button>
+                        <button
+                          disabled={isUpdating}
+                          onClick={onClearSelection}
+                          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed"
+                        >
+                          Bỏ chọn
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-gray-700">
+                          Lý do hủy (tùy chọn)
+                        </label>
+                        <textarea
+                          rows={3}
+                          className="bg-white mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-300"
+                          placeholder="Nhập lý do chi tiết khi hủy đơn thuê..."
+                          value={cancelReason}
+                          onChange={(e) => setCancelReason(e.target.value)}
+                          disabled={isUpdating}
+                        />
+                        <Button
+                          onClick={handleCancelDisputedRental}
+                          disabled={isUpdating}
+                          className="w-full bg-red-600 hover:bg-red-700 text-white disabled:cursor-not-allowed disabled:bg-red-400"
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Đang xử lý...
+                            </>
+                          ) : (
+                            'Hủy đơn thuê'
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>

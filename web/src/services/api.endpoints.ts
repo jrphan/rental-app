@@ -32,6 +32,7 @@ const API_ENDPOINTS = {
     LIST_RENTALS: '/admin/rentals',
     GET_RENTAL_DETAIL: (id: string) => `/admin/rentals/${id}`,
     UPDATE_RENTAL_STATUS: (id: string) => `/admin/rentals/${id}/status`,
+    UPDATE_RENTAL_DISPUTE: (id: string) => `/admin/rentals/${id}/dispute`,
     STATS: '/admin/stats',
     COMMISSION_SETTINGS: '/admin/commission-settings',
     COMMISSION_PAYMENTS: '/admin/commission-payments',

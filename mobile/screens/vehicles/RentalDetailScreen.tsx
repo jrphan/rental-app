@@ -1032,24 +1032,38 @@ export default function RentalDetailScreen() {
 								<View
 									className={`px-2 py-1 rounded-full ${rental.dispute.status === "OPEN"
 										? "bg-amber-100"
-										: rental.dispute.status === "RESOLVED"
-											? "bg-green-100"
-											: "bg-gray-100"
+										: rental.dispute.status === "UNDER_REVIEW"
+											? "bg-blue-100"
+											: rental.dispute.status === "RESOLVED_REFUND" || rental.dispute.status === "RESOLVED_NO_REFUND"
+												? "bg-green-100"
+												: rental.dispute.status === "CANCELLED"
+													? "bg-red-100"
+													: "bg-gray-100"
 										}`}
 								>
 									<Text
 										className={`text-xs font-medium ${rental.dispute.status === "OPEN"
 											? "text-amber-700"
-											: rental.dispute.status === "RESOLVED"
-												? "text-green-700"
-												: "text-gray-700"
+											: rental.dispute.status === "UNDER_REVIEW"
+												? "text-blue-700"
+												: rental.dispute.status === "RESOLVED_REFUND" || rental.dispute.status === "RESOLVED_NO_REFUND"
+													? "text-green-700"
+													: rental.dispute.status === "CANCELLED"
+														? "text-red-700"
+														: "text-gray-700"
 											}`}
 									>
 										{rental.dispute.status === "OPEN"
 											? "Đang xử lý"
-											: rental.dispute.status === "RESOLVED"
-												? "Đã giải quyết"
-												: "Đã đóng"}
+											: rental.dispute.status === "UNDER_REVIEW"
+												? "Đang xem xét"
+												: rental.dispute.status === "RESOLVED_REFUND"
+													? "Đã giải quyết (hoàn tiền)"
+													: rental.dispute.status === "RESOLVED_NO_REFUND"
+														? "Đã giải quyết"
+														: rental.dispute.status === "CANCELLED"
+															? "Đã hủy"
+															: "Đã đóng"}
 									</Text>
 								</View>
 							</View>

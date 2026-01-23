@@ -64,6 +64,7 @@ export const ROUTES = {
     LIST_RENTALS: '/admin/rentals',
     GET_RENTAL_DETAIL: '/admin/rentals/:id',
     UPDATE_RENTAL_STATUS: '/admin/rentals/:id/status',
+    UPDATE_RENTAL_DISPUTE: '/admin/rentals/:id/dispute',
     STATS: '/admin/stats',
     COMMISSION_SETTINGS: '/admin/commission-settings',
     COMMISSION_PAYMENTS: '/admin/commission-payments',

@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateRentalDto } from '@/common/dto/Rental/create-rental.dto';
 import { UpdateRentalStatusDto } from '@/common/dto/Rental/update-rental-status.dto';
+import { UpdateRentalDisputeDto } from '@/common/dto/Rental/update-rental-dispute.dto';
 import {
   UploadEvidenceDto,
   UploadMultipleEvidenceDto,
@@ -925,6 +926,69 @@ export class RentalService {
   }
 
   /**
+   * Admin: Cập nhật trạng thái tranh chấp (dispute) của một rental
+   */
+  async updateRentalDisputeAdmin(
+    adminId: string,
+    rentalId: string,
+    dto: UpdateRentalDisputeDto,
+  ) {
+    await this.assertAdminOrSupport(adminId);
+
+    const rental = await this.prismaService.rental.findUnique({
+      where: { id: rentalId },
+      include: { dispute: true },
+    });
+
+    if (!rental) {
+      throw new NotFoundException('Không tìm thấy đơn thuê');
+    }
+
+    if (!rental.dispute) {
+      throw new BadRequestException('Đơn thuê này không có tranh chấp');
+    }
+
+    const { status, adminNotes } = dto;
+
+    const isResolved =
+      status === 'RESOLVED_REFUND' || status === 'RESOLVED_NO_REFUND';
+    const isClosed = isResolved || status === 'CANCELLED';
+
+    const updatedDispute = await this.prismaService.dispute.update({
+      where: { id: rental.dispute.id },
+      data: {
+        status,
+        adminNotes: adminNotes?.trim() ? adminNotes.trim() : null,
+        resolvedBy: isClosed ? adminId : null,
+        resolvedAt: isClosed ? new Date() : null,
+      },
+    });
+
+    await this.auditLogService
+      .log({
+        actorId: adminId,
+        action: AuditAction.UPDATE,
+        targetId: rental.id,
+        targetType: AuditTargetType.RENTAL,
+        metadata: {
+          action: 'admin_update_rental_dispute',
+          disputeId: updatedDispute.id,
+          oldStatus: rental.dispute.status,
+          newStatus: status,
+          adminNotes: adminNotes?.trim() || null,
+        },
+      })
+      .catch(error => {
+        this.logger.error('Failed to log admin dispute update audit', error);
+      });
+
+    return {
+      message: 'Cập nhật tranh chấp thành công',
+      dispute: updatedDispute,
+    };
+  }
+
+  /**
    * Admin: Cập nhật trạng thái đơn thuê
    * Cho phép admin chuyển đơn tranh chấp đã giải quyết thành hoàn thành
    */
@@ -935,7 +999,7 @@ export class RentalService {
   ): Promise<UpdateRentalStatusResponse> {
     await this.assertAdminOrSupport(adminId);
 
-    const { status } = updateStatusDto;
+    const { status, cancelReason } = updateStatusDto;
 
     const rental = await this.prismaService.rental.findUnique({
       where: { id: rentalId },
@@ -950,20 +1014,26 @@ export class RentalService {
     }
 
     // Validate status transition for admin
-    // Admin có thể chuyển từ DISPUTED sang COMPLETED nếu dispute đã được giải quyết
-    if (
-      rental.status === RentalStatus.DISPUTED &&
-      status === RentalStatus.COMPLETED
-    ) {
+    // Admin có thể chuyển từ DISPUTED sang COMPLETED hoặc CANCELLED
+    if (rental.status === RentalStatus.DISPUTED) {
       if (!rental.dispute) {
         throw new BadRequestException('Đơn thuê này không có tranh chấp');
       }
 
-      // Chỉ cho phép chuyển sang COMPLETED nếu dispute đã được giải quyết
-      const resolvedStatuses = ['RESOLVED_REFUND', 'RESOLVED_NO_REFUND'];
-      if (!resolvedStatuses.includes(rental.dispute.status)) {
+      if (status === RentalStatus.COMPLETED) {
+        // Chỉ cho phép chuyển sang COMPLETED nếu dispute đã được giải quyết
+        const resolvedStatuses = ['RESOLVED_REFUND', 'RESOLVED_NO_REFUND'];
+        if (!resolvedStatuses.includes(rental.dispute.status)) {
+          throw new BadRequestException(
+            'Chỉ có thể chuyển đơn tranh chấp đã giải quyết thành hoàn thành',
+          );
+        }
+      } else if (status === RentalStatus.CANCELLED) {
+        // Admin có thể hủy đơn tranh chấp bất kỳ lúc nào
+        // Không cần kiểm tra dispute status
+      } else {
         throw new BadRequestException(
-          'Chỉ có thể chuyển đơn tranh chấp đã giải quyết thành hoàn thành',
+          `Không thể chuyển từ ${rental.status} sang ${status}`,
         );
       }
     } else {
@@ -987,7 +1057,7 @@ export class RentalService {
         ],
         [RentalStatus.COMPLETED]: [],
         [RentalStatus.CANCELLED]: [],
-        [RentalStatus.DISPUTED]: [RentalStatus.COMPLETED], // Admin có thể chuyển từ DISPUTED sang COMPLETED
+        [RentalStatus.DISPUTED]: [RentalStatus.COMPLETED, RentalStatus.CANCELLED], // Admin có thể chuyển từ DISPUTED sang COMPLETED hoặc CANCELLED
       };
 
       if (!validTransitions[rental.status]?.includes(status)) {
@@ -1002,9 +1072,32 @@ export class RentalService {
       where: { id: rentalId },
       data: {
         status,
+        cancelReason: status === RentalStatus.CANCELLED ? cancelReason : null,
       },
       select: selectRental,
     });
+
+    // Quản lý VehicleUnavailability dựa trên status
+    // Nếu rental bị hủy (CANCELLED) hoặc hoàn thành (COMPLETED), xóa unavailability liên quan
+    if (
+      status === RentalStatus.CANCELLED ||
+      status === RentalStatus.COMPLETED
+    ) {
+      // Xóa unavailability khi rental bị hủy hoặc hoàn thành
+      await this.prismaService.vehicleUnavailability
+        .deleteMany({
+          where: {
+            vehicleId: rental.vehicleId,
+            reason: { contains: rental.id },
+          },
+        })
+        .catch(error => {
+          this.logger.error(
+            'Failed to delete vehicle unavailability on cancel/completion',
+            error,
+          );
+        });
+    }
 
     // Log audit
     await this.auditLogService
@@ -1017,6 +1110,7 @@ export class RentalService {
           action: 'admin_update_rental_status',
           oldStatus: rental.status,
           newStatus: status,
+          cancelReason,
         },
       })
       .catch(error => {

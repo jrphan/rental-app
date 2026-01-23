@@ -165,16 +165,32 @@ export const adminRentalApi = {
   async updateStatus(
     id: string,
     status: RentalStatus,
+    cancelReason?: string,
   ): Promise<{ message: string; rental: AdminRentalDetail }> {
     const response = await apiClient.patch<
       { message: string; rental: AdminRentalDetail }
     >(API_ENDPOINTS.ADMIN.UPDATE_RENTAL_STATUS(id), {
       status,
+      cancelReason,
     })
     if (response.success && response.data && !Array.isArray(response.data)) {
       return response.data
     }
     throw new Error(response.message || 'Cập nhật trạng thái đơn hàng thất bại')
+  },
+
+  async updateDispute(
+    id: string,
+    payload: { status: DisputeStatus; adminNotes?: string },
+  ): Promise<{ message: string; dispute: RentalDispute }> {
+    const response = await apiClient.patch<{ message: string; dispute: RentalDispute }>(
+      API_ENDPOINTS.ADMIN.UPDATE_RENTAL_DISPUTE(id),
+      payload,
+    )
+    if (response.success && response.data && !Array.isArray(response.data)) {
+      return response.data
+    }
+    throw new Error(response.message || 'Cập nhật tranh chấp thất bại')
   },
 }
 

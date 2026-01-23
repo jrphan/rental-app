@@ -17,6 +17,7 @@ import { AuthGuard } from '@/common/guards/auth.guard';
 import { AuthenticatedRequest } from '@/types/response.type';
 import { CreateRentalDto } from '@/common/dto/Rental/create-rental.dto';
 import { UpdateRentalStatusDto } from '@/common/dto/Rental/update-rental-status.dto';
+import { UpdateRentalDisputeDto } from '@/common/dto/Rental/update-rental-dispute.dto';
 import {
   UploadEvidenceDto,
   UploadMultipleEvidenceDto,
@@ -189,5 +190,20 @@ export class RentalController {
     }
 
     return this.rentalService.updateRentalStatusAdmin(adminId, id, updateStatusDto);
+  }
+
+  @Patch(ROUTES.ADMIN.UPDATE_RENTAL_DISPUTE)
+  @UseGuards(AuthGuard)
+  updateRentalDisputeAdmin(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: UpdateRentalDisputeDto,
+  ) {
+    const adminId = (req as AuthenticatedRequest).user?.sub;
+    if (!adminId) {
+      throw new UnauthorizedException('Người dùng không tồn tại');
+    }
+
+    return this.rentalService.updateRentalDisputeAdmin(adminId, id, dto);
   }
 }
